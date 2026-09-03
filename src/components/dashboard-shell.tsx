@@ -18,11 +18,13 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid min-h-screen grid-cols-1 md:grid-cols-[250px_1fr]">
-      <aside className="border-r border-[var(--line)] bg-[var(--panel)] p-5">
-        <Link className="mb-8 flex items-center gap-2 font-black" href="/">
-          <BriefcaseBusiness size={24} aria-hidden />
-          EventRecruit
+    <div className="dashboard-shell grid min-h-screen grid-cols-1 md:grid-cols-[260px_1fr]">
+      <aside className="dashboard-sidebar border-b border-[var(--line)] p-5 md:border-b-0 md:border-r">
+        <Link className="brand-link mb-8" href="/">
+          <span className="brand-mark">
+            <BriefcaseBusiness size={20} aria-hidden />
+          </span>
+          <span>EventRecruit</span>
         </Link>
         <nav className="grid gap-2">
           {nav.map((item) => {
@@ -31,9 +33,7 @@ export function DashboardShell({
             return (
               <Link
                 key={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 font-bold ${
-                  isActive ? "bg-teal-700 text-white" : "text-[var(--muted)] hover:bg-white"
-                }`}
+                className={`dashboard-nav-link ${isActive ? "dashboard-nav-active" : ""}`}
                 href={item.href}
               >
                 <Icon size={18} aria-hidden />

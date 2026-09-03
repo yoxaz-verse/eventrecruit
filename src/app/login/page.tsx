@@ -20,7 +20,7 @@ export default async function LoginPage({
       <AuthCard
         badge="Secure access"
         title="Log in to EventRecruit"
-        description="Use your password or request a one-time code sent to your verified email."
+        description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >
         <LoginTabs mode={mode} />

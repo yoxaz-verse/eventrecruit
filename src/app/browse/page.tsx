@@ -13,24 +13,30 @@ export default function BrowsePage({
     <div className="shell">
       <TopNav />
       <main className="page py-10">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="page-kicker flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-black">Open event roles</h1>
-            <p className="mt-2 text-[var(--muted)]">
-              Verified event talent can apply for live recruitment needs from exhibitors and agencies.
+            <span className="badge badge-accent">India opportunities</span>
+            <h1>Open event and retail roles</h1>
+            <p>
+              Verified talent can apply for live recruitment needs from exhibitors,
+              agencies, brands, and store activation teams across India.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <select className="input w-[180px]" aria-label="Filter by location">
               <option>All locations</option>
-              <option>Dubai</option>
+              <option>Delhi NCR</option>
+              <option>Mumbai</option>
               <option>Bengaluru</option>
-              <option>Sharjah</option>
+              <option>Hyderabad</option>
+              <option>Chennai</option>
+              <option>Kochi</option>
             </select>
             <select className="input w-[160px]" aria-label="Filter by role">
               <option>All roles</option>
               <option>Host</option>
               <option>Demo staff</option>
+              <option>Retail promoter</option>
               <option>Registration</option>
             </select>
           </div>

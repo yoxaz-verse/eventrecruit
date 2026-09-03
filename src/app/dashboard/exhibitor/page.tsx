@@ -13,7 +13,7 @@ import { applicants, openRoles, reputations, testimonials } from "@/lib/mock-dat
 const recommendations = [
   {
     id: "60000000-0000-0000-0000-000000000001",
-    agency: "Prime Booth Talent",
+    agency: "FieldCrew Partners",
     role: "Product Demonstrator",
     talent: applicants[0],
     note: "Strong product demo background with excellent reliability score.",
@@ -28,11 +28,11 @@ export default async function ExhibitorDashboard() {
 
   return (
     <DashboardShell active="exhibitor">
-      <div className="mb-8">
+      <div className="page-kicker">
         <span className="badge">Exhibitor panel</span>
-        <h1 className="mt-3 text-4xl font-black">Hire event staff</h1>
+        <h1 className="mt-3 text-4xl font-black">Hire event and retail staff</h1>
         <p className="mt-2 text-[var(--muted)]">
-          Post staffing needs, evaluate verified applicants, and complete reviews after the event.
+          Post staffing needs, evaluate verified applicants, and complete reviews after the event or activation.
         </p>
       </div>
       <section className="mb-8 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
@@ -87,7 +87,7 @@ export default async function ExhibitorDashboard() {
         </p>
         <div className="mt-5 grid gap-4">
           {recommendations.map((recommendation) => (
-            <article className="rounded-lg border border-[var(--line)] bg-white p-4" key={recommendation.id}>
+            <article className="surface-card p-4" key={recommendation.id}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <strong>{recommendation.talent.name}</strong>

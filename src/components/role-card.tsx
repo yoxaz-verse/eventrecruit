@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/status-badge";
 
 export function RoleCard({ role, apply = false }: { role: EventRole; apply?: boolean }) {
   return (
-    <article className="panel grid gap-4 p-5">
+    <article className="panel role-card grid gap-4 p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-[var(--accent)]">{role.eventTitle}</p>
@@ -22,7 +22,7 @@ export function RoleCard({ role, apply = false }: { role: EventRole; apply?: boo
           <Users size={16} aria-hidden /> {role.headcount} people needed
         </span>
         <span className="flex items-center gap-2">
-          <Star size={16} aria-hidden /> ${role.rate}/day · {role.shift}
+          <Star size={16} aria-hidden /> Rs {role.rate.toLocaleString("en-IN")}/day · {role.shift}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">

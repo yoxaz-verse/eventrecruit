@@ -14,21 +14,21 @@ const pendingProfiles = [
     name: "Aisha Rahman",
     type: "Event Talent",
     status: "pending_verification",
-    city: "Dubai",
+    city: "Mumbai",
   },
   {
     id: "00000000-0000-0000-0000-000000000003",
     name: "Nexa Exhibitions Manager",
     type: "Exhibitor",
     status: "pending_verification",
-    city: "Dubai",
+    city: "Bengaluru",
   },
   {
     id: "00000000-0000-0000-0000-000000000002",
-    name: "Prime Booth Talent",
+    name: "FieldCrew Partners",
     type: "Agency",
     status: "pending_verification",
-    city: "Dubai",
+    city: "Delhi NCR",
   },
 ];
 
@@ -37,11 +37,11 @@ export default async function AdminDashboard() {
 
   return (
     <DashboardShell active="admin">
-      <div className="mb-8">
+      <div className="page-kicker">
         <span className="badge">Admin control</span>
         <h1 className="mt-3 text-4xl font-black">Marketplace oversight</h1>
         <p className="mt-2 text-[var(--muted)]">
-          Verify users, monitor placements, and keep trust signals clean.
+          Verify users, monitor India-wide placements, and keep trust signals clean.
         </p>
       </div>
       <section className="grid-auto">
@@ -66,7 +66,7 @@ export default async function AdminDashboard() {
           </div>
           <div className="grid gap-3">
             {pendingProfiles.map((profile) => (
-              <div className="rounded-lg border border-[var(--line)] bg-white p-4" key={profile.name}>
+            <div className="surface-card p-4" key={profile.name}>
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <strong>{profile.name}</strong>
@@ -105,7 +105,7 @@ export default async function AdminDashboard() {
         </div>
         <div className="grid-auto">
           {["Event talent require admin verification before placement", "Private contact details are admin-only", "Agency commissions are tracked but paid offline"].map((item) => (
-            <div className="rounded-lg bg-white p-4 font-bold" key={item}>{item}</div>
+            <div className="surface-card p-4 font-bold" key={item}>{item}</div>
           ))}
         </div>
       </section>

@@ -23,7 +23,7 @@ export function TestimonialList({
       </div>
       <div className="grid gap-3">
         {visible.map((testimonial) => (
-          <article className="rounded-lg border border-[var(--line)] bg-white p-4" key={testimonial.id}>
+          <article className="surface-card p-4" key={testimonial.id}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <strong>{testimonial.revieweeName}</strong>

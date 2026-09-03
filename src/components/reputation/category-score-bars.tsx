@@ -24,11 +24,11 @@ export function CategoryScoreBars({ reputation }: { reputation: Reputation }) {
         ))}
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-lg bg-white p-4">
+        <div className="stat-card">
           <strong>{reputation.cancellations}</strong>
           <p className="text-[var(--muted)]">Cancellations</p>
         </div>
-        <div className="rounded-lg bg-white p-4">
+        <div className="stat-card">
           <strong>{reputation.disputes}</strong>
           <p className="text-[var(--muted)]">Disputes</p>
         </div>

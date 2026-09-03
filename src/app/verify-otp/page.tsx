@@ -32,7 +32,7 @@ export default async function VerifyOtpPage({
       <AuthCard
         badge="Email OTP"
         title={labels[type] ?? "Verify OTP"}
-        description="Enter the 6 digit code sent by Supabase Auth, or use the magic link in the same email."
+        description="Enter the 6 digit code sent to your email, or use the magic link in the same message."
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
       >
         <AuthMessage message={params?.message} />

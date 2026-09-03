@@ -60,7 +60,7 @@ export const applicants: Applicant[] = [
     rating: 4.9,
     reliability: 98,
     completed: 24,
-    languages: ["English", "Arabic", "Hindi"],
+    languages: ["English", "Hindi", "Marathi"],
     status: "shortlisted",
   },
   {
@@ -164,7 +164,7 @@ export const testimonials: Testimonial[] = [
     reliability: 5,
     text: "Aisha handled demos with confidence, captured clean leads, and stayed sharp through a long expo day.",
     status: "published",
-    placement: "Gulf Tech Expo 2026",
+    placement: "Delhi Auto Expo Activation",
   },
   {
     id: "70000000-0000-0000-0000-000000000002",
@@ -177,7 +177,7 @@ export const testimonials: Testimonial[] = [
     reliability: 5,
     text: "The booth team gave clear instructions, paid attention to breaks, and managed visitors professionally.",
     status: "published",
-    placement: "Gulf Tech Expo 2026",
+    placement: "Delhi Auto Expo Activation",
   },
   {
     id: "70000000-0000-0000-0000-000000000003",
@@ -190,6 +190,6 @@ export const testimonials: Testimonial[] = [
     reliability: 3,
     text: "Good registration support, but arrival timing needs improvement for busy morning shifts.",
     status: "hidden",
-    placement: "Auto Mobility Week",
+    placement: "Bengaluru SaaS Conference",
   },
 ];

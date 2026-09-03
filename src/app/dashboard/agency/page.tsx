@@ -10,7 +10,7 @@ import { applicants, openRoles, reputations } from "@/lib/mock-data";
 
 const clients = [
   { name: "Nexa Exhibitions", activeRoles: 7, commission: "12%" },
-  { name: "VoltEdge Motors", activeRoles: 4, commission: "$18 per placement" },
+  { name: "VoltEdge Motors", activeRoles: 4, commission: "Rs 1,500 per placement" },
   { name: "Meridian Foods", activeRoles: 2, commission: "10%" },
 ];
 
@@ -21,11 +21,11 @@ export default async function AgencyDashboard() {
 
   return (
     <DashboardShell active="agency">
-      <div className="mb-8">
+      <div className="page-kicker">
         <span className="badge">Agency panel</span>
         <h1 className="mt-3 text-4xl font-black">Manage exhibitor clients</h1>
         <p className="mt-2 text-[var(--muted)]">
-          Run staffing requests for exhibitors and track commission on filled placements.
+          Run event and retail staffing requests across Indian cities and track commission on filled placements.
         </p>
       </div>
       <section className="grid-auto">
@@ -62,8 +62,8 @@ export default async function AgencyDashboard() {
             <h2 className="text-2xl font-black">Commission tracker</h2>
           </div>
           <div className="grid gap-3">
-            {["$4,620 pending", "$11,880 approved", "$1,920 disputed"].map((item) => (
-              <div className="rounded-lg bg-white p-4 font-bold" key={item}>{item}</div>
+            {["Rs 3.8L pending", "Rs 9.6L approved", "Rs 82K disputed"].map((item) => (
+              <div className="surface-card p-4 font-bold" key={item}>{item}</div>
             ))}
           </div>
         </div>
@@ -77,7 +77,7 @@ export default async function AgencyDashboard() {
           {applicants.map((talent) => (
             <form
               action={recommendTalent}
-              className="grid gap-3 rounded-lg border border-[var(--line)] bg-white p-4 md:grid-cols-[1fr_220px_1fr_auto]"
+              className="surface-card grid gap-3 p-4 md:grid-cols-[1fr_220px_1fr_auto]"
               key={talent.id}
             >
               <input name="talent_id" type="hidden" value={talent.talentId} />

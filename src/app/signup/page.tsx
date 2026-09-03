@@ -40,7 +40,7 @@ export default async function SignupPage({
       <AuthCard
         badge="Verified signup"
         title="Create your account"
-        description="Start with your account and role. You will verify your email before onboarding."
+        description="Start as talent, an exhibitor, or an agency for events and retail activations across India."
         footer={{ text: "Already registered?", href: "/login", label: "Log in" }}
       >
         <form action={signUpWithEmailVerification} className="grid gap-4">
