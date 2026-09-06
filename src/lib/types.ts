@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "agency" | "exhibitor" | "talent";
+export type UserRole = "organizer" | "admin" | "agency" | "exhibitor" | "talent";
 
 export type VerificationStatus = "pending" | "verified" | "rejected";
 

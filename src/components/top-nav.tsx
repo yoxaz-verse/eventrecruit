@@ -12,6 +12,8 @@ export function TopNav() {
           <span>EventRecruit</span>
         </Link>
         <nav className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+          <Link className="button button-secondary" href="/events">Events</Link>
+          <Link className="button button-secondary" href="/signup?role=organizer">Event Organizer</Link>
           <Link className="button button-secondary hide-sm" href="/browse">
             Browse roles
           </Link>

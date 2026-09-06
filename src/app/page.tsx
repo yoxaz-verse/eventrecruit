@@ -70,16 +70,16 @@ const audiences = [
 ];
 
 const cityCoverage = [
-  { city: "Delhi NCR", x: 48, y: 22, events: 42, people: 180 },
-  { city: "Jaipur", x: 39, y: 31, events: 18, people: 74 },
-  { city: "Ahmedabad", x: 32, y: 44, events: 21, people: 92 },
-  { city: "Mumbai", x: 35, y: 58, events: 46, people: 210 },
-  { city: "Pune", x: 42, y: 62, events: 29, people: 126 },
-  { city: "Hyderabad", x: 52, y: 66, events: 34, people: 150 },
-  { city: "Bengaluru", x: 48, y: 78, events: 39, people: 172 },
-  { city: "Chennai", x: 58, y: 82, events: 31, people: 138 },
-  { city: "Kochi", x: 43, y: 88, events: 16, people: 68 },
-  { city: "Kolkata", x: 76, y: 46, events: 24, people: 96 },
+  { city: "Delhi NCR", x: 32, y: 30, labelX: 10, labelY: -20, events: 42, people: 180 },
+  { city: "Jaipur", x: 27, y: 37, labelX: 10, labelY: -8, events: 18, people: 74 },
+  { city: "Ahmedabad", x: 18, y: 51, labelX: 10, labelY: -8, events: 21, people: 92 },
+  { city: "Mumbai", x: 19, y: 65, labelX: 10, labelY: -10, events: 46, people: 210 },
+  { city: "Pune", x: 22, y: 68, labelX: 10, labelY: 6, events: 29, people: 126 },
+  { city: "Hyderabad", x: 37, y: 69, labelX: 10, labelY: -2, events: 34, people: 150 },
+  { city: "Bengaluru", x: 34, y: 82, labelX: 10, labelY: -6, events: 39, people: 172 },
+  { city: "Chennai", x: 44, y: 83, labelX: 10, labelY: -2, events: 31, people: 138 },
+  { city: "Kochi", x: 30, y: 92, labelX: 10, labelY: -2, events: 16, people: 68 },
+  { city: "Kolkata", x: 71, y: 51, labelX: 10, labelY: -8, events: 24, people: 96 },
 ];
 
 const steps = [
@@ -210,37 +210,37 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="coverage-map panel" aria-label="India coverage map">
+            <div className="coverage-map panel" aria-label="India coverage map for EventRecruit">
               <div className="map-shell">
-                <svg
-                  aria-hidden="true"
-                  className="india-map"
-                  viewBox="0 0 100 110"
-                  role="img"
-                >
-                  <path
-                    d="M48 7 58 14 61 23 72 27 80 39 73 50 78 62 69 71 62 88 50 102 41 88 34 79 27 68 20 54 27 43 32 31 39 24Z"
-                    fill="rgba(13, 107, 95, 0.12)"
-                    stroke="rgba(13, 107, 95, 0.36)"
-                    strokeWidth="1.5"
+                <div className="map-viewport">
+                  <Image
+                    aria-hidden="true"
+                    alt=""
+                    className="india-map"
+                    height={2000}
+                    unoptimized
+                    width={1871}
+                    src="/brand/india-map.svg"
                   />
-                  <path
-                    d="M37 89 43 102 48 91"
-                    fill="none"
-                    stroke="rgba(13, 107, 95, 0.26)"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-                {cityCoverage.map((market) => (
-                  <div
-                    className="map-pin"
-                    key={market.city}
-                    style={{ left: `${market.x}%`, top: `${market.y}%` }}
-                  >
-                    <span className="pin-dot" />
-                    <span className="pin-label">{market.city}</span>
-                  </div>
-                ))}
+                  {cityCoverage.map((market) => (
+                    <div
+                      aria-label={`${market.city}: ${market.events} staffing needs, ${market.people} people`}
+                      className="map-pin"
+                      key={market.city}
+                      style={{ left: `${market.x}%`, top: `${market.y}%` }}
+                    >
+                      <span className="pin-dot" />
+                      <span
+                        className="pin-label"
+                        style={{
+                          transform: `translate(${market.labelX}px, ${market.labelY}px)`,
+                        }}
+                      >
+                        {market.city}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="city-grid">
                 {cityCoverage.map((market) => (

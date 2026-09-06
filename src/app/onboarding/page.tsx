@@ -1,8 +1,12 @@
+import { getCurrentProfile } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { completeOnboarding } from "@/app/actions/onboarding";
 import { TopNav } from "@/components/top-nav";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const profile = await getCurrentProfile();
+  if (profile?.role === "organizer") redirect("/dashboard/organizer/company");
   return (
     <div className="shell">
       <TopNav />

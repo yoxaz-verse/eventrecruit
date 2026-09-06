@@ -27,7 +27,7 @@ EventRecruit is an India-wide people operations platform for events, exhibitions
 - **Buttons:** primary buttons start a hiring or sign-up action; secondary buttons guide alternate paths such as joining as talent.
 - **Badges:** badges mark verification, coverage, workflow state, or small contextual labels.
 - **Panels:** use panels for individual cards, forms, maps, and bounded tools. Avoid nesting cards inside cards.
-- **Maps:** coverage maps are visual proof of reach, not decoration. Pair city pins with counts or operational context.
+- **Maps:** coverage maps are visual proof of reach, not decoration. Use recognizable geographic outlines from local, license-safe assets, never abstract placeholder polygons, and pair city pins with counts or operational context. Record source context when a map asset is added.
 - **Forms:** labels should be concrete and short. Error or status messages must be visible near the form header.
 
 ## Voice Examples

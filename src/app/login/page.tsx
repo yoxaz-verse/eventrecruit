@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requestLoginOtp, signInWithPassword } from "@/app/actions/auth";
 import { AuthCard } from "@/components/auth/auth-card";
-import { AuthMessage } from "@/components/auth/auth-message";
+import { AuthMessage, resolveAuthMessage } from "@/components/auth/auth-message";
 import { LoginTabs } from "@/components/auth/login-tabs";
 import { PasswordField } from "@/components/auth/password-field";
 import { TopNav } from "@/components/top-nav";
+import { getSupabaseServerConfig } from "@/lib/supabase/env";
 
 export default async function LoginPage({
   searchParams,
@@ -13,6 +15,14 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const mode = params?.mode === "otp" ? "otp" : "password";
+  const supabaseConfigured = getSupabaseServerConfig().isConfigured;
+  if (params?.message === "configure-supabase" && supabaseConfigured) {
+    redirect(mode === "otp" ? "/login?mode=otp" : "/login");
+  }
+
+  const message = resolveAuthMessage(params?.message, {
+    supabaseConfigured,
+  });
 
   return (
     <div className="shell">
@@ -23,8 +33,9 @@ export default async function LoginPage({
         description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >
+        <p className="mb-4 text-sm">Event organizer login: use your company account email below. <Link href="/signup?role=organizer" className="font-bold">Register your company</Link></p>
         <LoginTabs mode={mode} />
-        <AuthMessage message={params?.message} />
+        <AuthMessage message={message} />
         {mode === "password" ? (
           <form action={signInWithPassword} className="grid gap-4">
           <label className="label">

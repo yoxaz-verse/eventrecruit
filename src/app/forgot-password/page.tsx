@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requestPasswordReset } from "@/app/actions/auth";
 import { AuthCard } from "@/components/auth/auth-card";
-import { AuthMessage } from "@/components/auth/auth-message";
+import { AuthMessage, resolveAuthMessage } from "@/components/auth/auth-message";
 import { TopNav } from "@/components/top-nav";
+import { getSupabaseServerConfig } from "@/lib/supabase/env";
 
 export default async function ForgotPasswordPage({
   searchParams,
@@ -10,6 +12,14 @@ export default async function ForgotPasswordPage({
   searchParams?: Promise<{ message?: string }>;
 }) {
   const params = await searchParams;
+  const supabaseConfigured = getSupabaseServerConfig().isConfigured;
+  if (params?.message === "configure-supabase" && supabaseConfigured) {
+    redirect("/forgot-password");
+  }
+
+  const message = resolveAuthMessage(params?.message, {
+    supabaseConfigured,
+  });
 
   return (
     <div className="shell">
@@ -19,7 +29,7 @@ export default async function ForgotPasswordPage({
         title="Reset your password"
         description="Enter your account email. We will send an OTP and recovery link to confirm ownership."
       >
-        <AuthMessage message={params?.message} />
+        <AuthMessage message={message} />
         <form action={requestPasswordReset} className="grid gap-4">
           <label className="label">
             Email

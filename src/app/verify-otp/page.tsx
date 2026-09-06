@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   requestLoginOtp,
   requestPasswordReset,
@@ -6,9 +7,10 @@ import {
   verifyEmailOtp,
 } from "@/app/actions/auth";
 import { AuthCard } from "@/components/auth/auth-card";
-import { AuthMessage } from "@/components/auth/auth-message";
+import { AuthMessage, resolveAuthMessage } from "@/components/auth/auth-message";
 import { OtpInput } from "@/components/auth/otp-input";
 import { TopNav } from "@/components/top-nav";
+import { getSupabaseServerConfig } from "@/lib/supabase/env";
 
 const labels: Record<string, string> = {
   signup: "Verify signup",
@@ -25,6 +27,17 @@ export default async function VerifyOtpPage({
   const params = await searchParams;
   const type = params?.type ?? "email";
   const email = params?.email ?? "";
+  const supabaseConfigured = getSupabaseServerConfig().isConfigured;
+  if (params?.message === "configure-supabase" && supabaseConfigured) {
+    const cleanParams = new URLSearchParams();
+    if (email) cleanParams.set("email", email);
+    if (type) cleanParams.set("type", type);
+    redirect(`/verify-otp${cleanParams.size ? `?${cleanParams.toString()}` : ""}`);
+  }
+
+  const message = resolveAuthMessage(params?.message, {
+    supabaseConfigured,
+  });
 
   return (
     <div className="shell">
@@ -35,7 +48,7 @@ export default async function VerifyOtpPage({
         description="Enter the 6 digit code sent to your email, or use the magic link in the same message."
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
       >
-        <AuthMessage message={params?.message} />
+        <AuthMessage message={message} />
         <form action={verifyEmailOtp} className="grid gap-4">
           <input name="type" type="hidden" value={type} />
           <label className="label">

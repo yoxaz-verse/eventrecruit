@@ -21,6 +21,8 @@ export async function completeOnboarding(formData: FormData) {
 
   if (profileError) redirect(`/onboarding?message=${encodeURIComponent(profileError.message)}`);
 
+  if (profile.role === "organizer") redirect("/dashboard/organizer/company");
+
   await supabase
     .from("profiles")
     .update({

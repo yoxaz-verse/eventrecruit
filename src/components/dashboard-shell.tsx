@@ -4,6 +4,7 @@ import { signOut } from "@/app/actions/auth";
 import type { UserRole } from "@/lib/types";
 
 const nav = [
+  { href: "/dashboard/organizer", label: "Event Organizer", icon: Building2 },
   { href: "/dashboard/admin", label: "Admin", icon: ShieldCheck },
   { href: "/dashboard/agency", label: "Agency", icon: Users },
   { href: "/dashboard/exhibitor", label: "Exhibitor", icon: Building2 },

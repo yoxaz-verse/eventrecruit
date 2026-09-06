@@ -1,15 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getAppUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
 
-const roles: UserRole[] = ["admin", "agency", "exhibitor", "talent"];
+const roles: UserRole[] = ["organizer", "agency", "exhibitor", "talent"];
 const otpTypes = ["signup", "email", "magiclink", "recovery"] as const;
-
-function appUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "http://localhost:3000";
-}
 
 function cleanEmail(formData: FormData) {
   return String(formData.get("email") ?? "").trim().toLowerCase();
@@ -51,7 +48,7 @@ export async function requestLoginOtp(formData: FormData) {
     email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: `${appUrl()}/auth/callback?next=/dashboard`,
+      emailRedirectTo: `${getAppUrl()}/auth/callback?next=/dashboard`,
     },
   });
 
@@ -98,7 +95,7 @@ export async function resendSignupOtp(formData: FormData) {
     type: "signup",
     email,
     options: {
-      emailRedirectTo: `${appUrl()}/auth/callback?next=/onboarding`,
+      emailRedirectTo: `${getAppUrl()}/auth/callback?next=/onboarding`,
     },
   });
 
@@ -124,7 +121,7 @@ export async function signUpWithEmailVerification(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${appUrl()}/auth/callback?next=/onboarding`,
+      emailRedirectTo: `${getAppUrl()}/auth/callback?next=/onboarding`,
       data: {
         full_name: fullName.trim(),
         role,
@@ -147,7 +144,7 @@ export async function requestPasswordReset(formData: FormData) {
   if (!isEmail(email)) redirect(messageUrl("/forgot-password", "Enter a valid email address."));
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${appUrl()}/auth/callback?next=/reset-password`,
+    redirectTo: `${getAppUrl()}/auth/callback?next=/reset-password`,
   });
 
   if (error) redirect(messageUrl("/forgot-password", error.message));
