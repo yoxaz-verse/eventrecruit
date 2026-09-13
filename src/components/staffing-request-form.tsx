@@ -17,7 +17,7 @@ export function StaffingRequestForm({ source }: { source: "agency" | "exhibitor"
     <div className="grid gap-3 sm:grid-cols-2"><label className="label">Starts<input className="input" name="starts_at" required type="date" /></label><label className="label">Ends<input className="input" name="ends_at" required type="date" /></label></div>
     <label className="label">Role title<input className="input" name="title" required /></label>
     <label className="label">Description<textarea className="input textarea" name="description" /></label>
-    <div className="grid gap-3 sm:grid-cols-2"><label className="label">Headcount<input className="input" min="1" name="headcount" required type="number" /></label><label className="label">Daily rate<input className="input" min="0" name="hourly_rate" required type="number" /></label></div>
+    <div className="grid gap-3 sm:grid-cols-2"><label className="label">Headcount<input className="input" min="1" name="headcount" required type="number" /></label><label className="label">Hourly rate<input className="input" min="0" name="hourly_rate" required type="number" /></label></div>
     <div className="grid gap-3 sm:grid-cols-2"><label className="label">Shift start<input className="input" name="shift_start" required type="time" /></label><label className="label">Shift end<input className="input" name="shift_end" required type="time" /></label></div>
     <label className="label">Required skills<input className="input" name="required_skills" placeholder="English, Lead capture" /></label>
     {!pending && state.error ? <p className="alert" role="alert">{state.error}</p> : null}

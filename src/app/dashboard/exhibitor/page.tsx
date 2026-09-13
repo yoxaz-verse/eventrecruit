@@ -1,12 +1,8 @@
-import { WorkflowActionForm } from "@/components/workflow-action-form";
 import { StaffingRequestForm } from "@/components/staffing-request-form";
-import { SubmitButton } from "@/components/submit-button";
 import { ClipboardList } from "lucide-react";
-import { updateRecommendationStatus } from "@/app/actions/workflow";
 import { ApplicantTable } from "@/components/applicant-table";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { CategoryScoreBars } from "@/components/reputation/category-score-bars";
-import { ReviewForm } from "@/components/reputation/review-form";
 import { ScoreSummaryCard } from "@/components/reputation/score-summary-card";
 import { TestimonialList } from "@/components/reputation/testimonial-list";
 import { RoleCard } from "@/components/role-card";
@@ -26,7 +22,6 @@ const recommendations = [
 export default async function ExhibitorDashboard() {
   await requireRole(["exhibitor", "admin"]);
   const exhibitorReputation = reputations.find((reputation) => reputation.role === "exhibitor")!;
-  const talentReputation = reputations.find((reputation) => reputation.role === "talent")!;
   const exhibitorTestimonials = testimonials.filter((testimonial) => testimonial.revieweeName === "Nexa Exhibitions");
 
   return (
@@ -45,6 +40,7 @@ export default async function ExhibitorDashboard() {
       <section className="grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
         <StaffingRequestForm source="exhibitor" />
         <div className="grid gap-4">
+          <p className="text-sm text-[var(--muted)]">Example roles; your published requests appear in live role browsing.</p>
           {openRoles.slice(0, 2).map((role) => (
             <RoleCard key={role.id} role={role} />
           ))}
@@ -60,7 +56,7 @@ export default async function ExhibitorDashboard() {
       <section className="mt-8 panel p-5">
         <h2 className="text-2xl font-black">Agency recommendations</h2>
         <p className="mt-2 text-[var(--muted)]">
-          Review agency-matched event talent using public profile signals. Phone and contact details are hidden.
+          Example recommendations are shown here. Live matches will appear when your staffing records are connected. Phone and contact details are hidden.
         </p>
         <div className="mt-5 grid gap-4">
           {recommendations.map((recommendation) => (
@@ -76,30 +72,13 @@ export default async function ExhibitorDashboard() {
                     {recommendation.talent.rating.toFixed(1)} rating · {recommendation.talent.reliability}% reliable · {recommendation.talent.completed} completed
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <WorkflowActionForm action={updateRecommendationStatus}>
-                    <input name="recommendation_id" type="hidden" value={recommendation.id} />
-                    <input name="status" type="hidden" value="accepted" />
-                    <SubmitButton className="button button-primary" pendingText="Accepting…">Accept</SubmitButton>
-                  </WorkflowActionForm>
-                  <WorkflowActionForm action={updateRecommendationStatus}>
-                    <input name="recommendation_id" type="hidden" value={recommendation.id} />
-                    <input name="status" type="hidden" value="rejected" />
-                    <SubmitButton className="button button-secondary" pendingText="Rejecting…">Reject</SubmitButton>
-                  </WorkflowActionForm>
-                </div>
               </div>
             </article>
           ))}
         </div>
       </section>
       <section className="mt-8 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
-        <ReviewForm
-          placementId="80000000-0000-0000-0000-000000000001"
-          revieweeId={talentReputation.profileId}
-          revieweeRole="talent"
-          title="Review event talent"
-        />
+        <p className="panel p-5 text-[var(--muted)]">Reviews become available after a completed placement.</p>
         <TestimonialList testimonials={exhibitorTestimonials} />
       </section>
     </DashboardShell>

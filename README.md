@@ -60,6 +60,10 @@ Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL
 npm run dev
 ```
 
+To check SMTP connection and authentication without sending an email, run `npm run diagnose:email`. It reports a safe category such as `smtp_auth`, `smtp_timeout`, or `smtp_configuration`; it does not test Supabase OTP creation or message delivery. A signup attempt reports `signup_email_send_failed` with a stage and category in the server log. Keep the full OTP, passwords, and provider error messages out of support logs.
+
+The public role browser and admin verification queue now read live database records. Other dashboard cards and actions built from `src/lib/mock-data.ts` are illustrative preview data; they are not reliable representations of a new account's records and need database-backed replacements before production use.
+
 Direct calls to the public Supabase Auth API can still trigger Supabase-managed email. Without a Send Email Hook, this project can guarantee only that **expo sphere's own email request actions** use MXroute. Restrict other clients to the same application flows and review the Supabase Auth email settings before rollout.
 
 ## Notes

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { sendAuthEmail } from "@/lib/email/send-auth-email";
 import type { AuthEmailPurpose } from "@/lib/email/message";
 import { sendSignupCode } from "@/lib/email/signup-code";
-import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError } from "@/lib/email/failure";
+import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError, classifyAuthEmailFailure } from "@/lib/email/failure";
 import { assertEmailOtp } from "@/lib/email/message";
 import { authAccountExists, consumeAuthEmailLimit } from "@/lib/email/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -35,9 +35,8 @@ function safeLog(event: string, error?: unknown) {
   if (error instanceof AuthEmailStageError) {
     Object.assign(record, authEmailDiagnostic(error));
   } else if (error && typeof error === "object") {
-    const candidate = error as { code?: unknown; name?: unknown; status?: unknown };
-    if (typeof candidate.name === "string") record.error_type = candidate.name;
-    if (typeof candidate.code === "string" && /^[A-Z0-9_]+$/i.test(candidate.code)) record.error_code = candidate.code;
+    const candidate = error as { status?: unknown };
+    record.category = "service_error";
     if (typeof candidate.status === "number") record.status = candidate.status;
   }
   console.error(JSON.stringify(record));
@@ -63,12 +62,13 @@ async function generateAndSendCode(
   linkType: "magiclink" | "recovery",
 ) {
   const admin = createAdminClient();
-  if (!admin) throw Object.assign(new Error("Auth email configuration is incomplete."), { code: "AUTH_EMAIL_CONFIGURATION" });
+  if (!admin) throw new AuthEmailStageError("configuration", "supabase_admin_missing");
 
+  const redirectTo = `${await atAuthEmailStage("configuration", getAppUrl)}/login`;
   const { data, error } = await atAuthEmailStage("supabase_generate", () => admin.auth.admin.generateLink({
     type: linkType,
     email,
-    options: { redirectTo: `${getAppUrl()}/login` },
+    options: { redirectTo },
   }));
   if (error) await atAuthEmailStage("supabase_generate", () => { throw error; });
   const code = await atAuthEmailStage("otp_validate", () => assertEmailOtp(data?.properties?.email_otp));
@@ -167,18 +167,19 @@ export async function signUpWithEmailVerification(_state: AuthFormState, formDat
 
   let verifyType: "signup" | "activation";
   try {
+    const redirectTo = `${await atAuthEmailStage("configuration", getAppUrl)}/login`;
     verifyType = await sendSignupCode(
       () => admin.auth.admin.generateLink({
         type: "signup",
         email,
         password,
-        options: { data: { full_name: fullName, role }, redirectTo: `${getAppUrl()}/login` },
+        options: { data: { full_name: fullName, role }, redirectTo },
       }),
       (code) => sendAuthEmail(email, code, "signup"),
       () => generateAndSendCode(email, "activation", "magiclink"),
     );
   } catch (error) {
-    safeLog("signup_email_send_failed", error);
+    safeLog("signup_email_send_failed", error instanceof AuthEmailStageError ? error : classifyAuthEmailFailure("unexpected", error));
     return { error: emailSendFailedMessage };
   }
 

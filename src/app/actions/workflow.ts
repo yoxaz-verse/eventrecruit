@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { ApplicationStatus, UserRole } from "@/lib/types";
+import { validDate } from "@/lib/organizer";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -33,6 +34,22 @@ export type WorkflowFormState = { error: string; success: string };
 
 export async function createStaffingRole(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const source = formData.get("source") === "agency" ? "agency" : "exhibitor";
+  const eventTitle = String(formData.get("event_title") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const venue = String(formData.get("venue") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const startsAt = String(formData.get("starts_at") ?? "");
+  const endsAt = String(formData.get("ends_at") ?? "");
+  const shiftStart = String(formData.get("shift_start") ?? "");
+  const shiftEnd = String(formData.get("shift_end") ?? "");
+  const headcount = Number(formData.get("headcount"));
+  const hourlyRate = Number(formData.get("hourly_rate"));
+  if (!eventTitle || !title || !venue || !city || eventTitle.length > 160 || title.length > 160 ||
+    !validDate(startsAt) || !validDate(endsAt) || endsAt < startsAt ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftStart) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftEnd) ||
+    !Number.isInteger(headcount) || headcount < 1 || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
+    return { error: "Check the event dates, shift times, headcount, and hourly rate before publishing.", success: "" };
+  }
   const supabase = await createClient();
   if (!supabase) return { error: "Posting is temporarily unavailable. Please try again later.", success: "" };
 
@@ -69,33 +86,41 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     .insert({
       exhibitor_id: exhibitor?.id ?? null,
       agency_id: profile?.role === "agency" ? agency?.id ?? null : null,
-      title: String(formData.get("event_title") ?? ""),
-      venue: String(formData.get("venue") ?? ""),
-      city: String(formData.get("city") ?? ""),
-      starts_at: String(formData.get("starts_at") ?? ""),
-      ends_at: String(formData.get("ends_at") ?? ""),
+      title: eventTitle,
+      venue,
+      city,
+      starts_at: startsAt,
+      ends_at: endsAt,
       created_by: user.id,
     })
     .select("id")
     .single();
 
-  if (eventError) return { error: "Unable to create the event. Check the details and try again.", success: "" };
+  if (eventError) {
+    console.error(JSON.stringify({ event: "staffing_request_failed", stage: "event_insert", category: "database_error" }));
+    return { error: "Unable to create the event. Check the details and try again.", success: "" };
+  }
 
   const { error } = await supabase.from("staffing_roles").insert({
     event_id: event.id,
-    title: String(formData.get("title") ?? ""),
+    title,
     description: String(formData.get("description") ?? ""),
-    headcount: Number(formData.get("headcount") ?? 1),
-    hourly_rate: Number(formData.get("hourly_rate") ?? 0),
-    shift_start: String(formData.get("shift_start") ?? ""),
-    shift_end: String(formData.get("shift_end") ?? ""),
+    headcount,
+    hourly_rate: hourlyRate,
+    shift_start: shiftStart,
+    shift_end: shiftEnd,
     required_skills: String(formData.get("required_skills") ?? "")
       .split(",")
       .map((skill) => skill.trim())
       .filter(Boolean),
   });
 
-  if (error) return { error: "The event was saved, but the staffing request could not be published. Please try again.", success: "" };
+  if (error) {
+    console.error(JSON.stringify({ event: "staffing_request_failed", stage: "role_insert", category: "database_error" }));
+    const { error: cleanupError } = await supabase.from("events").delete().eq("id", event.id);
+    if (cleanupError) console.error(JSON.stringify({ event: "staffing_request_cleanup_failed", category: "database_error" }));
+    return { error: "Unable to publish the staffing request. Check the details and try again.", success: "" };
+  }
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/agency");
   return { error: "", success: "Staffing request published." };

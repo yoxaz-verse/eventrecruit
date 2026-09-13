@@ -5,7 +5,7 @@ import { applyForRole } from "@/app/actions/workflow";
 import type { EventRole } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 
-export function RoleCard({ role, apply = false }: { role: EventRole; apply?: boolean }) {
+export function RoleCard({ role, apply = false, rateUnit = "day" }: { role: EventRole; apply?: boolean; rateUnit?: "day" | "hour" }) {
   return (
     <article className="panel role-card grid gap-4 p-5">
       <div className="flex items-start justify-between gap-4">
@@ -24,7 +24,7 @@ export function RoleCard({ role, apply = false }: { role: EventRole; apply?: boo
           <Users size={16} aria-hidden /> {role.headcount} people needed
         </span>
         <span className="flex items-center gap-2">
-          <Star size={16} aria-hidden /> Rs {role.rate.toLocaleString("en-IN")}/day · {role.shift}
+          <Star size={16} aria-hidden /> Rs {role.rate.toLocaleString("en-IN")}/{rateUnit} · {role.shift}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">

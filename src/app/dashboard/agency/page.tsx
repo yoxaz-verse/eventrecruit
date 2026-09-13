@@ -1,9 +1,6 @@
-import { WorkflowActionForm } from "@/components/workflow-action-form";
 import { StaffingRequestForm } from "@/components/staffing-request-form";
 import Link from "next/link";
-import { SubmitButton } from "@/components/submit-button";
 import { Banknote, Building2, Plus } from "lucide-react";
-import { recommendTalent } from "@/app/actions/workflow";
 import { ApplicantTable } from "@/components/applicant-table";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { CategoryScoreBars } from "@/components/reputation/category-score-bars";
@@ -34,6 +31,7 @@ export default async function AgencyDashboard({ searchParams }: { searchParams?:
         </p>
       </div>
       <section className="grid-auto">
+        <p className="text-sm text-[var(--muted)]">Illustrative client examples; account-specific clients and commissions require live records.</p>
         {clients.map((client) => (
           <article className="panel p-5" key={client.name}>
             <div className="flex items-start justify-between gap-4">
@@ -77,16 +75,11 @@ export default async function AgencyDashboard({ searchParams }: { searchParams?:
       <section className="mt-8 panel p-5">
         <h2 className="text-2xl font-black">Recommend verified talent</h2>
         <p className="mt-2 text-[var(--muted)]">
-          Match event talent to exhibitor needs using public profile signals only. Private contact details stay admin-only.
+          Example talent profiles are shown below. Recommendations require live talent and staffing records; private contact details stay admin-only.
         </p>
         <div className="mt-5 grid gap-4">
           {applicants.map((talent) => (
-            <WorkflowActionForm
-              action={recommendTalent}
-              className="surface-card grid gap-3 p-4 md:grid-cols-[1fr_220px_1fr_auto]"
-              key={talent.id}
-            >
-              <input name="talent_id" type="hidden" value={talent.talentId} />
+            <article className="surface-card p-4" key={talent.id}>
               <div>
                 <strong>{talent.name}</strong>
                 <p className="text-sm text-[var(--muted)]">
@@ -96,20 +89,7 @@ export default async function AgencyDashboard({ searchParams }: { searchParams?:
                   {talent.name === "Aisha Rahman" ? talentReputation.trustScore : talent.reliability} trust score
                 </p>
               </div>
-              <label className="label">
-                Recruitment need
-                <select className="input" name="staffing_role_id">
-                  {openRoles.map((role) => (
-                    <option key={role.id} value={role.id}>{role.role}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="label">
-                Recommendation note
-                <input className="input" name="note" placeholder="Why this person fits" />
-              </label>
-              <SubmitButton className="button button-primary self-end" pendingText="Recommending…">Recommend</SubmitButton>
-            </WorkflowActionForm>
+            </article>
           ))}
         </div>
       </section>

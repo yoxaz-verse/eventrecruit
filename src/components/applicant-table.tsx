@@ -1,7 +1,4 @@
-import { WorkflowActionForm } from "@/components/workflow-action-form";
-import { SubmitButton } from "@/components/submit-button";
 import { StatusBadge } from "@/components/status-badge";
-import { updateApplicationStatus } from "@/app/actions/workflow";
 import { applicants } from "@/lib/mock-data";
 
 export function ApplicantTable() {
@@ -14,7 +11,7 @@ export function ApplicantTable() {
             <th>Score</th>
             <th>Languages</th>
             <th>Status</th>
-            <th>Action</th>
+            <th>Data</th>
           </tr>
         </thead>
         <tbody>
@@ -35,18 +32,7 @@ export function ApplicantTable() {
                 <StatusBadge status={applicant.status} />
               </td>
               <td>
-                <div className="flex gap-2">
-                  <WorkflowActionForm action={updateApplicationStatus}>
-                    <input name="application_id" type="hidden" value={applicant.applicationId} />
-                    <input name="status" type="hidden" value="shortlisted" />
-                    <SubmitButton className="button button-secondary" pendingText="Shortlisting…">Shortlist</SubmitButton>
-                  </WorkflowActionForm>
-                  <WorkflowActionForm action={updateApplicationStatus}>
-                    <input name="application_id" type="hidden" value={applicant.applicationId} />
-                    <input name="status" type="hidden" value="accepted" />
-                    <SubmitButton className="button button-primary" pendingText="Accepting…">Accept</SubmitButton>
-                  </WorkflowActionForm>
-                </div>
+                <span className="text-sm text-[var(--muted)]">Illustrative profile</span>
               </td>
             </tr>
           ))}

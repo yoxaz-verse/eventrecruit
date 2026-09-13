@@ -8,34 +8,23 @@ import { ModerationTable } from "@/components/reputation/moderation-table";
 import { ScoreSummaryCard } from "@/components/reputation/score-summary-card";
 import { StatusBadge } from "@/components/status-badge";
 import { requireRole } from "@/lib/auth";
-import { metrics, privateContacts, reputations, testimonials } from "@/lib/mock-data";
-
-const pendingProfiles = [
-  {
-    id: "00000000-0000-0000-0000-000000000004",
-    name: "Aisha Rahman",
-    type: "Event Talent",
-    status: "pending_verification",
-    city: "Mumbai",
-  },
-  {
-    id: "00000000-0000-0000-0000-000000000003",
-    name: "Nexa Exhibitions Manager",
-    type: "Exhibitor",
-    status: "pending_verification",
-    city: "Bengaluru",
-  },
-  {
-    id: "00000000-0000-0000-0000-000000000002",
-    name: "FieldCrew Partners",
-    type: "Agency",
-    status: "pending_verification",
-    city: "Delhi NCR",
-  },
-];
+import { metrics, reputations, testimonials } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function AdminDashboard() {
   await requireRole(["admin"]);
+  const db = await createClient();
+  if (!db) throw new Error("Admin data is temporarily unavailable.");
+  const [{ data: pendingProfiles, error: pendingError }, { data: contacts, error: contactsError }] = await Promise.all([
+    db.from("profiles").select("id, full_name, role, city, verification_status").eq("verification_status", "pending_verification").neq("role", "admin").order("created_at", { ascending: true }).limit(100),
+    db.from("contact_details").select("profile_id, phone, alternate_email").limit(100),
+  ]);
+  if (pendingError || contactsError) throw new Error("Unable to load admin records. Check the database policies and retry.");
+  const contactProfiles = contacts?.length
+    ? await db.from("profiles").select("id, full_name, role, city").in("id", contacts.map((contact) => contact.profile_id))
+    : { data: [], error: null };
+  if (contactProfiles.error) throw new Error("Unable to load contact profiles.");
+  const profilesById = new Map(contactProfiles.data?.map((profile) => [profile.id, profile]));
 
   return (
     <DashboardShell active="admin">
@@ -47,6 +36,7 @@ export default async function AdminDashboard() {
         </p>
       </div>
       <section className="grid-auto">
+        <p className="text-sm text-[var(--muted)]">Illustrative marketplace metrics. The verification queue and contact vault below show current database records.</p>
         {metrics.map((metric) => (
           <div className="panel p-5" key={metric.label}>
             <p className="text-sm font-bold text-[var(--muted)]">{metric.label}</p>
@@ -67,14 +57,14 @@ export default async function AdminDashboard() {
             <h2 className="text-2xl font-black">Verification queue</h2>
           </div>
           <div className="grid gap-3">
-            {pendingProfiles.map((profile) => (
-            <div className="surface-card p-4" key={profile.name}>
+            {pendingProfiles?.map((profile) => (
+            <div className="surface-card p-4" key={profile.id}>
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <strong>{profile.name}</strong>
-                    <p className="text-sm text-[var(--muted)]">{profile.type} · {profile.city}</p>
+                    <strong>{profile.full_name}</strong>
+                    <p className="text-sm text-[var(--muted)]">{profile.role} · {profile.city || "Location pending"}</p>
                   </div>
-                  <StatusBadge status={profile.status} />
+                  <StatusBadge status={profile.verification_status} />
                 </div>
                 <div className="mt-3 flex gap-2">
                   <WorkflowActionForm action={updateProfileVerification}>
@@ -90,6 +80,7 @@ export default async function AdminDashboard() {
                 </div>
               </div>
             ))}
+            {!pendingProfiles?.length && <p className="text-[var(--muted)]">No profiles awaiting verification.</p>}
           </div>
         </div>
         <div className="panel p-5">
@@ -132,13 +123,13 @@ export default async function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {privateContacts.map((contact) => (
-                <tr key={contact.profileId}>
-                  <td>{contact.name}</td>
-                  <td>{contact.role}</td>
-                  <td>{contact.city}</td>
-                  <td>{contact.phone}</td>
-                  <td>{contact.alternateEmail}</td>
+              {contacts?.map((contact) => (
+                <tr key={contact.profile_id}>
+                  <td>{profilesById.get(contact.profile_id)?.full_name ?? "Unknown"}</td>
+                  <td>{profilesById.get(contact.profile_id)?.role ?? "Unknown"}</td>
+                  <td>{profilesById.get(contact.profile_id)?.city ?? ""}</td>
+                  <td>{contact.phone ?? ""}</td>
+                  <td>{contact.alternate_email ?? ""}</td>
                 </tr>
               ))}
             </tbody>

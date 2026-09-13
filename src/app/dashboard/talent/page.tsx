@@ -1,7 +1,7 @@
 import { Languages } from "lucide-react";
+import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { CategoryScoreBars } from "@/components/reputation/category-score-bars";
-import { ReviewForm } from "@/components/reputation/review-form";
 import { ScoreSummaryCard } from "@/components/reputation/score-summary-card";
 import { TestimonialList } from "@/components/reputation/testimonial-list";
 import { RoleCard } from "@/components/role-card";
@@ -12,7 +12,6 @@ import { openRoles, reputations, testimonials } from "@/lib/mock-data";
 export default async function TalentDashboard() {
   await requireRole(["talent", "admin"]);
   const talentReputation = reputations.find((reputation) => reputation.role === "talent")!;
-  const exhibitorReputation = reputations.find((reputation) => reputation.role === "exhibitor")!;
   const talentTestimonials = testimonials.filter((testimonial) => testimonial.revieweeName === "Aisha Rahman");
 
   return (
@@ -55,19 +54,15 @@ export default async function TalentDashboard() {
               exhibitors, agencies, or other talent.
             </p>
           </div>
-          <ReviewForm
-            placementId="80000000-0000-0000-0000-000000000001"
-            revieweeId={exhibitorReputation.profileId}
-            revieweeRole="exhibitor"
-            title="Review exhibitor"
-          />
+          <p className="panel p-5 text-[var(--muted)]">Reviews become available after a completed placement. The profiles below are illustrative.</p>
           <TestimonialList testimonials={talentTestimonials} />
         </div>
         <div>
           <h2 className="mb-4 text-2xl font-black">Recommended recruitment needs</h2>
+          <p className="mb-4 text-[var(--muted)]">Examples of roles we support. <Link className="font-bold underline" href="/browse">Browse current openings</Link> to apply.</p>
           <div className="grid gap-4">
             {openRoles.map((role) => (
-              <RoleCard apply key={role.id} role={role} />
+              <RoleCard key={role.id} role={role} />
             ))}
           </div>
         </div>

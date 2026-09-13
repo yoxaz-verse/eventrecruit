@@ -4,7 +4,7 @@ import { buildAuthEmail } from "../src/lib/email/message";
 import { deliverAuthCode } from "../src/lib/email/delivery";
 import { getAppUrl } from "../src/lib/supabase/env";
 import { sendSignupCode } from "../src/lib/email/signup-code";
-import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError } from "../src/lib/email/failure";
+import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError, classifyAuthEmailFailure } from "../src/lib/email/failure";
 
 test("sends a new signup code and recovers an existing account with an activation code", async () => {
   const sent: string[] = [];
@@ -90,6 +90,25 @@ test("diagnostics classify delivery failures without logging provider details", 
       },
     );
   }
+});
+
+test("classifies Supabase, configuration, and unanticipated signup failures safely", () => {
+  const secret = "user@example.com 123456 smtp-password";
+  const failures = [
+    classifyAuthEmailFailure("supabase_generate", Object.assign(new Error(secret), { status: 429 })),
+    classifyAuthEmailFailure("supabase_generate", Object.assign(new Error(secret), { status: 403 })),
+    classifyAuthEmailFailure("configuration", new Error(secret)),
+    classifyAuthEmailFailure("unexpected", new Error(secret)),
+    classifyAuthEmailFailure("smtp_delivery", Object.assign(new Error(secret), { responseCode: 535 })),
+  ];
+  assert.deepEqual(failures.map(authEmailDiagnostic), [
+    { stage: "supabase_generate", category: "supabase_rate_limit" },
+    { stage: "supabase_generate", category: "supabase_authorization" },
+    { stage: "configuration", category: "app_url_invalid" },
+    { stage: "unexpected", category: "unexpected_error" },
+    { stage: "smtp_delivery", category: "smtp_auth" },
+  ]);
+  assert.doesNotMatch(JSON.stringify(failures.map(authEmailDiagnostic)), /user@example|123456|smtp-password/);
 });
 
 test("accepts only the production origin or a local development origin", () => {
