@@ -1,8 +1,10 @@
+import { AuthActionForm } from "@/components/auth/auth-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  requestLoginOtp,
-  requestPasswordReset,
+  resendLoginOtp,
+  resendRecoveryOtp,
   resendSignupOtp,
   verifyEmailOtp,
 } from "@/app/actions/auth";
@@ -50,7 +52,7 @@ export default async function VerifyOtpPage({
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
       >
         <AuthMessage message={message} />
-        <form action={verifyEmailOtp} className="grid gap-4">
+        <AuthActionForm action={verifyEmailOtp}>
           <input name="type" type="hidden" value={type} />
           <label className="label">
             Email
@@ -64,23 +66,21 @@ export default async function VerifyOtpPage({
             />
           </label>
           <OtpInput />
-          <button className="button button-primary" type="submit">
-            Verify and continue
-          </button>
-        </form>
+          <SubmitButton className="button button-primary" pendingText="Verifying…">Verify and continue</SubmitButton>
+        </AuthActionForm>
         <div className="auth-resend">
-          <form
+          <AuthActionForm
             action={
               type === "recovery"
-                ? requestPasswordReset
+                ? resendRecoveryOtp
                 : type === "signup" || type === "activation"
                   ? resendSignupOtp
-                  : requestLoginOtp
+                  : resendLoginOtp
             }
           >
             <input name="email" type="hidden" value={email} />
             <ResendButton key={`${email}:${params?.message ?? ""}`} disabled={!email} />
-          </form>
+          </AuthActionForm>
           <Link className="button button-secondary" href="/forgot-password">
             Forgot password
           </Link>

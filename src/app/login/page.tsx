@@ -1,3 +1,5 @@
+import { AuthActionForm } from "@/components/auth/auth-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requestLoginOtp, signInWithPassword } from "@/app/actions/auth";
@@ -29,7 +31,7 @@ export default async function LoginPage({
       <TopNav />
       <AuthCard
         badge="Secure access"
-        title="Log in to EventRecruit"
+        title="Log in to expo sphere"
         description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >
@@ -37,32 +39,28 @@ export default async function LoginPage({
         <LoginTabs mode={mode} />
         <AuthMessage message={message} />
         {mode === "password" ? (
-          <form action={signInWithPassword} className="grid gap-4">
+          <AuthActionForm action={signInWithPassword}>
           <label className="label">
             Email
               <input autoComplete="email" className="input" name="email" required type="email" />
           </label>
             <PasswordField />
-          <button className="button button-primary" type="submit">
-            Log in
-          </button>
+          <SubmitButton className="button button-primary" pendingText="Logging in…">Log in</SubmitButton>
             <Link className="text-sm font-bold text-[var(--accent)]" href="/forgot-password">
               Forgot password?
             </Link>
-        </form>
+        </AuthActionForm>
         ) : (
-          <form action={requestLoginOtp} className="grid gap-4">
+          <AuthActionForm action={requestLoginOtp}>
             <label className="label">
               Email
               <input autoComplete="email" className="input" name="email" required type="email" />
             </label>
-            <button className="button button-primary" type="submit">
-              Send OTP
-            </button>
+            <SubmitButton className="button button-primary" pendingText="Sending code…">Send OTP</SubmitButton>
             <p className="text-sm text-[var(--muted)]">
               OTP login works only for existing accounts, so unknown emails are not auto-created.
             </p>
-          </form>
+          </AuthActionForm>
         )}
       </AuthCard>
     </div>

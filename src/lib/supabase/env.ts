@@ -32,7 +32,7 @@ export function getAppUrl(requestOrigin?: string) {
   const isLocal = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
 
   if (!isProduction && !isLocal) {
-    throw new Error("NEXT_PUBLIC_APP_URL must be EventRecruit production or a local development URL.");
+    throw new Error("NEXT_PUBLIC_APP_URL must be expo sphere production or a local development URL.");
   }
 
   return parsed.origin;

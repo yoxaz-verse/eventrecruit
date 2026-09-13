@@ -1,3 +1,5 @@
+import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import { createPlacementReview } from "@/app/actions/workflow";
 import type { UserRole } from "@/lib/types";
 
@@ -13,7 +15,7 @@ export function ReviewForm({
   title: string;
 }) {
   return (
-    <form action={createPlacementReview} className="panel grid gap-4 p-5">
+    <WorkflowActionForm action={createPlacementReview} className="panel grid gap-4 p-5">
       <h2 className="text-2xl font-black">{title}</h2>
       <input name="placement_id" type="hidden" value={placementId} />
       <input name="reviewee_id" type="hidden" value={revieweeId} />
@@ -42,9 +44,7 @@ export function ReviewForm({
           required
         />
       </label>
-      <button className="button button-primary" type="submit">
-        Publish review
-      </button>
-    </form>
+      <SubmitButton className="button button-primary" pendingText="Publishing review…">Publish review</SubmitButton>
+    </WorkflowActionForm>
   );
 }

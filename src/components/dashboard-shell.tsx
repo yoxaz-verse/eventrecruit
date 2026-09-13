@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/submit-button";
 import Link from "next/link";
 import { BriefcaseBusiness, Building2, Sparkles, ShieldCheck, Users } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -25,7 +26,7 @@ export function DashboardShell({
           <span className="brand-mark">
             <BriefcaseBusiness size={20} aria-hidden />
           </span>
-          <span>EventRecruit</span>
+          <span>expo sphere</span>
         </Link>
         <nav className="grid gap-2">
           {nav.map((item) => {
@@ -44,9 +45,7 @@ export function DashboardShell({
           })}
         </nav>
         <form action={signOut} className="mt-8">
-          <button className="button button-secondary w-full" type="submit">
-            Sign out
-          </button>
+          <SubmitButton className="button button-secondary w-full" pendingText="Signing out…">Sign out</SubmitButton>
         </form>
       </aside>
       <main className="p-5 md:p-8">{children}</main>

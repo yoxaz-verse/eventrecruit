@@ -1,3 +1,5 @@
+import { AuthActionForm } from "@/components/auth/auth-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { updatePassword } from "@/app/actions/auth";
@@ -30,17 +32,15 @@ export default async function ResetPasswordPage({
       <AuthCard
         badge="New password"
         title="Create a new password"
-        description="Verify the recovery code first, then set a new password for your EventRecruit account."
+        description="Verify the recovery code first, then set a new password for your expo sphere account."
         footer={profile ? undefined : { text: "Need a new recovery code?", href: "/forgot-password", label: "Send again" }}
       >
         <AuthMessage message={message ?? (profile ? undefined : "Verify the recovery code from your email before updating your password.")} />
-        <form action={updatePassword} className="grid gap-4">
+        <AuthActionForm action={updatePassword}>
           <PasswordField autoComplete="new-password" label="New password" showStrength />
           <PasswordField autoComplete="new-password" label="Confirm password" name="confirm_password" />
-          <button className="button button-primary" type="submit">
-            Update password
-          </button>
-        </form>
+          <SubmitButton className="button button-primary" pendingText="Updating password…">Update password</SubmitButton>
+        </AuthActionForm>
         {profile ? (
           <Link className="text-sm font-bold text-[var(--accent)]" href="/dashboard">
             Return to dashboard

@@ -1,3 +1,5 @@
+import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import { updateReviewVisibility } from "@/app/actions/workflow";
 import { StatusBadge } from "@/components/status-badge";
 import type { Testimonial } from "@/lib/types";
@@ -34,16 +36,16 @@ export function ModerationTable({ testimonials }: { testimonials: Testimonial[] 
               </td>
               <td>
                 <div className="flex gap-2">
-                  <form action={updateReviewVisibility}>
+                  <WorkflowActionForm action={updateReviewVisibility}>
                     <input name="review_id" type="hidden" value={testimonial.id} />
                     <input name="visibility_status" type="hidden" value="published" />
-                    <button className="button button-primary" type="submit">Publish</button>
-                  </form>
-                  <form action={updateReviewVisibility}>
+                    <SubmitButton className="button button-primary" pendingText="Publishing…">Publish</SubmitButton>
+                  </WorkflowActionForm>
+                  <WorkflowActionForm action={updateReviewVisibility}>
                     <input name="review_id" type="hidden" value={testimonial.id} />
                     <input name="visibility_status" type="hidden" value="hidden" />
-                    <button className="button button-secondary" type="submit">Hide</button>
-                  </form>
+                    <SubmitButton className="button button-secondary" pendingText="Hiding…">Hide</SubmitButton>
+                  </WorkflowActionForm>
                 </div>
               </td>
             </tr>

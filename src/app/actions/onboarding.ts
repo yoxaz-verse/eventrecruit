@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function completeOnboarding(formData: FormData) {
+export async function completeOnboarding(_state: { error: string }, formData: FormData): Promise<{ error: string }> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -19,21 +19,23 @@ export async function completeOnboarding(formData: FormData) {
     .eq("id", user.id)
     .single();
 
-  if (profileError) redirect(`/onboarding?message=${encodeURIComponent(profileError.message)}`);
+  if (profileError) return { error: "Unable to load your profile. Please try again." };
 
   if (profile.role === "organizer") redirect("/dashboard/organizer/company");
 
-  await supabase
+  const { error: cityError } = await supabase
     .from("profiles")
     .update({
       city: String(formData.get("city") ?? ""),
     })
     .eq("id", user.id);
+  if (cityError) return { error: "Unable to save your location. Please try again." };
 
-  await supabase.from("contact_details").upsert({
+  const { error: contactError } = await supabase.from("contact_details").upsert({
     profile_id: user.id,
     phone: String(formData.get("phone") ?? ""),
   });
+  if (contactError) return { error: "Unable to save your contact details. Please try again." };
 
   if (profile.role === "talent") {
     const skills = String(formData.get("skills") ?? "")
@@ -45,7 +47,7 @@ export async function completeOnboarding(formData: FormData) {
       .map((item) => item.trim())
       .filter(Boolean);
 
-    await supabase.from("talent_profiles").upsert({
+    const { error } = await supabase.from("talent_profiles").upsert({
       profile_id: user.id,
       headline: String(formData.get("headline") ?? ""),
       bio: String(formData.get("bio") ?? ""),
@@ -55,10 +57,11 @@ export async function completeOnboarding(formData: FormData) {
       experience_years: Number(formData.get("experience_years") ?? 0),
       documents_note: String(formData.get("documents_note") ?? ""),
     });
+    if (error) return { error: "Unable to save your talent profile. Please try again." };
   }
 
   if (profile.role === "agency") {
-    await supabase.from("agencies").upsert(
+    const { error } = await supabase.from("agencies").upsert(
       {
       owner_id: user.id,
       name: String(formData.get("business_name") ?? ""),
@@ -67,10 +70,11 @@ export async function completeOnboarding(formData: FormData) {
       },
       { onConflict: "owner_id" },
     );
+    if (error) return { error: "Unable to save your agency profile. Please try again." };
   }
 
   if (profile.role === "exhibitor") {
-    await supabase.from("exhibitors").upsert(
+    const { error } = await supabase.from("exhibitors").upsert(
       {
         owner_id: user.id,
         company_name: String(formData.get("business_name") ?? ""),
@@ -78,6 +82,7 @@ export async function completeOnboarding(formData: FormData) {
       },
       { onConflict: "owner_id" },
     );
+    if (error) return { error: "Unable to save your exhibitor profile. Please try again." };
   }
 
   redirect(`/dashboard/${profile.role}`);

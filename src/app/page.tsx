@@ -91,7 +91,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: "Match verified people",
-    text: "EventRecruit helps coordinate suitable talent with profile, language, skill, and reliability signals.",
+    text: "expo sphere helps coordinate suitable talent with profile, language, skill, and reliability signals.",
   },
   {
     icon: Handshake,
@@ -120,7 +120,7 @@ export default function Home() {
                 People for events and retail activations across India.
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-[var(--muted)]">
-                EventRecruit helps brands, exhibitors, agencies, and store teams find
+                expo sphere helps brands, exhibitors, agencies, and store teams find
                 verified people for exhibitions, retail stores, launches, roadshows,
                 pop-ups, and campaign days. Wherever the work is happening in India,
                 the people can be coordinated.
@@ -149,7 +149,7 @@ export default function Home() {
             </div>
             <div className="hero-visual">
               <Image
-                src="/brand/eventrecruit-hero.png"
+                src="/brand/expo-sphere-hero.png"
                 width={1728}
                 height={921}
                 priority
@@ -198,7 +198,7 @@ export default function Home() {
               <span className="badge">Where we help</span>
               <h2>No matter where in India your event or store activation is happening.</h2>
               <p className="mt-4 leading-8 text-[var(--muted)]">
-                EventRecruit helps coordinate the right people across major Indian
+                expo sphere helps coordinate the right people across major Indian
                 markets, from exhibition halls and conference venues to retail stores,
                 malls, pop-ups, and local brand activations.
               </p>
@@ -210,7 +210,7 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="coverage-map panel" aria-label="India coverage map for EventRecruit">
+            <div className="coverage-map panel" aria-label="India coverage map for expo sphere">
               <div className="map-shell">
                 <div className="map-viewport">
                   <Image
@@ -322,7 +322,7 @@ export default function Home() {
                 </span>
                 <h2>Need people for an event, store, launch, or activation?</h2>
                 <p>
-                  Start with your role and location. EventRecruit keeps the process
+                  Start with your role and location. expo sphere keeps the process
                   simple: find verified people, coordinate placements, and keep trust
                   records visible.
                 </p>

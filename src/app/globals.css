@@ -78,6 +78,11 @@ textarea {
   transform: translateY(-1px);
 }
 
+.button:disabled, .button[data-pending] { cursor: wait; opacity: .7; transform: none; }
+.button-spinner { width: 16px; height: 16px; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; }
+@keyframes button-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .button-spinner { animation: none; border-right-color: currentColor; } .button { transition: none; } }
+
 .button:focus-visible,
 .input:focus-visible,
 .auth-tab:focus-visible,

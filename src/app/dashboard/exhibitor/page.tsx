@@ -1,5 +1,8 @@
-import { CalendarPlus, ClipboardList } from "lucide-react";
-import { createStaffingRole, updateRecommendationStatus } from "@/app/actions/workflow";
+import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { StaffingRequestForm } from "@/components/staffing-request-form";
+import { SubmitButton } from "@/components/submit-button";
+import { ClipboardList } from "lucide-react";
+import { updateRecommendationStatus } from "@/app/actions/workflow";
 import { ApplicantTable } from "@/components/applicant-table";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { CategoryScoreBars } from "@/components/reputation/category-score-bars";
@@ -40,33 +43,7 @@ export default async function ExhibitorDashboard() {
         <CategoryScoreBars reputation={exhibitorReputation} />
       </section>
       <section className="grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
-        <form action={createStaffingRole} className="panel grid gap-4 p-5">
-          <div className="flex items-center gap-2">
-            <CalendarPlus className="text-[var(--accent)]" aria-hidden />
-            <h2 className="text-2xl font-black">Create staffing request</h2>
-          </div>
-          <label className="label">Event title<input className="input" name="event_title" required /></label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="label">Venue<input className="input" name="venue" required /></label>
-            <label className="label">City<input className="input" name="city" required /></label>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="label">Starts<input className="input" name="starts_at" required type="date" /></label>
-            <label className="label">Ends<input className="input" name="ends_at" required type="date" /></label>
-          </div>
-          <label className="label">Role title<input className="input" name="title" required /></label>
-          <label className="label">Description<textarea className="input textarea" name="description" /></label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="label">Headcount<input className="input" min="1" name="headcount" required type="number" /></label>
-            <label className="label">Daily rate<input className="input" min="0" name="hourly_rate" required type="number" /></label>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="label">Shift start<input className="input" name="shift_start" required type="time" /></label>
-            <label className="label">Shift end<input className="input" name="shift_end" required type="time" /></label>
-          </div>
-          <label className="label">Required skills<input className="input" name="required_skills" placeholder="English, Lead capture" /></label>
-          <button className="button button-primary" type="submit">Publish request</button>
-        </form>
+        <StaffingRequestForm source="exhibitor" />
         <div className="grid gap-4">
           {openRoles.slice(0, 2).map((role) => (
             <RoleCard key={role.id} role={role} />
@@ -100,16 +77,16 @@ export default async function ExhibitorDashboard() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <form action={updateRecommendationStatus}>
+                  <WorkflowActionForm action={updateRecommendationStatus}>
                     <input name="recommendation_id" type="hidden" value={recommendation.id} />
                     <input name="status" type="hidden" value="accepted" />
-                    <button className="button button-primary" type="submit">Accept</button>
-                  </form>
-                  <form action={updateRecommendationStatus}>
+                    <SubmitButton className="button button-primary" pendingText="Accepting…">Accept</SubmitButton>
+                  </WorkflowActionForm>
+                  <WorkflowActionForm action={updateRecommendationStatus}>
                     <input name="recommendation_id" type="hidden" value={recommendation.id} />
                     <input name="status" type="hidden" value="rejected" />
-                    <button className="button button-secondary" type="submit">Reject</button>
-                  </form>
+                    <SubmitButton className="button button-secondary" pendingText="Rejecting…">Reject</SubmitButton>
+                  </WorkflowActionForm>
                 </div>
               </div>
             </article>

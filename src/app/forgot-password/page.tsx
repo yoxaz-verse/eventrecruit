@@ -1,3 +1,5 @@
+import { AuthActionForm } from "@/components/auth/auth-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requestPasswordReset } from "@/app/actions/auth";
@@ -30,15 +32,13 @@ export default async function ForgotPasswordPage({
         description="Enter your account email. We will send a 6 digit recovery code to confirm ownership."
       >
         <AuthMessage message={message} />
-        <form action={requestPasswordReset} className="grid gap-4">
+        <AuthActionForm action={requestPasswordReset}>
           <label className="label">
             Email
             <input autoComplete="email" className="input" name="email" required type="email" />
           </label>
-          <button className="button button-primary" type="submit">
-            Send recovery code
-          </button>
-        </form>
+          <SubmitButton className="button button-primary" pendingText="Sending code…">Send recovery code</SubmitButton>
+        </AuthActionForm>
         <p className="text-sm text-[var(--muted)]">
           Remembered it?{" "}
           <Link className="font-bold text-[var(--accent)]" href="/login">

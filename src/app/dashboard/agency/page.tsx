@@ -1,3 +1,7 @@
+import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { StaffingRequestForm } from "@/components/staffing-request-form";
+import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { Banknote, Building2, Plus } from "lucide-react";
 import { recommendTalent } from "@/app/actions/workflow";
 import { ApplicantTable } from "@/components/applicant-table";
@@ -14,7 +18,8 @@ const clients = [
   { name: "Meridian Foods", activeRoles: 2, commission: "10%" },
 ];
 
-export default async function AgencyDashboard() {
+export default async function AgencyDashboard({ searchParams }: { searchParams?: Promise<{ new?: string; message?: string }> }) {
+  const params = await searchParams;
   await requireRole(["agency", "admin"]);
   const talentReputation = reputations.find((reputation) => reputation.role === "talent")!;
   const exhibitorReputation = reputations.find((reputation) => reputation.role === "exhibitor")!;
@@ -48,8 +53,9 @@ export default async function AgencyDashboard() {
         <div>
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-2xl font-black">Client staffing posts</h2>
-            <button className="button button-primary" type="button"><Plus size={18} aria-hidden /> New post</button>
+            <Link className="button button-primary" href="/dashboard/agency?new=1#new-post"><Plus size={18} aria-hidden /> New post</Link>
           </div>
+          {params?.new === "1" ? <div className="mb-4"><StaffingRequestForm source="agency" /></div> : null}
           <div className="grid gap-4">
             {openRoles.filter((role) => role.agency).map((role) => (
               <RoleCard key={role.id} role={role} />
@@ -75,7 +81,7 @@ export default async function AgencyDashboard() {
         </p>
         <div className="mt-5 grid gap-4">
           {applicants.map((talent) => (
-            <form
+            <WorkflowActionForm
               action={recommendTalent}
               className="surface-card grid gap-3 p-4 md:grid-cols-[1fr_220px_1fr_auto]"
               key={talent.id}
@@ -102,8 +108,8 @@ export default async function AgencyDashboard() {
                 Recommendation note
                 <input className="input" name="note" placeholder="Why this person fits" />
               </label>
-              <button className="button button-primary self-end" type="submit">Recommend</button>
-            </form>
+              <SubmitButton className="button button-primary self-end" pendingText="Recommending…">Recommend</SubmitButton>
+            </WorkflowActionForm>
           ))}
         </div>
       </section>

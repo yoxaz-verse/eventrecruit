@@ -23,15 +23,18 @@ function ratingValue(formData: FormData, key: string) {
   const value = Number(formData.get(key) ?? 0);
 
   if (!Number.isInteger(value) || value < 1 || value > 5) {
-    redirect("/dashboard?message=invalid-review-rating");
+    return null;
   }
 
   return value;
 }
 
-export async function createStaffingRole(formData: FormData) {
+export type WorkflowFormState = { error: string; success: string };
+
+export async function createStaffingRole(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
+  const source = formData.get("source") === "agency" ? "agency" : "exhibitor";
   const supabase = await createClient();
-  if (!supabase) redirect("/dashboard/exhibitor?message=configure-supabase");
+  if (!supabase) return { error: "Posting is temporarily unavailable. Please try again later.", success: "" };
 
   const {
     data: { user },
@@ -57,6 +60,10 @@ export async function createStaffingRole(formData: FormData) {
     .eq("owner_id", user.id)
     .maybeSingle();
 
+  if (profile?.role !== source || (source === "agency" ? !agency?.id : !exhibitor?.id)) {
+    return { error: "Complete your business profile before posting a staffing request.", success: "" };
+  }
+
   const { data: event, error: eventError } = await supabase
     .from("events")
     .insert({
@@ -72,7 +79,7 @@ export async function createStaffingRole(formData: FormData) {
     .select("id")
     .single();
 
-  if (eventError) redirect(`/dashboard/exhibitor?message=${encodeURIComponent(eventError.message)}`);
+  if (eventError) return { error: "Unable to create the event. Check the details and try again.", success: "" };
 
   const { error } = await supabase.from("staffing_roles").insert({
     event_id: event.id,
@@ -88,13 +95,15 @@ export async function createStaffingRole(formData: FormData) {
       .filter(Boolean),
   });
 
-  if (error) redirect(`/dashboard/exhibitor?message=${encodeURIComponent(error.message)}`);
+  if (error) return { error: "The event was saved, but the staffing request could not be published. Please try again.", success: "" };
   revalidatePath("/dashboard/exhibitor");
+  revalidatePath("/dashboard/agency");
+  return { error: "", success: "Staffing request published." };
 }
 
-export async function applyForRole(formData: FormData) {
+export async function applyForRole(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
-  if (!supabase) redirect("/browse?message=configure-supabase");
+  if (!supabase) return { error: "Applications are temporarily unavailable.", success: "" };
 
   const {
     data: { user },
@@ -108,11 +117,12 @@ export async function applyForRole(formData: FormData) {
     cover_note: String(formData.get("cover_note") ?? ""),
   });
 
-  if (error) redirect(`/browse?message=${encodeURIComponent(error.message)}`);
+  if (error) return { error: "Unable to apply for this role. Check whether you have already applied and try again.", success: "" };
   revalidatePath("/browse");
+  return { error: "", success: "Application sent." };
 }
 
-export async function updateApplicationStatus(formData: FormData) {
+export async function updateApplicationStatus(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -120,20 +130,21 @@ export async function updateApplicationStatus(formData: FormData) {
   const applicationId = String(formData.get("application_id") ?? "");
 
   if (!applicationStatuses.includes(status)) {
-    redirect("/dashboard?message=invalid-application-status");
+    return { error: "Choose a valid application status.", success: "" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("applications")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", applicationId);
+    .eq("id", applicationId).select("id").maybeSingle();
 
-  if (error) redirect(`/dashboard?message=${encodeURIComponent(error.message)}`);
+  if (error || !updated) return { error: "Unable to update this application. Please retry.", success: "" };
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/agency");
+  return { error: "", success: "Application updated." };
 }
 
-export async function createPlacementReview(formData: FormData) {
+export async function createPlacementReview(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -149,13 +160,15 @@ export async function createPlacementReview(formData: FormData) {
   >;
 
   if (!revieweeRoles.includes(revieweeRole)) {
-    redirect("/dashboard?message=invalid-reviewee-role");
+    return { error: "Choose a valid review recipient.", success: "" };
   }
 
   const testimonial = String(formData.get("testimonial") ?? "").trim();
+  const ratings = ["rating", "communication_rating", "professionalism_rating", "reliability_rating"].map((key) => ratingValue(formData, key));
+  if (ratings.some((rating) => rating === null)) return { error: "Choose a rating from 1 to 5 for each category.", success: "" };
 
   if (testimonial.length < 10) {
-    redirect("/dashboard?message=review-testimonial-too-short");
+    return { error: "Write at least 10 characters for the testimonial.", success: "" };
   }
 
   const { error } = await supabase.from("placement_reviews").insert({
@@ -163,21 +176,22 @@ export async function createPlacementReview(formData: FormData) {
     reviewer_id: user.id,
     reviewee_id: String(formData.get("reviewee_id") ?? ""),
     reviewee_role: revieweeRole,
-    rating: ratingValue(formData, "rating"),
-    communication_rating: ratingValue(formData, "communication_rating"),
-    professionalism_rating: ratingValue(formData, "professionalism_rating"),
-    reliability_rating: ratingValue(formData, "reliability_rating"),
+    rating: ratings[0],
+    communication_rating: ratings[1],
+    professionalism_rating: ratings[2],
+    reliability_rating: ratings[3],
     testimonial,
     visibility_status: "published",
   });
 
-  if (error) redirect(`/dashboard?message=${encodeURIComponent(error.message)}`);
+  if (error) return { error: "Unable to publish the review. Please retry.", success: "" };
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/talent");
   revalidatePath("/dashboard/admin");
+  return { error: "", success: "Review published." };
 }
 
-export async function recommendTalent(formData: FormData) {
+export async function recommendTalent(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -193,7 +207,7 @@ export async function recommendTalent(formData: FormData) {
     .eq("owner_id", user.id)
     .single();
 
-  if (agencyError) redirect(`/dashboard/agency?message=${encodeURIComponent(agencyError.message)}`);
+  if (agencyError) return { error: "Complete your agency profile before recommending talent.", success: "" };
 
   const { error } = await supabase.from("talent_recommendations").insert({
     agency_id: agency.id,
@@ -202,12 +216,13 @@ export async function recommendTalent(formData: FormData) {
     note: String(formData.get("note") ?? ""),
   });
 
-  if (error) redirect(`/dashboard/agency?message=${encodeURIComponent(error.message)}`);
+  if (error) return { error: "Unable to send this recommendation. Please retry.", success: "" };
   revalidatePath("/dashboard/agency");
   revalidatePath("/dashboard/exhibitor");
+  return { error: "", success: "Recommendation sent." };
 }
 
-export async function updateRecommendationStatus(formData: FormData) {
+export async function updateRecommendationStatus(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -215,20 +230,21 @@ export async function updateRecommendationStatus(formData: FormData) {
   const status = String(formData.get("status") ?? "recommended");
 
   if (!recommendationStatuses.includes(status)) {
-    redirect("/dashboard/exhibitor?message=invalid-recommendation-status");
+    return { error: "Choose a valid recommendation status.", success: "" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("talent_recommendations")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", recommendationId);
+    .eq("id", recommendationId).select("id").maybeSingle();
 
-  if (error) redirect(`/dashboard/exhibitor?message=${encodeURIComponent(error.message)}`);
+  if (error || !updated) return { error: "Unable to update this recommendation. Please retry.", success: "" };
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/agency");
+  return { error: "", success: "Recommendation updated." };
 }
 
-export async function updateProfileVerification(formData: FormData) {
+export async function updateProfileVerification(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -236,19 +252,20 @@ export async function updateProfileVerification(formData: FormData) {
   const verificationStatus = String(formData.get("verification_status") ?? "pending_verification");
 
   if (!verificationStatuses.includes(verificationStatus)) {
-    redirect("/dashboard/admin?message=invalid-verification-status");
+    return { error: "Choose a valid verification status.", success: "" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("profiles")
     .update({ verification_status: verificationStatus, updated_at: new Date().toISOString() })
-    .eq("id", profileId);
+    .eq("id", profileId).select("id").maybeSingle();
 
-  if (error) redirect(`/dashboard/admin?message=${encodeURIComponent(error.message)}`);
+  if (error || !updated) return { error: "Unable to update profile verification. Please retry.", success: "" };
   revalidatePath("/dashboard/admin");
+  return { error: "", success: "Verification updated." };
 }
 
-export async function updateReviewVisibility(formData: FormData) {
+export async function updateReviewVisibility(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
@@ -256,17 +273,18 @@ export async function updateReviewVisibility(formData: FormData) {
   const visibilityStatus = String(formData.get("visibility_status") ?? "published");
 
   if (!reviewVisibilityStatuses.includes(visibilityStatus)) {
-    redirect("/dashboard/admin?message=invalid-review-visibility");
+    return { error: "Choose a valid review visibility.", success: "" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("placement_reviews")
     .update({ visibility_status: visibilityStatus, updated_at: new Date().toISOString() })
-    .eq("id", reviewId);
+    .eq("id", reviewId).select("id").maybeSingle();
 
-  if (error) redirect(`/dashboard/admin?message=${encodeURIComponent(error.message)}`);
+  if (error || !updated) return { error: "Unable to update review visibility. Please retry.", success: "" };
   revalidatePath("/dashboard/admin");
   revalidatePath("/dashboard/talent");
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/agency");
+  return { error: "", success: "Review visibility updated." };
 }

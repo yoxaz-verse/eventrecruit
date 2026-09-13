@@ -1,3 +1,5 @@
+import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import { ShieldCheck, SlidersHorizontal, UserCheck } from "lucide-react";
 import { updateProfileVerification } from "@/app/actions/workflow";
 import { ApplicantTable } from "@/components/applicant-table";
@@ -75,16 +77,16 @@ export default async function AdminDashboard() {
                   <StatusBadge status={profile.status} />
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <form action={updateProfileVerification}>
+                  <WorkflowActionForm action={updateProfileVerification}>
                     <input name="profile_id" type="hidden" value={profile.id} />
                     <input name="verification_status" type="hidden" value="verified" />
-                    <button className="button button-primary" type="submit">Verify</button>
-                  </form>
-                  <form action={updateProfileVerification}>
+                    <SubmitButton className="button button-primary" pendingText="Verifying…">Verify</SubmitButton>
+                  </WorkflowActionForm>
+                  <WorkflowActionForm action={updateProfileVerification}>
                     <input name="profile_id" type="hidden" value={profile.id} />
                     <input name="verification_status" type="hidden" value="rejected" />
-                    <button className="button button-secondary" type="submit">Reject</button>
-                  </form>
+                    <SubmitButton className="button button-secondary" pendingText="Rejecting…">Reject</SubmitButton>
+                  </WorkflowActionForm>
                 </div>
               </div>
             ))}

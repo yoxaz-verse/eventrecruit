@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { sendAuthEmail } from "@/lib/email/send-auth-email";
 import type { AuthEmailPurpose } from "@/lib/email/message";
 import { sendSignupCode } from "@/lib/email/signup-code";
+import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError } from "@/lib/email/failure";
+import { assertEmailOtp } from "@/lib/email/message";
 import { authAccountExists, consumeAuthEmailLimit } from "@/lib/email/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
@@ -30,7 +32,9 @@ function messageUrl(path: string, message: string, extra?: Record<string, string
 
 function safeLog(event: string, error?: unknown) {
   const record: Record<string, string | number> = { event };
-  if (error && typeof error === "object") {
+  if (error instanceof AuthEmailStageError) {
+    Object.assign(record, authEmailDiagnostic(error));
+  } else if (error && typeof error === "object") {
     const candidate = error as { code?: unknown; name?: unknown; status?: unknown };
     if (typeof candidate.name === "string") record.error_type = candidate.name;
     if (typeof candidate.code === "string" && /^[A-Z0-9_]+$/i.test(candidate.code)) record.error_code = candidate.code;
@@ -39,17 +43,17 @@ function safeLog(event: string, error?: unknown) {
   console.error(JSON.stringify(record));
 }
 
-async function enforceEmailLimit(email: string, returnPath: string, extra?: Record<string, string>) {
+async function enforceEmailLimit(email: string): Promise<string | undefined> {
   let result: Awaited<ReturnType<typeof consumeAuthEmailLimit>>;
   try {
     result = await consumeAuthEmailLimit(email);
   } catch (error) {
     safeLog("auth_email_rate_limit_failed", error);
-    redirect(messageUrl(returnPath, "Email verification is temporarily unavailable. Please try again shortly.", extra));
+    return "Email verification is temporarily unavailable. Please try again shortly.";
   }
 
   if (!result.allowed) {
-    redirect(messageUrl(returnPath, `Please wait ${result.retry_after_seconds} seconds before requesting another code.`, extra));
+    return `Please wait ${result.retry_after_seconds} seconds before requesting another code.`;
   }
 }
 
@@ -61,15 +65,14 @@ async function generateAndSendCode(
   const admin = createAdminClient();
   if (!admin) throw Object.assign(new Error("Auth email configuration is incomplete."), { code: "AUTH_EMAIL_CONFIGURATION" });
 
-  const { data, error } = await admin.auth.admin.generateLink({
+  const { data, error } = await atAuthEmailStage("supabase_generate", () => admin.auth.admin.generateLink({
     type: linkType,
     email,
     options: { redirectTo: `${getAppUrl()}/login` },
-  });
-  if (error || !data.properties?.email_otp) {
-    throw error ?? Object.assign(new Error("Supabase did not return an OTP."), { code: "SUPABASE_OTP_MISSING" });
-  }
-  await sendAuthEmail(email, data.properties.email_otp, purpose);
+  }));
+  if (error) await atAuthEmailStage("supabase_generate", () => { throw error; });
+  const code = await atAuthEmailStage("otp_validate", () => assertEmailOtp(data?.properties?.email_otp));
+  await atAuthEmailStage("smtp_delivery", () => sendAuthEmail(email, code, purpose));
 }
 
 async function requestExistingAccountCode(
@@ -77,21 +80,20 @@ async function requestExistingAccountCode(
   options: {
     linkType: "magiclink" | "recovery";
     purpose: AuthEmailPurpose;
-    returnPath: "/login" | "/forgot-password" | "/verify-otp";
     verifyType: VerifyPageType;
   },
-) {
+): Promise<AuthFormState> {
   const email = cleanEmail(formData);
-  const extra = options.returnPath === "/login" ? { mode: "otp" } : undefined;
-  if (!isEmail(email)) redirect(messageUrl(options.returnPath, "Enter a valid email address.", extra));
+  if (!isEmail(email)) return { error: "Enter a valid email address." };
 
-  await enforceEmailLimit(email, options.returnPath, extra);
+  const limitError = await enforceEmailLimit(email);
+  if (limitError) return { error: limitError };
   let accountExists: boolean;
   try {
     accountExists = await authAccountExists(email);
   } catch (error) {
     safeLog("auth_email_lookup_failed", error);
-    redirect(messageUrl(options.returnPath, "Email verification is temporarily unavailable. Please try again shortly.", extra));
+    return { error: "Email verification is temporarily unavailable. Please try again shortly." };
   }
 
   if (!accountExists) {
@@ -102,7 +104,7 @@ async function requestExistingAccountCode(
     await generateAndSendCode(email, options.purpose, options.linkType);
   } catch (error) {
     safeLog("auth_email_send_failed", error);
-    redirect(messageUrl("/verify-otp", emailSendFailedMessage, { email, type: options.verifyType }));
+    return { error: emailSendFailedMessage };
   }
 
   redirect(messageUrl("/verify-otp", genericRequestMessage, {
@@ -111,46 +113,57 @@ async function requestExistingAccountCode(
   }));
 }
 
-export async function signInWithPassword(formData: FormData) {
+export async function signInWithPassword(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const supabase = await createClient();
-  if (!supabase) redirect("/login?message=configure-supabase");
+  if (!supabase) return { error: "Login is temporarily unavailable. Please try again later." };
   const email = cleanEmail(formData);
   const password = String(formData.get("password") ?? "");
-  if (!isEmail(email)) redirect(messageUrl("/login", "Enter a valid email address."));
-  if (!password) redirect(messageUrl("/login", "Enter your password."));
+  if (!isEmail(email)) return { error: "Enter a valid email address." };
+  if (!password) return { error: "Enter your password." };
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect(messageUrl("/login", "Invalid email or password."));
+  if (error) return { error: "Invalid email or password." };
   redirect("/dashboard");
 }
 
-export async function requestLoginOtp(formData: FormData) {
-  return requestExistingAccountCode(formData, { linkType: "magiclink", purpose: "login", returnPath: "/login", verifyType: "magiclink" });
+export async function requestLoginOtp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  return requestExistingAccountCode(formData, { linkType: "magiclink", purpose: "login", verifyType: "magiclink" });
 }
 
-export async function resendSignupOtp(formData: FormData) {
-  return requestExistingAccountCode(formData, { linkType: "magiclink", purpose: "activation", returnPath: "/verify-otp", verifyType: "activation" });
+export async function resendSignupOtp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  return requestExistingAccountCode(formData, { linkType: "magiclink", purpose: "activation", verifyType: "activation" });
 }
 
-export async function requestPasswordReset(formData: FormData) {
-  return requestExistingAccountCode(formData, { linkType: "recovery", purpose: "recovery", returnPath: "/forgot-password", verifyType: "recovery" });
+export async function resendLoginOtp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  return requestExistingAccountCode(formData, { linkType: "magiclink", purpose: "login", verifyType: "magiclink" });
 }
 
-export async function signUpWithEmailVerification(formData: FormData) {
+export async function resendRecoveryOtp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  return requestExistingAccountCode(formData, { linkType: "recovery", purpose: "recovery", verifyType: "recovery" });
+}
+
+export async function requestPasswordReset(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  return requestExistingAccountCode(formData, { linkType: "recovery", purpose: "recovery", verifyType: "recovery" });
+}
+
+export type AuthFormState = { error: string };
+
+export async function signUpWithEmailVerification(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const email = cleanEmail(formData);
   const fullName = String(formData.get("full_name") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const role = String(formData.get("role") ?? "talent") as UserRole;
 
-  if (fullName.length < 2 || fullName.length > 160) redirect(messageUrl("/signup", "Enter your full name."));
-  if (!isEmail(email)) redirect(messageUrl("/signup", "Enter a valid email address."));
+  if (fullName.length < 2 || fullName.length > 160) return { error: "Enter your full name." };
+  if (!isEmail(email)) return { error: "Enter a valid email address." };
   const passwordCheck = checkNewPassword(password);
-  if (!passwordCheck.strong) redirect(messageUrl("/signup", passwordCheck.reason));
-  if (!roles.includes(role)) redirect(messageUrl("/signup", "Choose a valid account type."));
+  if (!passwordCheck.strong) return { error: passwordCheck.reason };
+  if (!roles.includes(role)) return { error: "Choose a valid account type." };
 
-  await enforceEmailLimit(email, "/signup");
+  const limitError = await enforceEmailLimit(email);
+  if (limitError) return { error: limitError };
   const admin = createAdminClient();
-  if (!admin) redirect(messageUrl("/signup", "Email verification is not configured for this deployment."));
+  if (!admin) return { error: "Email verification is not configured for this deployment." };
 
   let verifyType: "signup" | "activation";
   try {
@@ -166,15 +179,15 @@ export async function signUpWithEmailVerification(formData: FormData) {
     );
   } catch (error) {
     safeLog("signup_email_send_failed", error);
-    redirect(messageUrl("/verify-otp", emailSendFailedMessage, { email, type: "signup" }));
+    return { error: emailSendFailedMessage };
   }
 
   redirect(messageUrl("/verify-otp", genericRequestMessage, { email, type: verifyType }));
 }
 
-export async function verifyEmailOtp(formData: FormData) {
+export async function verifyEmailOtp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const supabase = await createClient();
-  if (!supabase) redirect("/verify-otp?message=configure-supabase");
+  if (!supabase) return { error: "Verification is temporarily unavailable. Please try again later." };
   const email = cleanEmail(formData);
   const token = String(formData.get("token") ?? "").replace(/\s/g, "");
   const pageType = String(formData.get("type") ?? "magiclink") as VerifyPageType;
@@ -185,28 +198,28 @@ export async function verifyEmailOtp(formData: FormData) {
     recovery: "recovery",
   };
 
-  if (!isEmail(email)) redirect(messageUrl("/verify-otp", "Enter a valid email address.", { type: pageType }));
-  if (!/^\d{6}$/.test(token)) redirect(messageUrl("/verify-otp", "Enter the 6 digit OTP code.", { email, type: pageType }));
-  if (!verifyTypes[pageType]) redirect(messageUrl("/verify-otp", "Invalid OTP type.", { email }));
+  if (!isEmail(email)) return { error: "Enter a valid email address." };
+  if (!/^\d{6}$/.test(token)) return { error: "Enter the 6 digit OTP code." };
+  if (!verifyTypes[pageType]) return { error: "Invalid OTP type." };
 
   const { error } = await supabase.auth.verifyOtp({ email, token, type: verifyTypes[pageType] });
-  if (error) redirect(messageUrl("/verify-otp", "The code is invalid or has expired. Request a new code and try again.", { email, type: pageType }));
+  if (error) return { error: "The code is invalid or has expired. Request a new code and try again." };
   if (pageType === "signup" || pageType === "activation") redirect("/onboarding");
   if (pageType === "recovery") redirect("/reset-password");
   redirect("/dashboard");
 }
 
-export async function updatePassword(formData: FormData) {
+export async function updatePassword(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const supabase = await createClient();
-  if (!supabase) redirect("/reset-password?message=configure-supabase");
+  if (!supabase) return { error: "Password update is temporarily unavailable. Please try again later." };
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm_password") ?? "");
   const passwordCheck = checkNewPassword(password);
-  if (!passwordCheck.strong) redirect(messageUrl("/reset-password", passwordCheck.reason));
-  if (password !== confirmPassword) redirect(messageUrl("/reset-password", "Passwords do not match."));
+  if (!passwordCheck.strong) return { error: passwordCheck.reason };
+  if (password !== confirmPassword) return { error: "Passwords do not match." };
 
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) redirect(messageUrl("/reset-password", error.message));
+  if (error) return { error: "Unable to update your password. Please verify your recovery code and try again." };
   await supabase.auth.signOut();
   redirect(messageUrl("/login", "Password updated. Log in with your new password."));
 }

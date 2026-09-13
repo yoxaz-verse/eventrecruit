@@ -1,3 +1,5 @@
+import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { SubmitButton } from "@/components/submit-button";
 import { MapPin, Star, Users } from "lucide-react";
 import { applyForRole } from "@/app/actions/workflow";
 import type { EventRole } from "@/lib/types";
@@ -34,17 +36,15 @@ export function RoleCard({ role, apply = false }: { role: EventRole; apply?: boo
       </div>
       {role.agency ? <p className="text-sm text-[var(--muted)]">Managed by {role.agency}</p> : null}
       {apply ? (
-        <form action={applyForRole} className="grid gap-3">
+        <WorkflowActionForm action={applyForRole} className="grid gap-3">
           <input name="staffing_role_id" type="hidden" value={role.id} />
           <textarea
             className="input textarea"
             name="cover_note"
             placeholder="Short note for the exhibitor"
           />
-          <button className="button button-primary" type="submit">
-            Apply
-          </button>
-        </form>
+          <SubmitButton className="button button-primary" pendingText="Applying…">Apply</SubmitButton>
+        </WorkflowActionForm>
       ) : null}
     </article>
   );

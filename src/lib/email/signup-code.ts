@@ -1,3 +1,6 @@
+import { atAuthEmailStage } from "./failure";
+import { assertEmailOtp } from "./message";
+
 type SignupLinkResult = {
   data: { properties?: { email_otp?: string } | null } | null;
   error: (Error & { code?: string }) | null;
@@ -8,19 +11,16 @@ export async function sendSignupCode(
   sendNewAccountCode: (code: string) => Promise<void>,
   sendExistingAccountCode: () => Promise<void>,
 ): Promise<"signup" | "activation"> {
-  const { data, error } = await generateSignupLink();
+  const { data, error } = await atAuthEmailStage("supabase_generate", generateSignupLink);
 
   if (error?.code === "email_exists") {
-    await sendExistingAccountCode();
+    await atAuthEmailStage("smtp_delivery", sendExistingAccountCode);
     return "activation";
   }
-  if (error) throw error;
+  if (error) await atAuthEmailStage("supabase_generate", () => { throw error; });
 
-  const code = data?.properties?.email_otp;
-  if (!code) {
-    throw Object.assign(new Error("Supabase did not return an OTP."), { code: "SUPABASE_OTP_MISSING" });
-  }
+  const code = await atAuthEmailStage("otp_validate", () => assertEmailOtp(data?.properties?.email_otp));
 
-  await sendNewAccountCode(code);
+  await atAuthEmailStage("smtp_delivery", () => sendNewAccountCode(code));
   return "signup";
 }

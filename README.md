@@ -1,6 +1,6 @@
-# EventRecruit
+# expo sphere
 
-EventRecruit is a Next.js + Supabase MVP for event services and expo recruitment. It supports role-based panels for admins, agencies, exhibitors, and event talent.
+expo sphere is a Next.js + Supabase MVP for event services and expo recruitment. It supports role-based panels for admins, agencies, exhibitors, and event talent.
 
 ## Features
 
@@ -48,7 +48,7 @@ SMTP_AUTH_PASS=
 SMTP_FROM=
 ```
 
-4. Keep the Supabase email provider and email confirmation enabled. Configure email OTPs as six digits with a 600-second expiry. EventRecruit generates Supabase OTPs on the server and delivers the codes through MXroute; do not configure a Send Email Hook. Disable Supabase Auth security notification emails in the project settings if all application emails must come from MXroute.
+4. Keep the Supabase email provider and email confirmation enabled. Configure email OTPs as six digits with a 600-second expiry. expo sphere generates Supabase OTPs on the server and delivers the codes through MXroute; do not configure a Send Email Hook. Disable Supabase Auth security notification emails in the project settings if all application emails must come from MXroute.
 
 Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL=https://eventrecruit.vercel.app` in production.
 
@@ -60,7 +60,7 @@ Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL
 npm run dev
 ```
 
-Direct calls to the public Supabase Auth API can still trigger Supabase-managed email. Without a Send Email Hook, this project can guarantee only that **EventRecruit's own email request actions** use MXroute. Restrict other clients to the same application flows and review the Supabase Auth email settings before rollout.
+Direct calls to the public Supabase Auth API can still trigger Supabase-managed email. Without a Send Email Hook, this project can guarantee only that **expo sphere's own email request actions** use MXroute. Restrict other clients to the same application flows and review the Supabase Auth email settings before rollout.
 
 ## Notes
 
