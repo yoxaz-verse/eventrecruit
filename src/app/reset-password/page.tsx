@@ -35,7 +35,7 @@ export default async function ResetPasswordPage({
       >
         <AuthMessage message={message ?? (profile ? undefined : "Verify the recovery code from your email before updating your password.")} />
         <form action={updatePassword} className="grid gap-4">
-          <PasswordField autoComplete="new-password" label="New password" />
+          <PasswordField autoComplete="new-password" label="New password" showStrength />
           <PasswordField autoComplete="new-password" label="Confirm password" name="confirm_password" />
           <button className="button button-primary" type="submit">
             Update password

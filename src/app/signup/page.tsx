@@ -43,6 +43,7 @@ export default async function SignupPage({
   const message = resolveAuthMessage(params?.message, {
     supabaseConfigured,
   });
+  const selectedRole = roles.find((role) => role.value === params?.role)?.value ?? "talent";
 
   return (
     <div className="shell">
@@ -63,31 +64,23 @@ export default async function SignupPage({
             Email
             <input autoComplete="email" className="input" name="email" required type="email" />
           </label>
-          <PasswordField autoComplete="new-password" />
-          <label className="label">
-            Account type
-            <select className="input" name="role" required defaultValue={params?.role === "organizer" ? "organizer" : "talent"}>
-              {roles.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="role-options" aria-label="Available account types">
+          <PasswordField autoComplete="new-password" showStrength />
+          <fieldset className="role-options">
+            <legend className="label role-legend">Account type</legend>
             {roles.map((role) => {
               const Icon = role.icon;
               return (
-                <article className="role-option" key={role.value}>
+                <label className="role-option" key={role.value}>
+                  <input type="radio" name="role" value={role.value} defaultChecked={selectedRole === role.value} required />
                   <Icon size={20} aria-hidden />
                   <div>
                     <strong>{role.title}</strong>
                     <p>{role.text}</p>
                   </div>
-                </article>
+                </label>
               );
             })}
-          </div>
+          </fieldset>
           <button className="button button-primary" type="submit">
             Sign up and verify email
           </button>

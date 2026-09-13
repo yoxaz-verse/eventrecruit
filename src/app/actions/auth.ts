@@ -7,6 +7,7 @@ import { authAccountExists, consumeAuthEmailLimit } from "@/lib/email/rate-limit
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import { checkNewPassword } from "@/lib/password-strength";
 import type { UserRole } from "@/lib/types";
 
 const roles: UserRole[] = ["organizer", "agency", "exhibitor", "talent"];
@@ -114,7 +115,7 @@ export async function signInWithPassword(formData: FormData) {
   const email = cleanEmail(formData);
   const password = String(formData.get("password") ?? "");
   if (!isEmail(email)) redirect(messageUrl("/login", "Enter a valid email address."));
-  if (password.length < 8) redirect(messageUrl("/login", "Password must be at least 8 characters."));
+  if (!password) redirect(messageUrl("/login", "Enter your password."));
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) redirect(messageUrl("/login", "Invalid email or password."));
@@ -141,7 +142,8 @@ export async function signUpWithEmailVerification(formData: FormData) {
 
   if (fullName.length < 2 || fullName.length > 160) redirect(messageUrl("/signup", "Enter your full name."));
   if (!isEmail(email)) redirect(messageUrl("/signup", "Enter a valid email address."));
-  if (password.length < 8) redirect(messageUrl("/signup", "Password must be at least 8 characters."));
+  const passwordCheck = checkNewPassword(password);
+  if (!passwordCheck.strong) redirect(messageUrl("/signup", passwordCheck.reason));
   if (!roles.includes(role)) redirect(messageUrl("/signup", "Choose a valid account type."));
 
   await enforceEmailLimit(email, "/signup");
@@ -196,7 +198,8 @@ export async function updatePassword(formData: FormData) {
   if (!supabase) redirect("/reset-password?message=configure-supabase");
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm_password") ?? "");
-  if (password.length < 8) redirect(messageUrl("/reset-password", "Password must be at least 8 characters."));
+  const passwordCheck = checkNewPassword(password);
+  if (!passwordCheck.strong) redirect(messageUrl("/reset-password", passwordCheck.reason));
   if (password !== confirmPassword) redirect(messageUrl("/reset-password", "Passwords do not match."));
 
   const { error } = await supabase.auth.updateUser({ password });
