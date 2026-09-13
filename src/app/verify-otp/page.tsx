@@ -9,12 +9,13 @@ import {
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthMessage, resolveAuthMessage } from "@/components/auth/auth-message";
 import { OtpInput } from "@/components/auth/otp-input";
+import { ResendButton } from "@/components/auth/resend-button";
 import { TopNav } from "@/components/top-nav";
 import { getSupabaseServerConfig } from "@/lib/supabase/env";
 
 const labels: Record<string, string> = {
   signup: "Verify signup",
-  email: "Verify login",
+  activation: "Activate account",
   recovery: "Verify recovery",
   magiclink: "Verify login",
 };
@@ -25,7 +26,7 @@ export default async function VerifyOtpPage({
   searchParams?: Promise<{ email?: string; message?: string; type?: string }>;
 }) {
   const params = await searchParams;
-  const type = params?.type ?? "email";
+  const type = params?.type ?? "magiclink";
   const email = params?.email ?? "";
   const supabaseConfigured = getSupabaseServerConfig().isConfigured;
   if (params?.message === "configure-supabase" && supabaseConfigured) {
@@ -45,7 +46,7 @@ export default async function VerifyOtpPage({
       <AuthCard
         badge="Email OTP"
         title={labels[type] ?? "Verify OTP"}
-        description="Enter the 6 digit code sent to your email, or use the magic link in the same message."
+        description="Enter the 6 digit code sent to your email. Only the latest code will work."
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
       >
         <AuthMessage message={message} />
@@ -72,15 +73,13 @@ export default async function VerifyOtpPage({
             action={
               type === "recovery"
                 ? requestPasswordReset
-                : type === "signup"
+                : type === "signup" || type === "activation"
                   ? resendSignupOtp
                   : requestLoginOtp
             }
           >
             <input name="email" type="hidden" value={email} />
-            <button className="button button-secondary" disabled={!email} type="submit">
-              Send another code
-            </button>
+            <ResendButton key={`${email}:${params?.message ?? ""}`} disabled={!email} />
           </form>
           <Link className="button button-secondary" href="/forgot-password">
             Forgot password

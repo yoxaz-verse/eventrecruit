@@ -30,10 +30,10 @@ export default async function ResetPasswordPage({
       <AuthCard
         badge="New password"
         title="Create a new password"
-        description="Use the recovery email link first, then set a new password for your EventRecruit account."
-        footer={profile ? undefined : { text: "Need a new recovery link?", href: "/forgot-password", label: "Send again" }}
+        description="Verify the recovery code first, then set a new password for your EventRecruit account."
+        footer={profile ? undefined : { text: "Need a new recovery code?", href: "/forgot-password", label: "Send again" }}
       >
-        <AuthMessage message={message ?? (profile ? undefined : "Open the recovery link from your email before updating your password.")} />
+        <AuthMessage message={message ?? (profile ? undefined : "Verify the recovery code from your email before updating your password.")} />
         <form action={updatePassword} className="grid gap-4">
           <PasswordField autoComplete="new-password" label="New password" />
           <PasswordField autoComplete="new-password" label="Confirm password" name="confirm_password" />

@@ -27,7 +27,7 @@ export default async function ForgotPasswordPage({
       <AuthCard
         badge="Account recovery"
         title="Reset your password"
-        description="Enter your account email. We will send an OTP and recovery link to confirm ownership."
+        description="Enter your account email. We will send a 6 digit recovery code to confirm ownership."
       >
         <AuthMessage message={message} />
         <form action={requestPasswordReset} className="grid gap-4">
@@ -36,7 +36,7 @@ export default async function ForgotPasswordPage({
             <input autoComplete="email" className="input" name="email" required type="email" />
           </label>
           <button className="button button-primary" type="submit">
-            Send recovery email
+            Send recovery code
           </button>
         </form>
         <p className="text-sm text-[var(--muted)]">

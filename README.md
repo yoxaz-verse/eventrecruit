@@ -4,7 +4,7 @@ EventRecruit is a Next.js + Supabase MVP for event services and expo recruitment
 
 ## Features
 
-- Email/password signup with role metadata
+- Email/password signup with role metadata and MXroute-delivered verification codes
 - Supabase profile trigger for new users
 - Role-based dashboards
 - Public role browsing
@@ -34,27 +34,33 @@ npm install
 cp .env.example .env.local
 ```
 
-3. Fill in:
+3. Fill in the Supabase and MXroute settings:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+SMTP_HOST=chocobo.mxrouting.net
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_AUTH_USER=
+SMTP_AUTH_PASS=
+SMTP_FROM=
 ```
 
-4. Add Supabase Auth redirect URLs:
+4. Keep the Supabase email provider and email confirmation enabled. Configure email OTPs as six digits with a 600-second expiry. EventRecruit generates Supabase OTPs on the server and delivers the codes through MXroute; do not configure a Send Email Hook. Disable Supabase Auth security notification emails in the project settings if all application emails must come from MXroute.
 
-```text
-http://localhost:3000/auth/callback
-https://your-production-domain.com/auth/callback
-```
+Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL=https://eventrecruit.vercel.app` in production.
 
-5. Apply `supabase/migrations/001_initial_schema.sql` in Supabase, then optionally run `supabase/seed.sql`.
+5. Apply migrations in order through `supabase/migrations/005_auth_email_delivery.sql`, then optionally run `supabase/seed.sql` for a new development project. Migration 005 adds service-role-only email rate limiting and account lookup helpers; it does not replace Supabase Auth or existing users. Rate-limit identifiers are keyed hashes and reset when the service-role key is rotated.
 
 6. Start the app:
 
 ```bash
 npm run dev
 ```
+
+Direct calls to the public Supabase Auth API can still trigger Supabase-managed email. Without a Send Email Hook, this project can guarantee only that **EventRecruit's own email request actions** use MXroute. Restrict other clients to the same application flows and review the Supabase Auth email settings before rollout.
 
 ## Notes
 

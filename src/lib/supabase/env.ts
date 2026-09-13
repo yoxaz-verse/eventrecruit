@@ -13,17 +13,27 @@ export function getSupabaseServerConfig() {
   };
 }
 
+export function getSupabaseAdminConfig() {
+  const { url } = getSupabaseServerConfig();
+  const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  return {
+    isConfigured: Boolean(url && serviceRoleKey),
+    serviceRoleKey,
+    url,
+  };
+}
+
 export function getAppUrl(requestOrigin?: string) {
   const explicitUrl = readEnv("NEXT_PUBLIC_APP_URL") ?? readEnv("APP_URL");
-  const vercelUrl = readEnv("VERCEL_URL");
+  const candidate = explicitUrl ?? requestOrigin ?? "http://localhost:3000";
+  const parsed = new URL(candidate);
+  const isProduction = parsed.protocol === "https:" && parsed.hostname === "eventrecruit.vercel.app";
+  const isLocal = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
 
-  if (explicitUrl) {
-    return explicitUrl.replace(/\/$/, "");
+  if (!isProduction && !isLocal) {
+    throw new Error("NEXT_PUBLIC_APP_URL must be EventRecruit production or a local development URL.");
   }
 
-  if (vercelUrl) {
-    return `https://${vercelUrl.replace(/\/$/, "")}`;
-  }
-
-  return requestOrigin?.replace(/\/$/, "") ?? "http://localhost:3000";
+  return parsed.origin;
 }
