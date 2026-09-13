@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { sendAuthEmail } from "@/lib/email/send-auth-email";
 import type { AuthEmailPurpose } from "@/lib/email/message";
+import { sendSignupCode } from "@/lib/email/signup-code";
 import { authAccountExists, consumeAuthEmailLimit } from "@/lib/email/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
@@ -12,6 +13,7 @@ import type { UserRole } from "@/lib/types";
 
 const roles: UserRole[] = ["organizer", "agency", "exhibitor", "talent"];
 const genericRequestMessage = "If the account is eligible, check your inbox and spam folder for a code. If it does not arrive, wait a minute and request another. If it keeps failing, contact support.";
+const emailSendFailedMessage = "We could not send a verification code right now. Please try again in a minute.";
 type VerifyPageType = "signup" | "activation" | "magiclink" | "recovery";
 
 function cleanEmail(formData: FormData) {
@@ -100,7 +102,7 @@ async function requestExistingAccountCode(
     await generateAndSendCode(email, options.purpose, options.linkType);
   } catch (error) {
     safeLog("auth_email_send_failed", error);
-    redirect(messageUrl("/verify-otp", genericRequestMessage, { email, type: options.verifyType }));
+    redirect(messageUrl("/verify-otp", emailSendFailedMessage, { email, type: options.verifyType }));
   }
 
   redirect(messageUrl("/verify-otp", genericRequestMessage, {
@@ -150,23 +152,24 @@ export async function signUpWithEmailVerification(formData: FormData) {
   const admin = createAdminClient();
   if (!admin) redirect(messageUrl("/signup", "Email verification is not configured for this deployment."));
 
+  let verifyType: "signup" | "activation";
   try {
-    const { data, error } = await admin.auth.admin.generateLink({
-      type: "signup",
-      email,
-      password,
-      options: { data: { full_name: fullName, role }, redirectTo: `${getAppUrl()}/login` },
-    });
-    if (error || !data.properties?.email_otp) {
-      throw error ?? Object.assign(new Error("Supabase did not return an OTP."), { code: "SUPABASE_OTP_MISSING" });
-    }
-    await sendAuthEmail(email, data.properties.email_otp, "signup");
+    verifyType = await sendSignupCode(
+      () => admin.auth.admin.generateLink({
+        type: "signup",
+        email,
+        password,
+        options: { data: { full_name: fullName, role }, redirectTo: `${getAppUrl()}/login` },
+      }),
+      (code) => sendAuthEmail(email, code, "signup"),
+      () => generateAndSendCode(email, "activation", "magiclink"),
+    );
   } catch (error) {
     safeLog("signup_email_send_failed", error);
-    redirect(messageUrl("/verify-otp", genericRequestMessage, { email, type: "signup" }));
+    redirect(messageUrl("/verify-otp", emailSendFailedMessage, { email, type: "signup" }));
   }
 
-  redirect(messageUrl("/verify-otp", genericRequestMessage, { email, type: "signup" }));
+  redirect(messageUrl("/verify-otp", genericRequestMessage, { email, type: verifyType }));
 }
 
 export async function verifyEmailOtp(formData: FormData) {

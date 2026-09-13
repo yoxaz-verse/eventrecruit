@@ -46,7 +46,7 @@ export default async function VerifyOtpPage({
       <AuthCard
         badge="Email OTP"
         title={labels[type] ?? "Verify OTP"}
-        description="Enter the 6 digit code sent to your email. Only the latest code will work."
+        description="Enter your 6 digit email code. Only the latest code will work."
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
       >
         <AuthMessage message={message} />

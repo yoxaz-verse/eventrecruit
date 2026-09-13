@@ -3,6 +3,51 @@ import test from "node:test";
 import { buildAuthEmail } from "../src/lib/email/message";
 import { deliverAuthCode } from "../src/lib/email/delivery";
 import { getAppUrl } from "../src/lib/supabase/env";
+import { sendSignupCode } from "../src/lib/email/signup-code";
+
+test("sends a new signup code and recovers an existing account with an activation code", async () => {
+  const sent: string[] = [];
+  const sendNew = async (code: string) => { sent.push(`signup:${code}`); };
+  const sendExisting = async () => { sent.push("activation"); };
+
+  assert.equal(
+    await sendSignupCode(
+      async () => ({ data: { properties: { email_otp: "123456" } }, error: null }),
+      sendNew,
+      sendExisting,
+    ),
+    "signup",
+  );
+  assert.equal(
+    await sendSignupCode(
+      async () => ({ data: null, error: Object.assign(new Error("Already registered"), { code: "email_exists" }) }),
+      sendNew,
+      sendExisting,
+    ),
+    "activation",
+  );
+  assert.deepEqual(sent, ["signup:123456", "activation"]);
+});
+
+test("signup code errors cannot be mistaken for successful delivery", async () => {
+  const unexpected = Object.assign(new Error("Provider unavailable"), { code: "unexpected_failure" });
+  await assert.rejects(
+    sendSignupCode(async () => ({ data: null, error: unexpected }), async () => {}, async () => {}),
+    unexpected,
+  );
+  await assert.rejects(
+    sendSignupCode(async () => ({ data: { properties: {} }, error: null }), async () => {}, async () => {}),
+    { code: "SUPABASE_OTP_MISSING" },
+  );
+  await assert.rejects(
+    sendSignupCode(
+      async () => ({ data: null, error: Object.assign(new Error("Already registered"), { code: "email_exists" }) }),
+      async () => {},
+      async () => { throw Object.assign(new Error("SMTP unavailable"), { code: "ETIMEDOUT" }); },
+    ),
+    { code: "ETIMEDOUT" },
+  );
+});
 
 test("builds code-only branded messages for every authentication purpose", () => {
   for (const purpose of ["signup", "login", "activation", "recovery"] as const) {
