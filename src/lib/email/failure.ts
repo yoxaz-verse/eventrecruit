@@ -1,4 +1,4 @@
-export type AuthEmailStage = "configuration" | "supabase_generate" | "otp_validate" | "smtp_delivery" | "unexpected";
+export type AuthEmailStage = "configuration" | "smtp_delivery" | "unexpected" | "account_lookup" | "otp_generate" | "otp_store" | "otp_verify";
 
 export class AuthEmailStageError extends Error {
   constructor(public readonly stage: AuthEmailStage, public readonly category: string) {
@@ -15,16 +15,9 @@ export function classifyAuthEmailFailure(stage: AuthEmailStage, error: unknown):
   const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
   if (stage === "configuration") return new AuthEmailStageError(stage, "app_url_invalid");
   if (stage === "unexpected") return new AuthEmailStageError(stage, "unexpected_error");
-  if (stage === "otp_validate") {
-    return new AuthEmailStageError(stage, code === "SUPABASE_OTP_MISSING" ? "otp_missing" : "otp_invalid_format");
-  }
-  if (stage === "supabase_generate") {
-    const status = typeof error === "object" && error !== null && "status" in error ? error.status : undefined;
-    if (status === 429) return new AuthEmailStageError(stage, "supabase_rate_limit");
-    if (status === 401 || status === 403) return new AuthEmailStageError(stage, "supabase_authorization");
-    if (status === 422) return new AuthEmailStageError(stage, "supabase_validation");
-    return new AuthEmailStageError(stage, "supabase_error");
-  }
+  if (stage === "otp_generate") return new AuthEmailStageError(stage, "otp_generation_failed");
+  if (stage === "account_lookup") return new AuthEmailStageError(stage, "database_error");
+  if (stage === "otp_store" || stage === "otp_verify") return new AuthEmailStageError(stage, "database_error");
   const categories: Record<string, string> = {
     EAUTH: "smtp_auth",
     ETIMEDOUT: "smtp_timeout",

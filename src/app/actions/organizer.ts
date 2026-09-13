@@ -2,16 +2,17 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentAccount } from '@/lib/auth';
 import { validDate } from '@/lib/organizer';
 export type FormState = { error: string };
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
 async function session() {
  const db = await createClient();
  if (!db) throw new Error('Service is not configured. Please try again later.');
- const { data: { user } } = await db.auth.getUser();
+ const user = await getCurrentAccount();
  if (!user) throw new Error('Please log in again.');
  const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single();
- if (profile?.role !== 'organizer' || !user.email_confirmed_at) throw new Error('A verified event organizer account is required.');
+ if (profile?.role !== 'organizer' || !user.email_verified_at) throw new Error('A verified event organizer account is required.');
  return { db, user };
 }
 export async function saveCompany(_state: FormState, data: FormData): Promise<FormState> {

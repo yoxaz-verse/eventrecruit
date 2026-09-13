@@ -2,14 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount } from "@/lib/auth";
 
 export async function completeOnboarding(_state: { error: string }, formData: FormData): Promise<{ error: string }> {
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentAccount();
 
   if (!user) redirect("/login");
 

@@ -4,11 +4,9 @@ function readEnv(name: string) {
 
 export function getSupabaseServerConfig() {
   const url = readEnv("NEXT_PUBLIC_SUPABASE_URL") ?? readEnv("SUPABASE_URL");
-  const anonKey = readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? readEnv("SUPABASE_ANON_KEY");
 
   return {
-    anonKey,
-    isConfigured: Boolean(url && anonKey),
+    isConfigured: Boolean(url && readEnv("SUPABASE_SERVICE_ROLE_KEY") && readEnv("APP_AUTH_SECRET")),
     url,
   };
 }

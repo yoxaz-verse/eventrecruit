@@ -1,41 +1,27 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { tokenAccount } from "@/lib/app-auth/session";
 import type { UserRole } from "@/lib/types";
 
+export async function getCurrentAccount() {
+  const account = await tokenAccount("session");
+  return account?.email_verified_at ? account : null;
+}
+
 export async function getCurrentProfile() {
-  const supabase = await createClient();
-
-  if (!supabase) {
-    return null;
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return null;
-  }
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, verification_status, avatar_url")
-    .eq("id", user.id)
-    .single();
-
-  return data;
+  const account = await getCurrentAccount();
+  if (!account) return null;
+  const db = createAdminClient();
+  if (!db) return null;
+  const {data,error} = await db.from("profiles")
+    .select("id,full_name,role,verification_status,avatar_url")
+    .eq("id",account.id).maybeSingle();
+  return error ? null : data;
 }
 
 export async function requireRole(allowed: UserRole[]) {
   const profile = await getCurrentProfile();
-
-  if (!profile) {
-    redirect("/login");
-  }
-
-  if (!allowed.includes(profile.role as UserRole)) {
-    redirect(`/dashboard/${profile.role}`);
-  }
-
+  if (!profile) redirect("/login");
+  if (!allowed.includes(profile.role as UserRole)) redirect(`/dashboard/${profile.role}`);
   return profile;
 }

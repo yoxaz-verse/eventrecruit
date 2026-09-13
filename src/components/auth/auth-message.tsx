@@ -1,6 +1,6 @@
 const authMessages: Record<string, string> = {
   "configure-supabase":
-    "This deployment is not connected to Supabase yet. Confirm the Supabase URL and anon key are set for this Vercel environment, then redeploy the project.",
+    "Authentication is not configured. Confirm the server database credentials and app auth secret, then redeploy.",
 };
 
 export function resolveAuthMessage(message?: string, options?: { supabaseConfigured?: boolean }) {

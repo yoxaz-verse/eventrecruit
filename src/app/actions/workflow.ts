@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount, getCurrentProfile } from "@/lib/auth";
+import { canApply, canModerate, ownsStaffingEvent } from "@/lib/app-auth/authorization";
 import type { ApplicationStatus, UserRole } from "@/lib/types";
 import { validDate } from "@/lib/organizer";
 
@@ -19,6 +21,19 @@ const recommendationStatuses = ["recommended", "accepted", "rejected", "withdraw
 const verificationStatuses = ["pending_verification", "verified", "rejected"];
 const revieweeRoles: Array<Extract<UserRole, "talent" | "exhibitor">> = ["talent", "exhibitor"];
 const reviewVisibilityStatuses = ["published", "hidden"];
+
+async function actor() {
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+  return profile;
+}
+
+async function staffingOwner(db: NonNullable<Awaited<ReturnType<typeof createClient>>>, roleId: string, actorId: string) {
+  const { data: role } = await db.from("staffing_roles").select("event_id").eq("id", roleId).maybeSingle();
+  if (!role) return false;
+  const { data: event } = await db.from("events").select("created_by").eq("id", role.event_id).maybeSingle();
+  return ownsStaffingEvent(event?.created_by, actorId);
+}
 
 function ratingValue(formData: FormData, key: string) {
   const value = Number(formData.get(key) ?? 0);
@@ -53,9 +68,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const supabase = await createClient();
   if (!supabase) return { error: "Posting is temporarily unavailable. Please try again later.", success: "" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentAccount();
 
   if (!user) redirect("/login");
 
@@ -130,14 +143,16 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
   const supabase = await createClient();
   if (!supabase) return { error: "Applications are temporarily unavailable.", success: "" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentAccount();
 
   if (!user) redirect("/login");
+  const profile = await actor();
+  const roleId = String(formData.get("staffing_role_id") ?? "");
+  const { data: openRole } = await supabase.from("staffing_roles").select("id").eq("id", roleId).eq("status", "open").maybeSingle();
+  if (!canApply(profile.role,profile.verification_status,openRole ? "open" : "closed")) return { error: "A verified talent account and open role are required.", success: "" };
 
   const { error } = await supabase.from("applications").insert({
-    staffing_role_id: String(formData.get("staffing_role_id") ?? ""),
+    staffing_role_id: roleId,
     talent_id: user.id,
     cover_note: String(formData.get("cover_note") ?? ""),
   });
@@ -153,10 +168,14 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
 
   const status = String(formData.get("status") ?? "applied") as ApplicationStatus;
   const applicationId = String(formData.get("application_id") ?? "");
+  const profile = await actor();
 
   if (!applicationStatuses.includes(status)) {
     return { error: "Choose a valid application status.", success: "" };
   }
+  if (!["exhibitor", "agency"].includes(profile.role)) return { error: "You cannot update this application.", success: "" };
+  const { data: application } = await supabase.from("applications").select("staffing_role_id").eq("id", applicationId).maybeSingle();
+  if (!application || !await staffingOwner(supabase, application.staffing_role_id, profile.id)) return { error: "You cannot update this application.", success: "" };
 
   const { data: updated, error } = await supabase
     .from("applications")
@@ -173,11 +192,19 @@ export async function createPlacementReview(_state: WorkflowFormState, formData:
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentAccount();
 
   if (!user) redirect("/login");
+  const profile = await actor();
+  const placementId = String(formData.get("placement_id") ?? "");
+  if (!["talent", "exhibitor"].includes(profile.role)) return { error: "Only placement participants can submit reviews.", success: "" };
+  const { data: placement } = await supabase.from("placements").select("talent_id,staffing_role_id,status").eq("id",placementId).maybeSingle();
+  if (!placement || placement.status !== "completed" || (placement.talent_id !== profile.id && !await staffingOwner(supabase,placement.staffing_role_id,profile.id))) return { error: "A completed placement you participated in is required.", success: "" };
+  const { data: placementRole } = await supabase.from("staffing_roles").select("event_id").eq("id",placement.staffing_role_id).maybeSingle();
+  const { data: placementEvent } = placementRole ? await supabase.from("events").select("created_by").eq("id",placementRole.event_id).maybeSingle() : { data: null };
+  const revieweeId = String(formData.get("reviewee_id") ?? "");
+  const expectedReviewee = placement.talent_id === profile.id ? placementEvent?.created_by : placement.talent_id;
+  if (!expectedReviewee || revieweeId !== expectedReviewee) return { error: "Choose the other participant in this placement.", success: "" };
 
   const revieweeRole = String(formData.get("reviewee_role") ?? "talent") as Extract<
     UserRole,
@@ -187,6 +214,7 @@ export async function createPlacementReview(_state: WorkflowFormState, formData:
   if (!revieweeRoles.includes(revieweeRole)) {
     return { error: "Choose a valid review recipient.", success: "" };
   }
+  if (revieweeRole !== (profile.role === "talent" ? "exhibitor" : "talent")) return { error: "Choose a valid review recipient.", success: "" };
 
   const testimonial = String(formData.get("testimonial") ?? "").trim();
   const ratings = ["rating", "communication_rating", "professionalism_rating", "reliability_rating"].map((key) => ratingValue(formData, key));
@@ -197,9 +225,9 @@ export async function createPlacementReview(_state: WorkflowFormState, formData:
   }
 
   const { error } = await supabase.from("placement_reviews").insert({
-    placement_id: String(formData.get("placement_id") ?? ""),
+    placement_id: placementId,
     reviewer_id: user.id,
-    reviewee_id: String(formData.get("reviewee_id") ?? ""),
+    reviewee_id: revieweeId,
     reviewee_role: revieweeRole,
     rating: ratings[0],
     communication_rating: ratings[1],
@@ -220,11 +248,11 @@ export async function recommendTalent(_state: WorkflowFormState, formData: FormD
   const supabase = await createClient();
   if (!supabase) redirect("/login");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentAccount();
 
   if (!user) redirect("/login");
+  const profile = await actor();
+  if (profile.role !== "agency") return { error: "An agency account is required.", success: "" };
 
   const { data: agency, error: agencyError } = await supabase
     .from("agencies")
@@ -253,10 +281,15 @@ export async function updateRecommendationStatus(_state: WorkflowFormState, form
 
   const recommendationId = String(formData.get("recommendation_id") ?? "");
   const status = String(formData.get("status") ?? "recommended");
+  const profile = await actor();
 
   if (!recommendationStatuses.includes(status)) {
     return { error: "Choose a valid recommendation status.", success: "" };
   }
+  const { data: recommendation } = await supabase.from("talent_recommendations").select("agency_id,staffing_role_id").eq("id",recommendationId).maybeSingle();
+  if (!recommendation) return { error: "You cannot update this recommendation.", success: "" };
+  const { data: agency } = await supabase.from("agencies").select("owner_id").eq("id",recommendation.agency_id).maybeSingle();
+  if (agency?.owner_id !== profile.id && !await staffingOwner(supabase,recommendation.staffing_role_id,profile.id)) return { error: "You cannot update this recommendation.", success: "" };
 
   const { data: updated, error } = await supabase
     .from("talent_recommendations")
@@ -275,6 +308,8 @@ export async function updateProfileVerification(_state: WorkflowFormState, formD
 
   const profileId = String(formData.get("profile_id") ?? "");
   const verificationStatus = String(formData.get("verification_status") ?? "pending_verification");
+  const profile = await actor();
+  if (!canModerate(profile.role)) return { error: "Administrator access is required.", success: "" };
 
   if (!verificationStatuses.includes(verificationStatus)) {
     return { error: "Choose a valid verification status.", success: "" };
@@ -296,6 +331,8 @@ export async function updateReviewVisibility(_state: WorkflowFormState, formData
 
   const reviewId = String(formData.get("review_id") ?? "");
   const visibilityStatus = String(formData.get("visibility_status") ?? "published");
+  const profile = await actor();
+  if (!canModerate(profile.role)) return { error: "Administrator access is required.", success: "" };
 
   if (!reviewVisibilityStatuses.includes(visibilityStatus)) {
     return { error: "Choose a valid review visibility.", success: "" };

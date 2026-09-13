@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:auth": "node --import tsx --test tests/*.test.ts",
-    "diagnose:email": "node --env-file=.env.local --import tsx scripts/check-email.ts"
+    "diagnose:email": "node --env-file=.env.local --import tsx scripts/check-email.ts",
+    "auth:grant-admin": "node --env-file=.env.local --import tsx scripts/grant-admin.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

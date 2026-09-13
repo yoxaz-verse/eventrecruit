@@ -1,29 +1,7 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { getSupabaseServerConfig } from "./env";
+import "server-only";
+import { createAdminClient } from "./admin";
 
+// Database transport only. Identity is resolved from app-owned sessions.
 export async function createClient() {
-  const { anonKey, url } = getSupabaseServerConfig();
-  const cookieStore = await cookies();
-
-  if (!url || !anonKey) {
-    return null;
-  }
-
-  return createServerClient(url, anonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        } catch {
-          // Server components cannot always set cookies. Middleware refreshes the session.
-        }
-      },
-    },
-  });
+  return createAdminClient();
 }

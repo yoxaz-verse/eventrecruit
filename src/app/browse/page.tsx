@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TopNav } from "@/components/top-nav";
 import { RoleCard } from "@/components/role-card";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentAccount } from "@/lib/auth";
 import type { EventRole } from "@/lib/types";
 
 export default async function BrowsePage({
@@ -11,7 +12,7 @@ export default async function BrowsePage({
 }) {
   const { city = "", q = "" } = (await searchParams) ?? {};
   const db = await createClient();
-  const { data: { user } } = db ? await db.auth.getUser() : { data: { user: null } };
+  const user = await getCurrentAccount();
   const [result, profileResult] = user
     ? await Promise.all([db!.from("staffing_roles")
         .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,required_skills,status,events(title,venue,city,starts_at)")

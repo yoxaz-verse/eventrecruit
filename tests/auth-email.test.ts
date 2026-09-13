@@ -3,56 +3,7 @@ import test from "node:test";
 import { buildAuthEmail } from "../src/lib/email/message";
 import { deliverAuthCode } from "../src/lib/email/delivery";
 import { getAppUrl } from "../src/lib/supabase/env";
-import { sendSignupCode } from "../src/lib/email/signup-code";
 import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError, classifyAuthEmailFailure } from "../src/lib/email/failure";
-
-test("sends a new signup code and recovers an existing account with an activation code", async () => {
-  const sent: string[] = [];
-  const sendNew = async (code: string) => { sent.push(`signup:${code}`); };
-  const sendExisting = async () => { sent.push("activation"); };
-
-  assert.equal(
-    await sendSignupCode(
-      async () => ({ data: { properties: { email_otp: "123456" } }, error: null }),
-      sendNew,
-      sendExisting,
-    ),
-    "signup",
-  );
-  assert.equal(
-    await sendSignupCode(
-      async () => ({ data: null, error: Object.assign(new Error("Already registered"), { code: "email_exists" }) }),
-      sendNew,
-      sendExisting,
-    ),
-    "activation",
-  );
-  assert.deepEqual(sent, ["signup:123456", "activation"]);
-});
-
-test("signup code errors cannot be mistaken for successful delivery", async () => {
-  const unexpected = Object.assign(new Error("Provider unavailable"), { code: "unexpected_failure" });
-  await assert.rejects(
-    sendSignupCode(async () => ({ data: null, error: unexpected }), async () => {}, async () => {}),
-    { stage: "supabase_generate", category: "supabase_error" },
-  );
-  await assert.rejects(
-    sendSignupCode(async () => ({ data: { properties: {} }, error: null }), async () => {}, async () => {}),
-    { stage: "otp_validate", category: "otp_missing" },
-  );
-  await assert.rejects(
-    sendSignupCode(async () => ({ data: { properties: { email_otp: "12345" } }, error: null }), async () => {}, async () => {}),
-    { stage: "otp_validate", category: "otp_invalid_format" },
-  );
-  await assert.rejects(
-    sendSignupCode(
-      async () => ({ data: null, error: Object.assign(new Error("Already registered"), { code: "email_exists" }) }),
-      async () => {},
-      async () => { throw Object.assign(new Error("SMTP unavailable"), { code: "ETIMEDOUT" }); },
-    ),
-    { stage: "smtp_delivery", category: "smtp_timeout" },
-  );
-});
 
 test("builds code-only branded messages for every authentication purpose", () => {
   for (const purpose of ["signup", "login", "activation", "recovery"] as const) {
@@ -69,8 +20,8 @@ test("builds code-only branded messages for every authentication purpose", () =>
 });
 
 test("rejects malformed OTP values before constructing an email", () => {
-  assert.throws(() => buildAuthEmail("12345", "signup"), { code: "SUPABASE_OTP_INVALID_FORMAT" });
-  assert.throws(() => buildAuthEmail("12345<", "recovery"), { code: "SUPABASE_OTP_INVALID_FORMAT" });
+  assert.throws(() => buildAuthEmail("12345", "signup"), { code: "OTP_INVALID_FORMAT" });
+  assert.throws(() => buildAuthEmail("12345<", "recovery"), { code: "OTP_INVALID_FORMAT" });
 });
 
 test("diagnostics classify delivery failures without logging provider details", async () => {
@@ -92,18 +43,18 @@ test("diagnostics classify delivery failures without logging provider details", 
   }
 });
 
-test("classifies Supabase, configuration, and unanticipated signup failures safely", () => {
+test("classifies database, configuration, and unanticipated signup failures safely", () => {
   const secret = "user@example.com 123456 smtp-password";
   const failures = [
-    classifyAuthEmailFailure("supabase_generate", Object.assign(new Error(secret), { status: 429 })),
-    classifyAuthEmailFailure("supabase_generate", Object.assign(new Error(secret), { status: 403 })),
+    classifyAuthEmailFailure("otp_store", new Error(secret)),
+    classifyAuthEmailFailure("otp_verify", new Error(secret)),
     classifyAuthEmailFailure("configuration", new Error(secret)),
     classifyAuthEmailFailure("unexpected", new Error(secret)),
     classifyAuthEmailFailure("smtp_delivery", Object.assign(new Error(secret), { responseCode: 535 })),
   ];
   assert.deepEqual(failures.map(authEmailDiagnostic), [
-    { stage: "supabase_generate", category: "supabase_rate_limit" },
-    { stage: "supabase_generate", category: "supabase_authorization" },
+    { stage: "otp_store", category: "database_error" },
+    { stage: "otp_verify", category: "database_error" },
     { stage: "configuration", category: "app_url_invalid" },
     { stage: "unexpected", category: "unexpected_error" },
     { stage: "smtp_delivery", category: "smtp_auth" },

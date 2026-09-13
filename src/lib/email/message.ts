@@ -20,9 +20,9 @@ const content: Record<AuthEmailPurpose, { heading: string; subject: string }> = 
 };
 
 export function assertEmailOtp(code: string | undefined): string {
-  if (!code) throw Object.assign(new Error("Supabase did not return an OTP."), { code: "SUPABASE_OTP_MISSING" });
+  if (!code) throw Object.assign(new Error("Missing email OTP."), { code: "OTP_MISSING" });
   if (!/^\d{6}$/.test(code)) {
-    throw Object.assign(new Error("Supabase returned an invalid email OTP."), { code: "SUPABASE_OTP_INVALID_FORMAT" });
+    throw Object.assign(new Error("Invalid email OTP format."), { code: "OTP_INVALID_FORMAT" });
   }
   return code;
 }
@@ -31,7 +31,7 @@ export function buildAuthEmail(code: string, purpose: AuthEmailPurpose) {
   assertEmailOtp(code);
 
   const copy = content[purpose];
-  const guidance = "Use the latest code you requested. It expires according to your account security settings.";
+  const guidance = "Use the latest code you requested. It expires in 10 minutes.";
 
   return {
     subject: copy.subject,

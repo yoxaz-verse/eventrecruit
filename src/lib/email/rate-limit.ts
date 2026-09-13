@@ -1,18 +1,10 @@
 import "server-only";
 
-import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { digest } from "@/lib/app-auth/crypto";
 
 type RateLimitResult = { allowed: boolean; retry_after_seconds: number };
-
-function digest(value: string) {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) {
-    throw Object.assign(new Error("Auth email configuration is incomplete."), { code: "AUTH_EMAIL_CONFIGURATION" });
-  }
-  return createHmac("sha256", key).update(value).digest("hex");
-}
 
 export async function getRequestIpHash() {
   const requestHeaders = await headers();
@@ -42,17 +34,4 @@ export async function consumeAuthEmailLimit(email: string) {
   }
 
   return data as RateLimitResult;
-}
-
-export async function authAccountExists(email: string) {
-  const admin = createAdminClient();
-  if (!admin) {
-    throw Object.assign(new Error("Auth email configuration is incomplete."), { code: "AUTH_EMAIL_CONFIGURATION" });
-  }
-
-  const { data, error } = await admin.rpc("auth_user_exists", { p_email: email });
-  if (error || typeof data !== "boolean") {
-    throw error ?? Object.assign(new Error("Auth account lookup is unavailable."), { code: "AUTH_EMAIL_LOOKUP_UNAVAILABLE" });
-  }
-  return data;
 }
