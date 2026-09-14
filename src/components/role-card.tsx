@@ -1,52 +1,73 @@
 import { WorkflowActionForm } from "@/components/workflow-action-form";
 import { SubmitButton } from "@/components/submit-button";
-import { CalendarDays, MapPin, Star, Users } from "lucide-react";
+import { CalendarDays, MapPin, DollarSign, Users, Clock, Send } from "lucide-react";
 import { applyForRole } from "@/app/actions/workflow";
 import type { EventRole } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 
-export function RoleCard({ role, apply = false, rateUnit = "day", showDate = false }: { role: EventRole; apply?: boolean; rateUnit?: "day" | "hour"; showDate?: boolean }) {
+export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = false }: { role: EventRole; apply?: boolean; rateUnit?: "day" | "hour"; showDate?: boolean }) {
   return (
-    <article className="panel role-card grid gap-4 p-5">
+    <article className="panel role-card grid gap-4 p-6 shadow-sm hover:shadow-md transition-all border border-[var(--line)] rounded-2xl bg-white">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-bold text-[var(--accent)]">{role.eventTitle}</p>
-          <h3 className="mt-1 text-xl font-black">{role.role}</h3>
-          <p className="mt-1 text-sm text-[var(--muted)]">{role.company}</p>
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent)]">{role.eventTitle}</span>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-[var(--foreground)]">{role.role}</h3>
+          <p className="mt-0.5 text-xs font-medium text-[var(--muted)]">{role.company}</p>
         </div>
         <StatusBadge status={role.status} />
       </div>
-      <div className="grid gap-2 text-sm text-[var(--muted)]">
-        {showDate ? <span className="flex items-center gap-2"><CalendarDays size={16} aria-hidden /> {role.date}</span> : null}
-        <span className="flex items-center gap-2">
-          <MapPin size={16} aria-hidden /> {role.location}
-        </span>
-        <span className="flex items-center gap-2">
-          <Users size={16} aria-hidden /> {role.headcount} people needed
-        </span>
-        <span className="flex items-center gap-2">
-          <Star size={16} aria-hidden /> Rs {role.rate.toLocaleString("en-IN")}/{rateUnit} · {role.shift}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {role.skills.map((skill) => (
-          <span className="badge" key={skill}>
-            {skill}
+
+      <div className="grid gap-2 text-xs font-medium text-[var(--muted)]">
+        {showDate ? (
+          <span className="flex items-center gap-2">
+            <CalendarDays size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
+            <span>{role.date}</span>
           </span>
-        ))}
+        ) : null}
+        <span className="flex items-center gap-2">
+          <MapPin size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
+          <span>{role.location}</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <Users size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
+          <span>{role.headcount} {role.headcount === 1 ? "position" : "positions"} open</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <Clock size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
+          <span>Shift: {role.shift}</span>
+        </span>
       </div>
-      {role.agency ? <p className="text-sm text-[var(--muted)]">Managed by {role.agency}</p> : null}
+
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--line)]">
+        <div className="flex flex-wrap gap-1.5">
+          {role.skills.map((skill) => (
+            <span className="badge badge-light text-[11px]" key={skill}>
+              {skill}
+            </span>
+          ))}
+        </div>
+        <div className="shrink-0 font-black text-sm text-[var(--accent)] bg-[var(--surface)] px-3 py-1.5 rounded-lg border border-[var(--line)]">
+          ${role.rate}/{rateUnit}
+        </div>
+      </div>
+
+      {role.agency ? <p className="text-xs text-[var(--muted)] italic">Managed by {role.agency}</p> : null}
+
       {apply ? (
-        <WorkflowActionForm action={applyForRole} className="grid gap-3">
+        <WorkflowActionForm action={applyForRole} className="grid gap-3 mt-2 pt-3 border-t border-[var(--line)]">
           <input name="staffing_role_id" type="hidden" value={role.id} />
           <textarea
-            className="input textarea"
+            className="input textarea text-xs"
             name="cover_note"
-            placeholder="Short note for the exhibitor"
+            placeholder="Share brief background or relevant experience for this role..."
           />
-          <SubmitButton className="button button-primary" pendingText="Applying…">Apply</SubmitButton>
+          <SubmitButton className="button button-primary gap-2" pendingText="Applying…">
+            <Send size={15} aria-hidden />
+            <span>Apply for position</span>
+          </SubmitButton>
         </WorkflowActionForm>
       ) : null}
     </article>
   );
 }
+

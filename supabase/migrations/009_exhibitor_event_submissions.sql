@@ -15,13 +15,10 @@ create table public.exhibitor_event_submissions (
 create index exhibitor_event_submissions_status on public.exhibitor_event_submissions(status, ends_at);
 create index exhibitor_event_submissions_owner on public.exhibitor_event_submissions(exhibitor_id);
 alter table public.exhibitor_event_submissions enable row level security;
-create policy "approved events or owner or admin read" on public.exhibitor_event_submissions for select
- using (status = 'approved' or public.is_admin() or exhibitor_id in (select id from public.exhibitors where owner_id = auth.uid()));
-create policy "exhibitor submits own event" on public.exhibitor_event_submissions for insert
- with check (status = 'pending' and reviewed_by is null and reviewed_at is null and exhibitor_id in (select id from public.exhibitors where owner_id = auth.uid()));
-create policy "admin reviews event" on public.exhibitor_event_submissions for update
- using (public.is_admin()) with check (public.is_admin());
-grant select, insert, update on public.exhibitor_event_submissions to authenticated;
+-- Migration 006 moved authorization to app-owned sessions and server actions.
+-- Never expose this table through a browser Supabase role.
+revoke all on public.exhibitor_event_submissions from public, anon, authenticated;
+grant select, insert, update on public.exhibitor_event_submissions to service_role;
 alter table public.events add column organizer_event_id uuid references public.organizer_events(id),
   add column exhibitor_event_submission_id uuid references public.exhibitor_event_submissions(id);
 alter table public.events add constraint one_catalog_event check (organizer_event_id is null or exhibitor_event_submission_id is null);

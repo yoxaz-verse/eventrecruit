@@ -8,6 +8,7 @@ expo sphere is a Next.js app backed by Supabase Postgres for event services and 
 - App-owned accounts and HttpOnly sessions
 - Role-based dashboards
 - Organizer event booking: HTTPS booking links and India-time capacity-limited guest slots. Apply `supabase/migrations/010_event_booking.sql` before deploying the booking UI; it adds reservation tables and makes talent positions optional for published events.
+- Exhibitor workspace: apply `supabase/migrations/009_exhibitor_event_submissions.sql` before deploying event submissions, admin reviews, or event-linked staffing requests. For databases that already applied an earlier 009, also apply `supabase/migrations/011_lock_down_exhibitor_submissions.sql` to remove direct client access under app-owned session authorization.
 - Public role browsing
 - Exhibitor staffing request form
 - Event talent application action
