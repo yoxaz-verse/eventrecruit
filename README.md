@@ -1,6 +1,6 @@
-# expo sphere
+# exporb
 
-expo sphere is a Next.js app backed by Supabase Postgres for event services and expo recruitment. Next.js owns accounts, OTPs, passwords, sessions, and portal authorization.
+exporb is a Next.js app backed by Supabase Postgres for event services and expo recruitment. Next.js owns accounts, OTPs, passwords, sessions, and portal authorization.
 
 ## Features
 

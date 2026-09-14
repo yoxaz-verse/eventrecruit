@@ -59,7 +59,7 @@ export function DashboardShell({
             <span className="brand-core" />
           </span>
           <span className="brand-wordmark font-black tracking-tight text-base">
-            expo<span className="text-[var(--accent)]">sphere</span>
+            expo<span className="text-[var(--accent)]">rb</span>
           </span>
         </Link>
 
@@ -84,7 +84,7 @@ export function DashboardShell({
                 <span className="brand-core" />
               </span>
               <span className="brand-wordmark font-black tracking-tight">
-                expo<span className="text-[var(--accent)]">sphere</span>
+                expo<span className="text-[var(--accent)]">rb</span>
               </span>
             </Link>
 

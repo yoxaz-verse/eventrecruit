@@ -8,14 +8,14 @@ export async function TopNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--line)]/70 bg-white/85 backdrop-blur-md transition-all">
       <div className="page flex min-h-20 flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-0">
-        <Link aria-label="expo sphere home" className="brand-link group" href="/">
+        <Link aria-label="exporb home" className="brand-link group" href="/">
           <span className="brand-mark shadow-sm transition-transform group-hover:scale-105" aria-hidden="true">
             <span className="brand-orbit brand-orbit-one" />
             <span className="brand-orbit brand-orbit-two" />
             <span className="brand-core" />
           </span>
           <span className="brand-wordmark font-black tracking-tight">
-            expo<span className="text-[var(--accent)]">sphere</span>
+            expo<span className="text-[var(--accent)]">rb</span>
           </span>
         </Link>
 

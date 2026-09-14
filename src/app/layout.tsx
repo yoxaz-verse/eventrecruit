@@ -10,7 +10,7 @@ const geist = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "expo sphere",
+  title: "exporb",
   description: "Event services and expo recruitment marketplace for exhibitors, agencies, and verified event talent.",
 };
 

@@ -11,10 +11,10 @@ insert into auth.users (
   updated_at
 )
 values
-  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@expo-sphere.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Admin User","role":"admin"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'agency@expo-sphere.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Prime Booth Talent","role":"agency"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'exhibitor@expo-sphere.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Nexa Exhibitions Manager","role":"exhibitor"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'talent@expo-sphere.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Aisha Rahman","role":"talent"}', now(), now())
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@exporb.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Admin User","role":"admin"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'agency@exporb.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Prime Booth Talent","role":"agency"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'exhibitor@exporb.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Nexa Exhibitions Manager","role":"exhibitor"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'talent@exporb.local', crypt('password123', gen_salt('bf')), now(), '{"full_name":"Aisha Rahman","role":"talent"}', now(), now())
 on conflict (id) do nothing;
 
 insert into public.profiles (id, full_name, role, verification_status, city)
@@ -27,9 +27,9 @@ on conflict (id) do nothing;
 
 insert into public.contact_details (profile_id, phone, whatsapp, alternate_email, emergency_contact)
 values
-  ('00000000-0000-0000-0000-000000000002', '+971500000002', '+971500000002', 'agency-ops@expo-sphere.local', null),
-  ('00000000-0000-0000-0000-000000000003', '+971500000003', '+971500000003', 'exhibitor-ops@expo-sphere.local', null),
-  ('00000000-0000-0000-0000-000000000004', '+971500000004', '+971500000004', 'aisha@expo-sphere.local', '+971599999999')
+  ('00000000-0000-0000-0000-000000000002', '+971500000002', '+971500000002', 'agency-ops@exporb.local', null),
+  ('00000000-0000-0000-0000-000000000003', '+971500000003', '+971500000003', 'exhibitor-ops@exporb.local', null),
+  ('00000000-0000-0000-0000-000000000004', '+971500000004', '+971500000004', 'aisha@exporb.local', '+971599999999')
 on conflict (profile_id) do nothing;
 
 insert into public.agencies (id, owner_id, name, commission_type, commission_value, verification_status)

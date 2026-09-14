@@ -34,7 +34,7 @@ export default async function LoginPage({
       <TopNav />
       <AuthCard
         badge="Secure access"
-        title="Log in to expo sphere"
+        title="Log in to exporb"
         description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >

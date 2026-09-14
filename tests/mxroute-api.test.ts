@@ -7,7 +7,7 @@ const config: MxrouteConfig = {
   server: "example.mxrouting.net",
   username: "no-reply@example.com",
   password: "private-password",
-  from: "expo sphere <no-reply@example.com>",
+  from: "exporb <no-reply@example.com>",
 };
 
 function response(body: unknown, status = 200) {
@@ -16,8 +16,8 @@ function response(body: unknown, status = 200) {
 
 test("extracts only one valid sender matching the authenticated mailbox", async () => {
   assert.equal(senderAddress(config.from), config.username);
-  assert.equal(senderAddress('"expo sphere <no-reply@example.com>"'), config.username);
-  assert.equal(senderAddress("expo sphere no-reply@example.com"), config.username);
+  assert.equal(senderAddress('"exporb <no-reply@example.com>"'), config.username);
+  assert.equal(senderAddress("exporb no-reply@example.com"), config.username);
   assert.throws(() => senderAddress("no-reply@example.com,other@example.com"), AuthEmailStageError);
   assert.throws(() => senderAddress("no-reply@example.com\r\nBcc: other@example.com"), AuthEmailStageError);
   await assert.rejects(sendMxrouteEmail({ ...config, from: "other@example.com" }, "recipient@example.com", "123456", "signup",

@@ -96,7 +96,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: "Match verified people",
-    text: "expo sphere helps coordinate suitable talent with profile, language, skill, and reliability signals.",
+    text: "exporb helps coordinate suitable talent with profile, language, skill, and reliability signals.",
   },
   {
     icon: Handshake,
@@ -141,7 +141,7 @@ export default async function Home() {
               </h1>
 
               <p className="hero-description mt-6 max-w-2xl text-[var(--muted)] leading-relaxed text-lg">
-                expo sphere helps brands, exhibitors, agencies, and store teams find
+                exporb helps brands, exhibitors, agencies, and store teams find
                 verified people for exhibitions, retail stores, launches, roadshows,
                 pop-ups, and campaign days across 10+ Indian cities.
               </p>
@@ -246,7 +246,7 @@ export default async function Home() {
               <span className="badge">Where we help</span>
               <h2>No matter where in India your event or store activation is happening.</h2>
               <p className="mt-4 leading-8 text-[var(--muted)]">
-                expo sphere helps coordinate the right people across major Indian
+                exporb helps coordinate the right people across major Indian
                 markets, from exhibition halls and conference venues to retail stores,
                 malls, pop-ups, and local brand activations.
               </p>
@@ -258,7 +258,7 @@ export default async function Home() {
                 ))}
               </div>
             </div>
-            <div className="coverage-map panel" aria-label="India coverage map for expo sphere">
+            <div className="coverage-map panel" aria-label="India coverage map for exporb">
               <div className="map-shell">
                 <div className="map-viewport">
                   <Image
@@ -370,7 +370,7 @@ export default async function Home() {
                 </span>
                 <h2>Need people for an event, store, launch, or activation?</h2>
                 <p>
-                  Start with your role and location. expo sphere keeps the process
+                  Start with your role and location. exporb keeps the process
                   simple: find verified people, coordinate placements, and keep trust
                   records visible.
                 </p>

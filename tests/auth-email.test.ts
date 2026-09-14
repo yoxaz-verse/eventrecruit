@@ -7,9 +7,9 @@ import { atAuthEmailStage, authEmailDiagnostic, AuthEmailStageError, classifyAut
 test("builds code-only branded messages for every authentication purpose", () => {
   for (const purpose of ["signup", "login", "activation", "recovery"] as const) {
     const message = buildAuthEmail("123456", purpose);
-    assert.match(message.subject, /expo sphere/);
-    assert.match(message.text, /expo sphere/);
-    assert.match(message.html, /expo sphere/);
+    assert.match(message.subject, /exporb/);
+    assert.match(message.text, /exporb/);
+    assert.match(message.html, /exporb/);
     assert.doesNotMatch(`${message.subject}${message.text}${message.html}`, /EventRecruit/);
     assert.match(message.text, /123456/);
     assert.match(message.html, /123456/);

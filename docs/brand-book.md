@@ -1,7 +1,7 @@
-# expo sphere Brand Book
+# exporb Brand Book
 
 ## Mission
-expo sphere is an India-wide people operations platform for events, exhibitions, retail stores, launches, roadshows, pop-ups, and brand activations. The product helps businesses find and manage verified people wherever work is happening.
+exporb is an India-wide people operations platform for events, exhibitions, retail stores, launches, roadshows, pop-ups, and brand activations. The product helps businesses find and manage verified people wherever work is happening.
 
 ## Positioning
 - **Core promise:** the right people for events and retail activations across India.
