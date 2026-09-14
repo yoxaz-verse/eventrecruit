@@ -6,7 +6,7 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t border-[var(--line)] bg-[var(--ink)] text-white">
-      <div className="page py-12">
+      <div className="page py-12 pb-24 md:pb-12">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link aria-label="expo sphere home" className="brand-link inline-flex items-center gap-3" href="/">

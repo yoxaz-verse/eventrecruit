@@ -304,11 +304,11 @@ a:focus-visible {
 }
 
 .dashboard-shell {
-  background: linear-gradient(180deg, #f8faf6 0%, var(--background) 320px);
+  background: var(--background);
 }
 
 .dashboard-sidebar {
-  background: rgba(255, 254, 250, 0.92);
+  background: var(--background);
 }
 
 .dashboard-nav-link {

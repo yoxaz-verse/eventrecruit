@@ -20,12 +20,12 @@ export async function TopNav() {
         </Link>
 
         <nav className="flex flex-wrap items-center justify-start gap-2.5 sm:justify-end">
-          <Link className="button button-secondary text-sm font-semibold gap-2 border-transparent hover:border-[var(--line)]" href="/events">
-            <Calendar size={17} className="text-[var(--accent)]" aria-hidden />
+          <Link className="button button-secondary text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 border-transparent hover:border-[var(--line)]" href="/events">
+            <Calendar size={16} className="text-[var(--accent)]" aria-hidden />
             <span>Events</span>
           </Link>
-          <Link className="button button-secondary text-sm font-semibold gap-2 border-transparent hover:border-[var(--line)] hide-sm" href="/browse">
-            <Search size={17} className="text-[var(--accent)]" aria-hidden />
+          <Link className="button button-secondary text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 border-transparent hover:border-[var(--line)]" href="/browse">
+            <Search size={16} className="text-[var(--accent)]" aria-hidden />
             <span>Browse roles</span>
           </Link>
           
