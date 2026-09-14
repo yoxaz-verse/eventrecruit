@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { createClient } from '@/lib/supabase/server';
+import { EventStaffingNeeds } from '@/components/event-staffing-needs';
 export default async function EventDetails({params}:{params:Promise<{id:string}>}) {
  const {id}=await params;
  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -12,6 +13,6 @@ export default async function EventDetails({params}:{params:Promise<{id:string}>
  if(companyError) throw new Error('Unable to load company.');
  return <div className="shell public-page"><TopNav/><main className="page py-12"><Link className="button button-secondary mb-6" href="/events">Back to events</Link>
  {event.status==='cancelled'&&<p role="status" className="panel mb-6 p-5 font-bold">This event has been cancelled.</p>}
- <div className="grid gap-6 lg:grid-cols-[2fr_1fr]"><article className="panel p-8"><span className="badge">{event.city}</span><h1 className="my-4 text-4xl font-black">{event.title}</h1><p className="font-bold">{event.starts_at} – {event.ends_at}</p><p className="mt-2">{event.venue}, {event.city}</p><p className="mt-8 whitespace-pre-wrap leading-8">{event.description}</p></article><aside className="panel h-fit p-6"><span className="badge">Organized by</span><h2 className="my-4 text-2xl font-bold">{company.name}</h2><p className="whitespace-pre-wrap">{company.description}</p><p className="my-4">{company.city}</p>{company.website&&/^https?:\/\//.test(company.website)&&<a className="button button-secondary" href={company.website} target="_blank" rel="noopener noreferrer">Company website</a>}</aside></div>
+ <div className="grid gap-6 lg:grid-cols-[2fr_1fr]"><article className="panel p-8"><span className="badge">{event.city}</span><h1 className="my-4 text-4xl font-black">{event.title}</h1><p className="font-bold">{event.starts_at} – {event.ends_at}</p><p className="mt-2">{event.venue}, {event.city}</p><p className="mt-8 whitespace-pre-wrap leading-8">{event.description}</p><section className="mt-8 border-t border-[var(--line)] pt-6"><h2 className="mb-4 text-2xl font-bold">Talent positions needed</h2><EventStaffingNeeds needs={event.staffing_needs}/></section></article><aside className="panel h-fit p-6"><span className="badge">Organized by</span><h2 className="my-4 text-2xl font-bold">{company.name}</h2><p className="whitespace-pre-wrap">{company.description}</p><p className="my-4">{company.city}</p>{company.website&&/^https?:\/\//.test(company.website)&&<a className="button button-secondary" href={company.website} target="_blank" rel="noopener noreferrer">Company website</a>}</aside></div>
  </main></div>;
 }

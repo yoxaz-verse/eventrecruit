@@ -1,5 +1,9 @@
 export type Company = { id: string; name: string; city: string; description: string; website: string };
-export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; starts_at: string | null; ends_at: string | null; status: 'draft' | 'published' | 'cancelled'; published_at: string | null };
+export type StaffingNeed = { title: string; people_needed: number | null };
+export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; starts_at: string | null; ends_at: string | null; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[] };
+export function validStaffingNeeds(needs: StaffingNeed[]) {
+ return needs.length > 0 && needs.length <= 30 && needs.every(need => need.title.trim().length > 0 && need.title.length <= 160 && Number.isInteger(need.people_needed) && (need.people_needed ?? 0) > 0 && (need.people_needed ?? 0) <= 100000);
+}
 export function indiaToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
 export function eventPhase(event: OrganizerEvent, today = indiaToday()) {
  if (event.status !== 'published') return event.status;

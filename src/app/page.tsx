@@ -17,6 +17,9 @@ import {
 import { TopNav } from "@/components/top-nav";
 import { openRoles } from "@/lib/mock-data";
 import { getCurrentAccount } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { indiaToday, type OrganizerEvent } from "@/lib/organizer";
+import { EventStaffingNeeds } from "@/components/event-staffing-needs";
 
 const services = [
   {
@@ -110,6 +113,9 @@ const landingMetrics = [
 
 export default async function Home() {
   const signedIn = Boolean(await getCurrentAccount());
+  const db = await createClient();
+  const upcomingResult = db ? await db.from('organizer_events').select('id,title,city,starts_at,ends_at,staffing_needs').eq('status','published').gte('ends_at',indiaToday()).order('starts_at').limit(3) : null;
+  const upcomingEvents = (upcomingResult?.data ?? []) as Pick<OrganizerEvent,'id'|'title'|'city'|'starts_at'|'ends_at'|'staffing_needs'>[];
   return (
     <div className="shell">
       <TopNav />
@@ -151,11 +157,12 @@ export default async function Home() {
             </div>
             <div className="hero-visual">
               <Image
-                src="/brand/expo-sphere-hero.png"
-                width={1728}
-                height={921}
+                src="/brand/expo-sphere-event-team.webp"
+                width={1672}
+                height={941}
                 priority
-                alt="Verified event staff assisting exhibitors at a trade show booth"
+                sizes="(max-width: 1023px) 100vw, 55vw"
+                alt="Indian event staff welcoming visitors and helping with registration at an exhibition booth"
               />
               <div className="hero-brief panel">
                 <p className="text-sm font-bold text-[var(--muted)]">Live India demand</p>
@@ -173,6 +180,14 @@ export default async function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="page py-14" aria-labelledby="upcoming-events-heading">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div className="section-heading"><span className="badge">Find your next opportunity</span><h2 id="upcoming-events-heading">Upcoming events</h2><p className="mt-4 text-[var(--muted)]">See who is hiring and how many people each position needs.</p></div>
+            <Link className="button button-secondary" href="/events">View all events <ArrowRight size={18} aria-hidden /></Link>
+          </div>
+          {!db || upcomingResult?.error ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(event=><article className="panel event-card gap-4 p-6" key={event.id}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>)}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
         </section>
 
         <section className="page py-14">
