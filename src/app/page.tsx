@@ -115,13 +115,13 @@ export default async function Home() {
       <TopNav />
       <main>
         <section className="hero-band border-b border-[var(--line)]">
-          <div className="page grid min-h-[650px] items-center gap-10 py-12 lg:grid-cols-[.92fr_1.08fr]">
+          <div className="page hero-layout grid items-center gap-12 py-16 lg:grid-cols-[.9fr_1.1fr] lg:py-24">
             <div className="max-w-2xl">
               <span className="badge badge-accent">India-wide people operations</span>
-              <h1 className="mt-6 text-5xl font-black leading-tight md:text-7xl">
-                People for events and retail activations across India.
+              <h1 className="hero-title mt-6">
+                The right people make <em>every moment</em> matter.
               </h1>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-[var(--muted)]">
+              <p className="hero-description mt-6 max-w-2xl text-[var(--muted)]">
                 expo sphere helps brands, exhibitors, agencies, and store teams find
                 verified people for exhibitions, retail stores, launches, roadshows,
                 pop-ups, and campaign days. Wherever the work is happening in India,
@@ -135,7 +135,7 @@ export default async function Home() {
                   {signedIn ? "Browse roles" : "Join as talent"}
                 </Link>
               </div>
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <div className="hero-signals mt-10 grid gap-3 sm:grid-cols-2">
                 {[
                   "Event staff, promoters, hosts, and brand reps",
                   "Coverage for events, stores, malls, and launches",
@@ -180,13 +180,13 @@ export default async function Home() {
             <span className="badge">What we do</span>
             <h2>We take care of the people behind your event, store, or campaign.</h2>
           </div>
-          <div className="grid-auto mt-8">
+          <div className="services-grid mt-10">
             {services.map((item) => {
               const Icon = item.icon;
               return (
-                <article className="panel p-5" key={item.title}>
-                  <Icon className="text-[var(--accent)]" size={28} aria-hidden />
-                  <h3 className="mt-4 text-xl font-black">{item.title}</h3>
+                <article className="service-card" key={item.title}>
+                  <span className="service-icon"><Icon size={28} aria-hidden /></span>
+                  <h3 className="mt-6 text-xl font-black">{item.title}</h3>
                   <p className="mt-2 leading-7 text-[var(--muted)]">{item.text}</p>
                 </article>
               );
@@ -263,11 +263,11 @@ export default async function Home() {
             <span className="badge">Who we serve</span>
             <h2>Built for the teams responsible for getting people on the ground.</h2>
           </div>
-          <div className="grid-auto mt-8">
+          <div className="audience-grid mt-10">
             {audiences.map((item) => {
               const Icon = item.icon;
               return (
-                <article className="panel p-5" key={item.title}>
+                <article className="audience-card" key={item.title}>
                   <Icon className="text-[var(--accent)]" size={28} aria-hidden />
                   <h3 className="mt-4 text-xl font-black">{item.title}</h3>
                   <p className="mt-2 leading-7 text-[var(--muted)]">{item.text}</p>
@@ -303,9 +303,9 @@ export default async function Home() {
             <span className="badge">Marketplace signals</span>
             <h2>Real operating context for teams that need people quickly.</h2>
           </div>
-          <div className="grid-auto mt-8">
+          <div className="metrics-strip mt-10">
             {landingMetrics.map((metric) => (
-              <div className="panel p-5" key={metric.label}>
+              <div className="metric-item" key={metric.label}>
                 <p className="text-sm font-bold text-[var(--muted)]">{metric.label}</p>
                 <strong className="mt-2 block text-4xl">{metric.value}</strong>
                 <p className="mt-2 text-sm text-[var(--muted)]">{metric.detail}</p>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, LayoutDashboard, LogIn, UserPlus } from "lucide-react";
+import { LayoutDashboard, LogIn, UserPlus } from "lucide-react";
 import { getCurrentAccount } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 
@@ -7,12 +7,14 @@ export async function TopNav() {
   const signedIn = Boolean(await getCurrentAccount());
   return (
     <header className="site-header border-b border-[var(--line)]">
-      <div className="page flex min-h-16 flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-0">
-        <Link className="brand-link" href="/">
-          <span className="brand-mark">
-            <CalendarDays size={20} aria-hidden />
+      <div className="page flex min-h-20 flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-0">
+        <Link aria-label="expo sphere home" className="brand-link" href="/">
+          <span className="brand-mark" aria-hidden="true">
+            <span className="brand-orbit brand-orbit-one" />
+            <span className="brand-orbit brand-orbit-two" />
+            <span className="brand-core" />
           </span>
-          <span>expo sphere</span>
+          <span className="brand-wordmark">expo<span>sphere</span></span>
         </Link>
         <nav className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
           <Link className="button button-secondary" href="/events">Events</Link>

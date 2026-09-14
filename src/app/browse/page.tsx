@@ -45,7 +45,7 @@ export default async function BrowsePage({
   );
 
   return (
-    <div className="shell">
+    <div className="shell public-page">
       <TopNav />
       <main className="page py-10">
         <div className="page-kicker">
@@ -55,7 +55,7 @@ export default async function BrowsePage({
         </div>
         {user && !result?.error && !profileResult?.error ? (
           <>
-            <form className="my-6 flex flex-wrap gap-3" action="/browse">
+            <form className="panel filter-panel my-8 flex flex-wrap gap-3 p-5" action="/browse">
               <label className="label">Search roles
                 <input className="input" name="q" defaultValue={q} maxLength={160} />
               </label>
