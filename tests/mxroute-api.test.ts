@@ -16,11 +16,24 @@ function response(body: unknown, status = 200) {
 
 test("extracts only one valid sender matching the authenticated mailbox", async () => {
   assert.equal(senderAddress(config.from), config.username);
+  assert.equal(senderAddress('"expo sphere <no-reply@example.com>"'), config.username);
   assert.equal(senderAddress("expo sphere no-reply@example.com"), config.username);
   assert.throws(() => senderAddress("no-reply@example.com,other@example.com"), AuthEmailStageError);
   assert.throws(() => senderAddress("no-reply@example.com\r\nBcc: other@example.com"), AuthEmailStageError);
   await assert.rejects(sendMxrouteEmail({ ...config, from: "other@example.com" }, "recipient@example.com", "123456", "signup",
-    (async () => { throw new Error("fetch should not happen"); }) as typeof fetch), { category: "mxroute_api_configuration" });
+    (async () => { throw new Error("fetch should not happen"); }) as typeof fetch), { category: "mxroute_api_sender_mismatch" });
+});
+
+test("identifies missing production configuration without exposing values", async () => {
+  const cases: Array<[Partial<MxrouteConfig>, string]> = [
+    [{ server: "" }, "mxroute_api_server_missing"],
+    [{ username: "" }, "mxroute_api_username_missing"],
+    [{ password: "" }, "mxroute_api_password_missing"],
+  ];
+  for (const [overrides, category] of cases) {
+    await assert.rejects(sendMxrouteEmail({ ...config, ...overrides }, "recipient@example.com", "123456", "login",
+      (async () => { throw new Error("fetch should not happen"); }) as typeof fetch), { category });
+  }
 });
 
 test("sends one HTTPS request with a bare sender and requires explicit provider success", async () => {

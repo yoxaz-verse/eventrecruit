@@ -12,11 +12,16 @@ export type MxrouteConfig = {
 };
 
 export function senderAddress(from: string) {
-  if (/[\r\n]/.test(from)) throw new AuthEmailStageError("smtp_delivery", "mxroute_api_configuration");
-  const parsed = addressparser(from);
+  if (/[\r\n]/.test(from)) throw new AuthEmailStageError("smtp_delivery", "mxroute_api_sender_invalid");
+  const trimmed = from.trim();
+  // Vercel stores quotes literally when a value is pasted from a .env file.
+  const normalized = trimmed.startsWith('"') && trimmed.endsWith('"')
+    ? trimmed.slice(1, -1).trim()
+    : trimmed;
+  const parsed = addressparser(normalized);
   const address = parsed[0]?.address;
   if (parsed.length !== 1 || !address || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(address)) {
-    throw new AuthEmailStageError("smtp_delivery", "mxroute_api_configuration");
+    throw new AuthEmailStageError("smtp_delivery", "mxroute_api_sender_invalid");
   }
   return address;
 }
@@ -37,9 +42,12 @@ export async function sendMxrouteEmail(
   purpose: AuthEmailPurpose,
   fetcher: typeof fetch = fetch,
 ) {
+  if (!config.server) throw new AuthEmailStageError("smtp_delivery", "mxroute_api_server_missing");
+  if (!config.username) throw new AuthEmailStageError("smtp_delivery", "mxroute_api_username_missing");
+  if (!config.password) throw new AuthEmailStageError("smtp_delivery", "mxroute_api_password_missing");
   const from = senderAddress(config.from);
-  if (!config.server || !config.username || !config.password || from.toLowerCase() !== config.username.toLowerCase()) {
-    throw new AuthEmailStageError("smtp_delivery", "mxroute_api_configuration");
+  if (from.toLowerCase() !== config.username.toLowerCase()) {
+    throw new AuthEmailStageError("smtp_delivery", "mxroute_api_sender_mismatch");
   }
   const message = buildAuthEmail(code, purpose);
   const controller = new AbortController();
