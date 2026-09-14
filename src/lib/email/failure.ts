@@ -1,4 +1,4 @@
-export type AuthEmailStage = "configuration" | "smtp_delivery" | "unexpected" | "account_lookup" | "otp_generate" | "otp_store" | "otp_verify";
+export type AuthEmailStage = "configuration" | "rate_limit" | "smtp_delivery" | "unexpected" | "account_lookup" | "otp_generate" | "otp_store" | "otp_verify";
 
 export class AuthEmailStageError extends Error {
   constructor(public readonly stage: AuthEmailStage, public readonly category: string) {
@@ -17,6 +17,7 @@ export function classifyAuthEmailFailure(stage: AuthEmailStage, error: unknown):
   if (stage === "configuration") return new AuthEmailStageError(stage, "app_url_invalid");
   if (stage === "unexpected") return new AuthEmailStageError(stage, "unexpected_error");
   if (stage === "otp_generate") return new AuthEmailStageError(stage, "otp_generation_failed");
+  if (stage === "rate_limit") return new AuthEmailStageError(stage, "database_error");
   if (stage === "account_lookup") return new AuthEmailStageError(stage, "database_error");
   if (stage === "otp_store" || stage === "otp_verify") return new AuthEmailStageError(stage, "database_error");
   return new AuthEmailStageError(stage, code === "OTP_INVALID_FORMAT" ? "otp_invalid_format" : "mxroute_api_unexpected");

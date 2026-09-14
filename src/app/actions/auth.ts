@@ -17,6 +17,7 @@ type Purpose = "signup" | "activation" | "login" | "recovery";
 const roles: UserRole[] = ["organizer", "agency", "exhibitor", "talent"];
 const genericMessage = "If the account is eligible, check your inbox and spam folder for a code.";
 const sendFailed = "We could not send a verification code right now. Please try again in a minute.";
+const authUnavailable = "Authentication is temporarily unavailable. Please try again later.";
 const codeFailed = "The code is invalid or has expired. Request a new code and try again.";
 function db() { const client = createAdminClient(); if (!client) throw new Error("Database is not configured."); return client; }
 function emailOf(data: FormData) { return String(data.get("email") ?? "").trim().toLowerCase(); }
@@ -28,7 +29,7 @@ function log(event: string, error: unknown) {
 }
 async function rateLimit(email: string) {
   try { const result = await consumeAuthEmailLimit(email); return result.allowed ? null : `Please wait ${result.retry_after_seconds} seconds before requesting another code.`; }
-  catch (error) { log("auth_rate_limit_failed", error); return sendFailed; }
+  catch (error) { log("auth_rate_limit_failed", error); return authUnavailable; }
 }
 async function account(email: string) {
   const { data, error } = await db().from("app_accounts").select("id,email,password_hash,email_verified_at").eq("email",email).maybeSingle();
@@ -88,7 +89,7 @@ export async function signInWithPassword(_state:AuthFormState,data:FormData):Pro
   const email=emailOf(data), password=String(data.get("password")??"");
   if(!isEmail(email))return {error:"Enter a valid email address."};
   if(!password)return {error:"Enter your password."};
-  const limited=await rateLimit(email); if(limited)return {error:"Too many attempts. Please try again later."};
+  const limited=await rateLimit(email); if(limited)return {error:limited};
   try {
     const found=await account(email);
     if(!found||!found.email_verified_at||!await verifyPassword(password,found.password_hash))return {error:"Invalid email or password."};
