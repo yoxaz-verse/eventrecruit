@@ -4,7 +4,7 @@ import ts from 'typescript';
 import fs from 'node:fs';
 const moduleOutput = { exports: {} };
 new Function('exports', ts.transpileModule(fs.readFileSync('src/lib/organizer.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(moduleOutput.exports);
-const { eventPhase, validDate, indiaToday, validStaffingNeeds } = moduleOutput.exports;
+const { eventPhase, validDate, indiaToday, validStaffingNeeds, validBookingSlot } = moduleOutput.exports;
 test('event date boundaries include start and end days', () => {
  const e = { status:'published', starts_at:'2026-09-06', ends_at:'2026-09-08' };
  assert.equal(eventPhase(e,'2026-09-05'),'upcoming');
@@ -13,6 +13,11 @@ test('event date boundaries include start and end days', () => {
  assert.equal(eventPhase(e,'2026-09-09'),'past');
  assert.equal(eventPhase({...e,status:'draft'},'2026-09-09'),'draft');
  assert.equal(eventPhase({...e,status:'cancelled'},'2026-09-05'),'cancelled');
+});
+test('booking slots require a valid India-time event date, increasing times, and capacity', () => {
+ const slot={slot_date:'2026-10-05',start_time:'09:00',end_time:'10:00',capacity:25};
+ assert.equal(validBookingSlot(slot,'2026-10-01','2026-10-10'),true);
+ for (const changed of [{slot_date:'2026-09-30'},{start_time:'10:00'},{end_time:'08:00'},{capacity:0},{capacity:1.5},{capacity:100001}]) assert.equal(validBookingSlot({...slot,...changed},'2026-10-01','2026-10-10'),false);
 });
 test('dates reject impossible calendar values', () => {
  for(const date of ['2026-02-29','2026-02-30','2026-13-01','bad','2026-9-6','']) assert.equal(validDate(date),false,date);

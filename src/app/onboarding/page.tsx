@@ -2,7 +2,6 @@ import { AuthActionForm } from "@/components/auth/auth-action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { getCurrentProfile } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { completeOnboarding } from "@/app/actions/onboarding";
 import { TopNav } from "@/components/top-nav";
 import { nextAccountPath } from "@/lib/onboarding";
@@ -64,11 +63,6 @@ export default async function OnboardingPage() {
             </div> : null}
             <SubmitButton className="button button-primary" pendingText="Saving profile…">Complete onboarding</SubmitButton>
           </AuthActionForm>
-          <div className="mt-4 flex gap-3">
-            <Link className="button button-secondary" href="/browse">
-              View roles
-            </Link>
-          </div>
         </section>
       </main>
     </div>

@@ -1,11 +1,11 @@
 import { WorkflowActionForm } from "@/components/workflow-action-form";
 import { SubmitButton } from "@/components/submit-button";
-import { MapPin, Star, Users } from "lucide-react";
+import { CalendarDays, MapPin, Star, Users } from "lucide-react";
 import { applyForRole } from "@/app/actions/workflow";
 import type { EventRole } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 
-export function RoleCard({ role, apply = false, rateUnit = "day" }: { role: EventRole; apply?: boolean; rateUnit?: "day" | "hour" }) {
+export function RoleCard({ role, apply = false, rateUnit = "day", showDate = false }: { role: EventRole; apply?: boolean; rateUnit?: "day" | "hour"; showDate?: boolean }) {
   return (
     <article className="panel role-card grid gap-4 p-5">
       <div className="flex items-start justify-between gap-4">
@@ -17,6 +17,7 @@ export function RoleCard({ role, apply = false, rateUnit = "day" }: { role: Even
         <StatusBadge status={role.status} />
       </div>
       <div className="grid gap-2 text-sm text-[var(--muted)]">
+        {showDate ? <span className="flex items-center gap-2"><CalendarDays size={16} aria-hidden /> {role.date}</span> : null}
         <span className="flex items-center gap-2">
           <MapPin size={16} aria-hidden /> {role.location}
         </span>

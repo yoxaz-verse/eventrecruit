@@ -7,6 +7,8 @@ import { getCurrentAccount, getCurrentProfile } from "@/lib/auth";
 import { canApply, canModerate, ownsStaffingEvent } from "@/lib/app-auth/authorization";
 import type { ApplicationStatus, UserRole } from "@/lib/types";
 import { validDate } from "@/lib/organizer";
+import { todayInIndia } from "@/lib/exhibitor-listings";
+import { isSelectableCatalogEvent, parseCatalogSelection } from "@/lib/event-selection";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -50,6 +52,7 @@ export type WorkflowFormState = { error: string; success: string };
 export async function createStaffingRole(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
   const source = formData.get("source") === "agency" ? "agency" : "exhibitor";
   const eventTitle = String(formData.get("event_title") ?? "").trim();
+  const selectedEvent = String(formData.get("selected_event") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const venue = String(formData.get("venue") ?? "").trim();
   const city = String(formData.get("city") ?? "").trim();
@@ -59,8 +62,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const shiftEnd = String(formData.get("shift_end") ?? "");
   const headcount = Number(formData.get("headcount"));
   const hourlyRate = Number(formData.get("hourly_rate"));
-  if (!eventTitle || !title || !venue || !city || eventTitle.length > 160 || title.length > 160 ||
-    !validDate(startsAt) || !validDate(endsAt) || endsAt < startsAt ||
+  if ((source === "agency" && (!eventTitle || !venue || !city || eventTitle.length > 160 || !validDate(startsAt) || !validDate(endsAt) || endsAt < startsAt)) ||
+    !title || title.length > 160 ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftStart) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftEnd) ||
     !Number.isInteger(headcount) || headcount < 1 || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
     return { error: "Check the event dates, shift times, headcount, and hourly rate before publishing.", success: "" };
@@ -94,22 +97,41 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     return { error: "Complete your business profile before posting a staffing request.", success: "" };
   }
 
-  const { data: event, error: eventError } = await supabase
-    .from("events")
-    .insert({
+  let eventFields = { title: eventTitle, venue, city, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null };
+  if (source === "exhibitor") {
+    const selection = parseCatalogSelection(selectedEvent);
+    if (!selection) return { error: "Choose an approved event from the list.", success: "" };
+    const { kind, id } = selection;
+    const result = kind === "organizer"
+      ? await supabase.from("organizer_events").select("id,title,venue,city,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
+      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,starts_at,ends_at,status").eq("id", id).eq("status", "approved").maybeSingle();
+    const selected = result.data;
+    if (result.error || !selected || !isSelectableCatalogEvent(selected, kind, todayInIndia())) return { error: "This event is not available for requests. Choose another event.", success: "" };
+    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null };
+  }
+
+  const catalogColumn = eventFields.organizer_event_id ? "organizer_event_id" : "exhibitor_event_submission_id";
+  const catalogId = eventFields.organizer_event_id ?? eventFields.exhibitor_event_submission_id;
+  const findExisting = async () => {
+    if (source !== "exhibitor" || !catalogId || !exhibitor?.id) return null;
+    const { data } = await supabase.from("events").select("id").eq("exhibitor_id", exhibitor.id).eq(catalogColumn, catalogId).maybeSingle();
+    return data;
+  };
+  let event = await findExisting();
+  let createdEvent = false;
+  if (!event) {
+    const inserted = await supabase.from("events").insert({
       exhibitor_id: exhibitor?.id ?? null,
       agency_id: profile?.role === "agency" ? agency?.id ?? null : null,
-      title: eventTitle,
-      venue,
-      city,
-      starts_at: startsAt,
-      ends_at: endsAt,
+      ...eventFields,
       created_by: user.id,
-    })
-    .select("id")
-    .single();
-
-  if (eventError) {
+    }).select("id").single();
+    event = inserted.data;
+    createdEvent = Boolean(event);
+    // The unique catalog index protects simultaneous requests for the same event.
+    if (inserted.error && source === "exhibitor" && inserted.error.code === "23505") event = await findExisting();
+  }
+  if (!event) {
     console.error(JSON.stringify({ event: "staffing_request_failed", stage: "event_insert", category: "database_error" }));
     return { error: "Unable to create the event. Check the details and try again.", success: "" };
   }
@@ -130,11 +152,14 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
 
   if (error) {
     console.error(JSON.stringify({ event: "staffing_request_failed", stage: "role_insert", category: "database_error" }));
-    const { error: cleanupError } = await supabase.from("events").delete().eq("id", event.id);
-    if (cleanupError) console.error(JSON.stringify({ event: "staffing_request_cleanup_failed", category: "database_error" }));
+    if (createdEvent && source === "agency") {
+      const { error: cleanupError } = await supabase.from("events").delete().eq("id", event.id);
+      if (cleanupError) console.error(JSON.stringify({ event: "staffing_request_cleanup_failed", category: "database_error" }));
+    }
     return { error: "Unable to publish the staffing request. Check the details and try again.", success: "" };
   }
   revalidatePath("/dashboard/exhibitor");
+  revalidatePath("/dashboard/exhibitor/requests");
   revalidatePath("/dashboard/agency");
   return { error: "", success: "Staffing request published." };
 }
@@ -184,6 +209,7 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
 
   if (error || !updated) return { error: "Unable to update this application. Please retry.", success: "" };
   revalidatePath("/dashboard/exhibitor");
+  revalidatePath("/dashboard/exhibitor/applicants");
   revalidatePath("/dashboard/agency");
   return { error: "", success: "Application updated." };
 }

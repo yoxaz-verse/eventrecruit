@@ -1,22 +1,24 @@
 import { SubmitButton } from "@/components/submit-button";
 import Link from "next/link";
-import { BriefcaseBusiness, Building2, Sparkles, ShieldCheck, Users } from "lucide-react";
+import { BriefcaseBusiness, Building2, Sparkles, ShieldCheck, Users, CalendarDays, ClipboardList, UserCheck, Star } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import type { UserRole } from "@/lib/types";
 
-const nav = [
-  { href: "/dashboard/organizer", label: "Event Organizer", icon: Building2 },
-  { href: "/dashboard/admin", label: "Admin", icon: ShieldCheck },
-  { href: "/dashboard/agency", label: "Agency", icon: Users },
-  { href: "/dashboard/exhibitor", label: "Exhibitor", icon: Building2 },
-  { href: "/dashboard/talent", label: "Event Talent", icon: Sparkles },
-];
+const nav = {
+  organizer: [{ href: "/dashboard/organizer", label: "Overview", icon: Building2 }, { href: "/dashboard/organizer/events/new", label: "Create event", icon: CalendarDays }, { href: "/dashboard/organizer/company", label: "Company", icon: Building2 }],
+  admin: [{ href: "/dashboard/admin", label: "Overview", icon: ShieldCheck }, { href: "/dashboard/admin/events", label: "Event reviews", icon: CalendarDays }],
+  agency: [{ href: "/dashboard/agency", label: "Overview", icon: Users }],
+  exhibitor: [{ href: "/dashboard/exhibitor", label: "Overview", icon: Building2 }, { href: "/dashboard/exhibitor/events", label: "Events", icon: CalendarDays }, { href: "/dashboard/exhibitor/requests", label: "Requests", icon: ClipboardList }, { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck }, { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star }],
+  talent: [{ href: "/dashboard/talent", label: "Overview", icon: Sparkles }],
+};
 
 export function DashboardShell({
   active,
+  current,
   children,
 }: {
   active: UserRole;
+  current?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -29,9 +31,9 @@ export function DashboardShell({
           <span>expo sphere</span>
         </Link>
         <nav className="grid gap-2">
-          {nav.map((item) => {
+          {nav[active].map((item) => {
             const Icon = item.icon;
-            const isActive = item.href.endsWith(active);
+            const isActive = item.href === (current ?? `/dashboard/${active}`);
             return (
               <Link
                 key={item.href}

@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentAccount } from '@/lib/auth';
-import { validDate, validStaffingNeeds, type StaffingNeed } from '@/lib/organizer';
+import { validBookingSlot, validDate, validStaffingNeeds, type BookingSlot, type StaffingNeed } from '@/lib/organizer';
 export type FormState = { error: string };
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
 async function session() {
@@ -42,6 +42,13 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  const status = value(data,'status');
  if (!['draft','published','cancelled'].includes(status)) return {error:'Choose a valid event status.'};
  const title=value(data,'title'), description=value(data,'description'), venue=value(data,'venue'), city=value(data,'city'), start=value(data,'starts_at'), end=value(data,'ends_at');
+ const bookingUrl=value(data,'booking_url');
+ if (bookingUrl) { try { if (new URL(bookingUrl).protocol !== 'https:') return {error:'Booking link must use HTTPS.'}; } catch { return {error:'Enter a valid booking URL.'}; } }
+ const slotIds=data.getAll('slot_id').map(String), slotDates=data.getAll('slot_date').map(String), slotStarts=data.getAll('slot_start').map(String), slotEnds=data.getAll('slot_end').map(String), slotCapacities=data.getAll('slot_capacity').map(String);
+ if ([slotDates,slotStarts,slotEnds,slotCapacities].some(items=>items.length!==slotIds.length) || slotIds.length>100) return {error:'Add no more than 100 complete slots.'};
+ const slots:BookingSlot[]=slotIds.map((slotId,index)=>({id:slotId||undefined,slot_date:slotDates[index],start_time:slotStarts[index],end_time:slotEnds[index],capacity:Number(slotCapacities[index])}));
+ if (slots.some(slot=>!validBookingSlot(slot,start,end))) return {error:'Slots need a valid date within the event, start and end times, and a capacity from 1 to 100,000.'};
+ if (new Set(slots.map(slot=>`${slot.slot_date}/${slot.start_time}/${slot.end_time}`)).size!==slots.length) return {error:'Duplicate time slots are not allowed.'};
  const titles=data.getAll('position_title').map(item=>String(item).trim());
  const counts=data.getAll('people_needed').map(item=>String(item).trim());
  if (titles.length!==counts.length || titles.length>30) return {error:'Add no more than 30 talent positions.'};
@@ -50,12 +57,19 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  if (!title || title.length>160 || description.length>10000 || venue.length>200 || city.length>120) return {error:'Enter a title and keep details within the displayed limits.'};
  if ((start && !validDate(start)) || (end && !validDate(end)) || (start && end && end<start)) return {error:'Enter valid dates with the end on or after the start.'};
  if (status==='published' && (!description || !venue || !city || !start || !end)) return {error:'Complete description, venue, city, and both dates before publishing.'};
- if (status==='published' && !validStaffingNeeds(staffingNeeds)) return {error:'Add at least one complete talent position with a positive number of people before publishing.'};
- const payload={company_id:company.id,title,description,venue,city,starts_at:start||null,ends_at:end||null,status,staffing_needs:staffingNeeds};
- const query = id ? db.from('organizer_events').update(payload).eq('id',id).eq('company_id',company.id) : db.from('organizer_events').insert(payload);
- const {data:saved,error}=await query.select('id').single();
- if (error || !saved) return {error:'Unable to save this event. Check access and try again.'};
- eventId=saved.id;
+ const completeNeeds=staffingNeeds.filter(need=>need.title || need.people_needed);
+ if (completeNeeds.length && !validStaffingNeeds(completeNeeds)) return {error:'Complete or remove each talent position.'};
+ if (id) {
+   const {data:existing,error:slotError}=await db.from('event_booking_slots').select('id,booked_count,capacity,slot_date,start_time,end_time').eq('event_id',id);
+   if (slotError) return {error:'Unable to check existing reservations.'};
+   const requestedIds=new Set(slots.map(slot=>slot.id).filter(Boolean));
+   if (slots.some(slot=>slot.id && !existing?.some(old=>old.id===slot.id))) return {error:'Invalid slot.'};
+   if (existing?.some(old=>old.booked_count>0 && (slots.some(slot=>slot.id===old.id && (slot.slot_date!==old.slot_date || slot.start_time!==old.start_time.slice(0,5) || slot.end_time!==old.end_time.slice(0,5) || slot.capacity<old.booked_count)) || (requestedIds.has(old.id) && (old.slot_date<start || old.slot_date>end))))) return {error:'Booked slots cannot be rescheduled or moved outside event dates, and capacity cannot fall below reservations.'};
+ }
+ const payload={title,description,venue,city,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl};
+ const {data:savedId,error}=await db.rpc('save_organizer_event_with_slots',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots});
+ if (error || !savedId) return {error:'Unable to save event and slots. Check for conflicting reservations and retry.'};
+ eventId=savedId;
  } catch (error) { return {error:error instanceof Error ? error.message : 'Unable to save. Please retry.'}; }
  revalidatePath('/dashboard/organizer'); revalidatePath(`/dashboard/organizer/events/${eventId}`); revalidatePath('/events','layout'); revalidatePath('/');
  redirect('/dashboard/organizer?message=Event+saved');
