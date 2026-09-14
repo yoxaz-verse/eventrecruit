@@ -12,10 +12,11 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent)]">{role.eventTitle}</span>
           <h3 className="mt-1 text-xl font-black tracking-tight text-[var(--foreground)]">{role.role}</h3>
-          <p className="mt-0.5 text-xs font-medium text-[var(--muted)]">{role.company}</p>
+          {role.company ? <p className="mt-0.5 text-xs font-medium text-[var(--muted)]">{role.company}</p> : null}
         </div>
         <StatusBadge status={role.status} />
       </div>
+      {role.description ? <p className="text-sm text-[var(--muted)] whitespace-pre-wrap">{role.description}</p> : null}
 
       <div className="grid gap-2 text-xs font-medium text-[var(--muted)]">
         {showDate ? (
@@ -70,4 +71,3 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
     </article>
   );
 }
-

@@ -21,6 +21,7 @@ const mainNav = {
   exhibitor: [
     { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
     { href: "/dashboard/exhibitor/events", label: "My Events", icon: CalendarDays },
+    { href: "/dashboard/exhibitor/space-inquiries", label: "Space Inquiries", icon: ClipboardList },
     { href: "/dashboard/exhibitor/requests", label: "Staff Requests", icon: ClipboardList },
     { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck },
     { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star },
@@ -171,5 +172,4 @@ export function DashboardShell({
     </div>
   );
 }
-
 

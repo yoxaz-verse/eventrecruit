@@ -1,90 +1,37 @@
-import { Languages, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { CategoryScoreBars } from "@/components/reputation/category-score-bars";
-import { ScoreSummaryCard } from "@/components/reputation/score-summary-card";
-import { TestimonialList } from "@/components/reputation/testimonial-list";
 import { RoleCard } from "@/components/role-card";
-import { StatusBadge } from "@/components/status-badge";
+import { SubmitButton } from "@/components/submit-button";
+import { TalentLiveRefresh } from "@/components/talent-live-refresh";
+import { TalentBrowserAlerts } from "@/components/talent-browser-alerts";
+import { updateTalentPreferences, requestBookingCancellation } from "@/app/actions/talent-jobs";
 import { requireRole } from "@/lib/auth";
-import { openRoles, reputations, testimonials } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
+import type { EventRole } from "@/lib/types";
 
 export default async function TalentDashboard() {
-  await requireRole(["talent", "admin"]);
-  const talentReputation = reputations.find((reputation) => reputation.role === "talent")!;
-  const talentTestimonials = testimonials.filter((testimonial) => testimonial.revieweeName === "Aisha Rahman");
-
-  return (
-    <DashboardShell active="talent">
-      <div className="page-kicker">
-        <span className="badge badge-accent inline-flex items-center gap-1.5">
-          <Sparkles size={14} aria-hidden />
-          <span>Event Talent panel</span>
-        </span>
-        <h1 className="mt-3 text-4xl font-black tracking-tight">Grow your event & retail profile</h1>
-        <p className="mt-2 text-[var(--muted)]">
-          Apply for recruitment needs across India, track verification status, and build your reputation score.
-        </p>
-      </div>
-
-      <section className="grid gap-6 lg:grid-cols-[.85fr_1.15fr]">
-        <div className="grid gap-6">
-          <ScoreSummaryCard reputation={talentReputation} />
-          <CategoryScoreBars reputation={talentReputation} />
-          
-          <div className="panel p-6 shadow-sm rounded-2xl bg-white border border-[var(--line)]">
-            <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] pb-4">
-              <div>
-                <h2 className="text-2xl font-black tracking-tight">Aisha Rahman</h2>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  Product Demos · Brand Hosting · Retail Activations · Event Registration
-                </p>
-              </div>
-              <StatusBadge status="verified" />
-            </div>
-
-            <div className="mt-5">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[var(--muted)] mb-2.5">Core Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {["English", "Hindi", "Lead capture", "Sampling", "Tech demos"].map((skill) => (
-                  <span className="badge badge-surface text-xs font-semibold" key={skill}>{skill}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="surface-card mt-5 flex items-center gap-3 p-3.5 rounded-xl border border-[var(--line)] bg-[var(--surface)]/70">
-              <Languages className="text-[var(--accent)] shrink-0" size={18} aria-hidden />
-              <p className="text-xs font-semibold text-[var(--foreground)]">Languages: English, Hindi, Malayalam</p>
-            </div>
-
-            <p className="mt-4 text-xs text-[var(--muted)] leading-relaxed">
-              Contact details are securely stored for admin verification only and are not shared publicly.
-            </p>
-          </div>
-
-          <TestimonialList testimonials={talentTestimonials} />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-black tracking-tight">Recommended recruitment needs</h2>
-              <p className="text-xs text-[var(--muted)] mt-1">Open positions matched to your profile skills.</p>
-            </div>
-            <Link className="button button-secondary text-xs font-bold gap-1.5" href="/browse">
-              <span>Browse all</span>
-              <ArrowRight size={14} aria-hidden />
-            </Link>
-          </div>
-
-          <div className="grid gap-4">
-            {openRoles.map((role) => (
-              <RoleCard key={role.id} role={role} />
-            ))}
-          </div>
-        </div>
-      </section>
-    </DashboardShell>
-  );
+  const talent = await requireRole(["talent"]);
+  const db = await createClient();
+  if (!db) throw new Error("Talent jobs are unavailable.");
+  const [preferences, rolesResult, applicationsResult, alertsResult] = await Promise.all([
+    db.from("talent_job_preferences").select("is_online,notify_push").eq("talent_id",talent.id).maybeSingle(),
+    db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city)").eq("status","open").order("created_at",{ascending:false}).limit(100),
+    db.from("applications").select("id,staffing_role_id,status,cancellation_requested_at").eq("talent_id",talent.id),
+    db.from("talent_job_alerts").select("id,staffing_role_id,created_at").eq("talent_id",talent.id).order("created_at",{ascending:false}).limit(20),
+  ]);
+  if (preferences.error || rolesResult.error || applicationsResult.error || alertsResult.error) throw new Error("Unable to load talent jobs. Apply the latest migration.");
+  const byRole = new Map((applicationsResult.data ?? []).map(item=>[item.staffing_role_id,item]));
+  const ownRoleIds=[...byRole.keys()].filter(id=>!(rolesResult.data??[]).some(record=>record.id===id));
+  const {data:ownRoles,error:ownRolesError}=ownRoleIds.length ? await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city)").in("id",ownRoleIds) : {data:[],error:null};
+  if (ownRolesError) throw new Error("Unable to load your bookings.");
+  const roles:EventRole[] = [...(rolesResult.data??[]),...(ownRoles??[])].flatMap(record=>{
+    const event = Array.isArray(record.events) ? record.events[0] : record.events;
+    if (!event) return [];
+    return [{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}];
+  });
+  return <DashboardShell active="talent"><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Live jobs</h1><p className="mt-2 text-[var(--muted)]">Browse event roles and manage your confirmed work days.</p></div><TalentBrowserAlerts enabled={Boolean(preferences.data?.notify_push)} alerts={alertsResult.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
+    <form action={updateTalentPreferences} className="panel mb-6 flex flex-wrap items-end gap-4 p-5"><label className="label">Availability<select className="input" name="is_online" defaultValue={String(preferences.data?.is_online??false)}><option value="true">Online for matching</option><option value="false">Offline</option></select></label><label className="label">Browser alerts<select className="input" name="notify_push" defaultValue={String(preferences.data?.notify_push??false)}><option value="true">On</option><option value="false">Off</option></select></label><SubmitButton pendingText="Saving…">Save preferences</SubmitButton></form>
+    <section className="mb-8"><h2 className="text-2xl font-bold">Recent job alerts</h2>{alertsResult.data?.length ? <div className="mt-3 grid gap-2">{alertsResult.data.map(alert=><p className="panel p-3 text-sm" key={alert.id}>New matching role · {new Date(alert.created_at).toLocaleString("en-IN")} · <Link className="underline" href="/browse">View jobs</Link></p>)}</div> : <p className="mt-2 text-sm text-[var(--muted)]">No matching alerts yet.</p>}</section>
+    <section><h2 className="mb-4 text-2xl font-bold">Jobs and bookings</h2><div className="grid gap-4 md:grid-cols-2">{roles.map(role=>{const application=byRole.get(role.id); return <div key={role.id}><RoleCard role={role} apply={!application && role.status==="open" && talent.verification_status==="verified"} showDate/><p className="mt-2 text-sm">{application ? `Your status: ${application.status}${application.cancellation_requested_at ? " · Cancellation requested" : ""}` : ""}</p>{application?.status==="accepted" && !application.cancellation_requested_at ? <form action={requestBookingCancellation}><input type="hidden" name="application_id" value={application.id}/><SubmitButton pendingText="Requesting…">Request cancellation</SubmitButton></form>:null}</div>})}</div>{!roles.length ? <p>No open roles right now.</p> : null}</section>
+  </DashboardShell>;
 }
-

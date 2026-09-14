@@ -9,6 +9,8 @@ import type { ApplicationStatus, UserRole } from "@/lib/types";
 import { validDate } from "@/lib/organizer";
 import { todayInIndia } from "@/lib/exhibitor-listings";
 import { isSelectableCatalogEvent, parseCatalogSelection } from "@/lib/event-selection";
+import { sendRolePush } from "@/lib/talent-push";
+import { workDaysOverlap } from "@/lib/talent-jobs";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -60,10 +62,12 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const endsAt = String(formData.get("ends_at") ?? "");
   const shiftStart = String(formData.get("shift_start") ?? "");
   const shiftEnd = String(formData.get("shift_end") ?? "");
+  const workStartsOn = String(formData.get("work_starts_on") ?? "");
+  const workEndsOn = String(formData.get("work_ends_on") ?? "");
   const headcount = Number(formData.get("headcount"));
   const hourlyRate = Number(formData.get("hourly_rate"));
   if ((source === "agency" && (!eventTitle || !venue || !city || eventTitle.length > 160 || !validDate(startsAt) || !validDate(endsAt) || endsAt < startsAt)) ||
-    !title || title.length > 160 ||
+    !title || title.length > 160 || !validDate(workStartsOn) || !validDate(workEndsOn) || workEndsOn < workStartsOn ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftStart) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftEnd) ||
     !Number.isInteger(headcount) || headcount < 1 || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
     return { error: "Check the event dates, shift times, headcount, and hourly rate before publishing.", success: "" };
@@ -109,6 +113,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     if (result.error || !selected || !isSelectableCatalogEvent(selected, kind, todayInIndia())) return { error: "This event is not available for requests. Choose another event.", success: "" };
     eventFields = { title: selected.title, venue: selected.venue, city: selected.city, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null };
   }
+  if (workStartsOn < eventFields.starts_at || workEndsOn > eventFields.ends_at) return { error: "Work days must fall within the event dates.", success: "" };
 
   const catalogColumn = eventFields.organizer_event_id ? "organizer_event_id" : "exhibitor_event_submission_id";
   const catalogId = eventFields.organizer_event_id ?? eventFields.exhibitor_event_submission_id;
@@ -136,7 +141,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     return { error: "Unable to create the event. Check the details and try again.", success: "" };
   }
 
-  const { error } = await supabase.from("staffing_roles").insert({
+  const { data: createdRole, error } = await supabase.from("staffing_roles").insert({
     event_id: event.id,
     title,
     description: String(formData.get("description") ?? ""),
@@ -144,11 +149,13 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     hourly_rate: hourlyRate,
     shift_start: shiftStart,
     shift_end: shiftEnd,
+    work_starts_on: workStartsOn,
+    work_ends_on: workEndsOn,
     required_skills: String(formData.get("required_skills") ?? "")
       .split(",")
       .map((skill) => skill.trim())
       .filter(Boolean),
-  });
+  }).select("id").single();
 
   if (error) {
     console.error(JSON.stringify({ event: "staffing_request_failed", stage: "role_insert", category: "database_error" }));
@@ -158,6 +165,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     }
     return { error: "Unable to publish the staffing request. Check the details and try again.", success: "" };
   }
+  // The database trigger creates matching in-app alerts for every role publication path.
+  if (createdRole) await sendRolePush(createdRole.id).catch((error) => console.error("Talent push dispatch failed",error));
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/requests");
   revalidatePath("/dashboard/agency");
@@ -173,8 +182,13 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
   if (!user) redirect("/login");
   const profile = await actor();
   const roleId = String(formData.get("staffing_role_id") ?? "");
-  const { data: openRole } = await supabase.from("staffing_roles").select("id").eq("id", roleId).eq("status", "open").maybeSingle();
+  const { data: openRole } = await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on").eq("id", roleId).eq("status", "open").maybeSingle();
   if (!canApply(profile.role,profile.verification_status,openRole ? "open" : "closed")) return { error: "A verified talent account and open role are required.", success: "" };
+  const {data:existing}=await supabase.from("applications").select("id,staffing_role_id,status").eq("talent_id",user.id).eq("status","accepted");
+  if (existing?.length) {
+    const {data:booked}=await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on").in("id",existing.map(item=>item.staffing_role_id));
+    if (booked?.some(item=>workDaysOverlap(item,openRole!))) return {error:"You are already booked on one or more of these days.",success:""};
+  }
 
   const { error } = await supabase.from("applications").insert({
     staffing_role_id: roleId,
@@ -199,14 +213,18 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
     return { error: "Choose a valid application status.", success: "" };
   }
   if (!["exhibitor", "agency"].includes(profile.role)) return { error: "You cannot update this application.", success: "" };
-  const { data: application } = await supabase.from("applications").select("staffing_role_id").eq("id", applicationId).maybeSingle();
+  const { data: application } = await supabase.from("applications").select("staffing_role_id,status,cancellation_requested_at").eq("id", applicationId).maybeSingle();
   if (!application || !await staffingOwner(supabase, application.staffing_role_id, profile.id)) return { error: "You cannot update this application.", success: "" };
+  if (application.status === "accepted" && !["accepted","cancelled","completed"].includes(status)) return {error:"Confirmed bookings may only be completed or cancelled.",success:""};
+  if (status === "cancelled" && application.status !== "accepted") return {error:"Only confirmed bookings can be cancelled.",success:""};
 
   const { data: updated, error } = await supabase
     .from("applications")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, cancellation_requested_at: status === "cancelled" ? null : application.cancellation_requested_at, updated_at: new Date().toISOString() })
     .eq("id", applicationId).select("id").maybeSingle();
 
+  if (error?.message.includes("Role is full")) return {error:"This role has no remaining openings.",success:""};
+  if (error?.message.includes("Talent is already booked")) return {error:"This talent is already booked on those days.",success:""};
   if (error || !updated) return { error: "Unable to update this application. Please retry.", success: "" };
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/applicants");

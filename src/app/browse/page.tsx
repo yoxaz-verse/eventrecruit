@@ -17,7 +17,7 @@ export default async function BrowsePage({
   const user = await getCurrentAccount();
   const [result, profileResult] = user
     ? await Promise.all([db!.from("staffing_roles")
-        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,required_skills,status,events(title,venue,city,starts_at)")
+        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,starts_at)")
         .eq("status", "open")
         .order("created_at", { ascending: false })
         .limit(100), db!.from("profiles").select("role,verification_status").eq("id", user.id).maybeSingle()])
@@ -29,11 +29,11 @@ export default async function BrowsePage({
     return [{
       id: record.id,
       eventTitle: event.title,
-      company: "Event staffing team",
       location: `${event.venue}, ${event.city}`,
-      date: event.starts_at,
+      date: `${record.work_starts_on} – ${record.work_ends_on}`,
       shift: `${record.shift_start} – ${record.shift_end}`,
       role: record.title,
+      description: record.description ?? undefined,
       headcount: record.headcount,
       rate: Number(record.hourly_rate),
       skills: record.required_skills ?? [],
@@ -105,7 +105,7 @@ export default async function BrowsePage({
               <p className="text-sm font-bold text-[var(--muted)]">Showing {filtered.length} open position{filtered.length === 1 ? "" : "s"}</p>
             </div>
 
-            <div className="grid-auto gap-6">{filtered.map((role) => <RoleCard apply={mayApply} key={role.id} role={role} rateUnit="hour" />)}</div>
+            <div className="grid-auto gap-6">{filtered.map((role) => <RoleCard apply={mayApply} key={role.id} role={role} rateUnit="hour" showDate />)}</div>
 
             {!filtered.length && (
               <div className="panel p-10 text-center my-8">
@@ -141,4 +141,3 @@ export default async function BrowsePage({
     </div>
   );
 }
-

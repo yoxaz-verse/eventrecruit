@@ -55,6 +55,7 @@ export function StaffingRequestForm({ source, events = [] }: { source: "agency" 
       <div className="grid gap-3 sm:grid-cols-2"><label className="label">Starts<input className="input" name="starts_at" required type="date" /></label><label className="label">Ends<input className="input" name="ends_at" required type="date" /></label></div>
     </>}
     <label className="label">Role title<input className="input" name="title" placeholder="e.g. Lead Generation Specialist" required /></label>
+    <div className="grid gap-3 sm:grid-cols-2"><label className="label">First work day<input className="input" name="work_starts_on" required type="date" /></label><label className="label">Last work day<input className="input" name="work_ends_on" required type="date" /></label></div>
     <label className="label">Description<textarea className="input textarea" name="description" placeholder="Describe responsibilities, expectations, and attire standard..." /></label>
     <div className="grid gap-3 sm:grid-cols-2"><label className="label">Headcount<input className="input" min="1" name="headcount" required type="number" placeholder="1" /></label><label className="label">Hourly rate ($)<input className="input" min="0" name="hourly_rate" required type="number" placeholder="25" /></label></div>
     <div className="grid gap-3 sm:grid-cols-2"><label className="label">Shift start<input className="input" name="shift_start" required type="time" /></label><label className="label">Shift end<input className="input" name="shift_end" required type="time" /></label></div>

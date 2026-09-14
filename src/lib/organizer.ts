@@ -1,7 +1,18 @@
 export type Company = { id: string; name: string; city: string; description: string; website: string };
 export type StaffingNeed = { title: string; people_needed: number | null };
 export type BookingSlot = { id?: string; slot_date: string; start_time: string; end_time: string; capacity: number; booked_count?: number };
-export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; starts_at: string | null; ends_at: string | null; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string };
+export type SpaceOffer = { id?: string; name: string; description: string; inclusions: string; area_sqft: number | null; unit_count: number | null; price_type: 'fixed' | 'per_sqft' | 'quote'; price_inr: number | null; is_active?: boolean };
+export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; starts_at: string | null; ends_at: string | null; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; pricing_chart_path?: string | null; floor_layout_path?: string | null };
+export function validSpaceOffer(offer: SpaceOffer) {
+ return offer.name.trim().length > 0 && offer.name.length <= 160 && offer.description.length <= 3000 && offer.inclusions.length <= 3000 &&
+  (offer.area_sqft === null || (Number.isFinite(offer.area_sqft) && offer.area_sqft > 0 && offer.area_sqft <= 1000000)) &&
+  (offer.unit_count === null || (Number.isInteger(offer.unit_count) && offer.unit_count > 0 && offer.unit_count <= 100000)) &&
+  ['fixed','per_sqft','quote'].includes(offer.price_type) &&
+  (offer.price_type === 'quote' ? offer.price_inr === null : Number.isInteger(offer.price_inr) && (offer.price_inr ?? 0) > 0 && (offer.price_inr ?? 0) <= 1000000000);
+}
+export function validSpaceAttachment(file: File) {
+ return file.size > 0 && file.size <= 5 * 1024 * 1024 && ['application/pdf','image/png','image/jpeg','image/webp'].includes(file.type);
+}
 export function validStaffingNeeds(needs: StaffingNeed[]) {
  return needs.length > 0 && needs.length <= 30 && needs.every(need => need.title.trim().length > 0 && need.title.length <= 160 && Number.isInteger(need.people_needed) && (need.people_needed ?? 0) > 0 && (need.people_needed ?? 0) <= 100000);
 }

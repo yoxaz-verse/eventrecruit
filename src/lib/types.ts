@@ -13,11 +13,12 @@ export type ApplicationStatus =
 export type EventRole = {
   id: string;
   eventTitle: string;
-  company: string;
+  company?: string;
   location: string;
   date: string;
   shift: string;
   role: string;
+  description?: string;
   headcount: number;
   rate: number;
   skills: string[];

@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentAccount } from '@/lib/auth';
-import { validBookingSlot, validDate, validStaffingNeeds, type BookingSlot, type StaffingNeed } from '@/lib/organizer';
+import { validBookingSlot, validDate, validSpaceAttachment, validSpaceOffer, validStaffingNeeds, type BookingSlot, type SpaceOffer, type StaffingNeed } from '@/lib/organizer';
 export type FormState = { error: string };
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
 async function session() {
@@ -49,6 +49,14 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  const slots:BookingSlot[]=slotIds.map((slotId,index)=>({id:slotId||undefined,slot_date:slotDates[index],start_time:slotStarts[index],end_time:slotEnds[index],capacity:Number(slotCapacities[index])}));
  if (slots.some(slot=>!validBookingSlot(slot,start,end))) return {error:'Slots need a valid date within the event, start and end times, and a capacity from 1 to 100,000.'};
  if (new Set(slots.map(slot=>`${slot.slot_date}/${slot.start_time}/${slot.end_time}`)).size!==slots.length) return {error:'Duplicate time slots are not allowed.'};
+ const offerKeys=['offer_id','offer_name','offer_description','offer_inclusions','offer_area_sqft','offer_unit_count','offer_price_type','offer_price_inr'] as const;
+ const offerFields=offerKeys.map(key=>data.getAll(key).map(item=>String(item).trim()));
+ if (offerFields.some(field=>field.length!==offerFields[0].length) || offerFields[0].length>30) return {error:'Add no more than 30 complete exhibitor offers.'};
+ const offers:SpaceOffer[]=offerFields[0].map((offerId,index)=>({id:offerId||undefined,name:offerFields[1][index],description:offerFields[2][index],inclusions:offerFields[3][index],area_sqft:offerFields[4][index]?Number(offerFields[4][index]):null,unit_count:offerFields[5][index]?Number(offerFields[5][index]):null,price_type:offerFields[6][index] as SpaceOffer['price_type'],price_inr:offerFields[7][index]?Number(offerFields[7][index]):null}));
+ if (offers.some(offer=>!validSpaceOffer(offer))) return {error:'Complete each exhibitor offer with a valid price, area, and unit count.'};
+ const uploads=(['pricing_chart','floor_layout'] as const).map(kind=>({kind,file:data.get(kind)}));
+ for (const upload of uploads) if (upload.file instanceof File && upload.file.size>0 && (!validSpaceAttachment(upload.file) || !await hasValidSignature(upload.file))) return {error:'Upload PDF, PNG, JPEG, or WebP files up to 5 MB.'};
+ if (uploads.some(upload=>data.get(`remove_${upload.kind}`)==='1' && upload.file instanceof File && upload.file.size>0)) return {error:'Choose either a replacement file or remove the current file.'};
  const titles=data.getAll('position_title').map(item=>String(item).trim());
  const counts=data.getAll('people_needed').map(item=>String(item).trim());
  if (titles.length!==counts.length || titles.length>30) return {error:'Add no more than 30 talent positions.'};
@@ -67,10 +75,36 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if (existing?.some(old=>old.booked_count>0 && (slots.some(slot=>slot.id===old.id && (slot.slot_date!==old.slot_date || slot.start_time!==old.start_time.slice(0,5) || slot.end_time!==old.end_time.slice(0,5) || slot.capacity<old.booked_count)) || (requestedIds.has(old.id) && (old.slot_date<start || old.slot_date>end))))) return {error:'Booked slots cannot be rescheduled or moved outside event dates, and capacity cannot fall below reservations.'};
  }
  const payload={title,description,venue,city,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl};
- const {data:savedId,error}=await db.rpc('save_organizer_event_with_slots',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots});
- if (error || !savedId) return {error:'Unable to save event and slots. Check for conflicting reservations and retry.'};
+ const {data:savedId,error}=await db.rpc('save_organizer_event_with_spaces',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots,p_offers:offers.map((offer,position)=>({...offer,position}))});
+ if (error || !savedId) return {error:error?.message?.includes('Published exhibitor spaces')?'Add at least one complete exhibitor offer before publishing a new event.':'Unable to save event, slots, and offers. Check for conflicting reservations and retry.'};
  eventId=savedId;
+ for (const {kind,file} of uploads) {
+   const column=kind==='pricing_chart'?'pricing_chart_path':'floor_layout_path';
+   if (!(file instanceof File && file.size>0) && data.get(`remove_${kind}`)!=='1') continue;
+   const {data:current}=await db.from('organizer_events').select('pricing_chart_path,floor_layout_path').eq('id',eventId).eq('company_id',company.id).single();
+   if (!current) return {error:'Event saved, but attachment ownership could not be verified.'};
+   let path:string|null=null;
+   if (file instanceof File && file.size>0) {
+     path=`${company.id}/${eventId}/${kind}/${crypto.randomUUID()}`;
+     const bytes=await file.arrayBuffer();
+     const {error:uploadError}=await db.storage.from('event-space-assets').upload(path,bytes,{contentType:file.type,upsert:false});
+     if (uploadError) return {error:'Event saved, but an attachment could not be uploaded. Reopen the event and retry.'};
+   }
+   const {error:updateError}=await db.from('organizer_events').update({[column]:path}).eq('id',eventId).eq('company_id',company.id);
+   if (updateError) { if (path) await db.storage.from('event-space-assets').remove([path]); return {error:'Event saved, but an attachment could not be linked. Reopen the event and retry.'}; }
+   const oldPath=current[column];
+   if (oldPath) await db.storage.from('event-space-assets').remove([oldPath]);
+ }
  } catch (error) { return {error:error instanceof Error ? error.message : 'Unable to save. Please retry.'}; }
  revalidatePath('/dashboard/organizer'); revalidatePath(`/dashboard/organizer/events/${eventId}`); revalidatePath('/events','layout'); revalidatePath('/');
  redirect('/dashboard/organizer?message=Event+saved');
+}
+async function hasValidSignature(file:File) {
+ const bytes=new Uint8Array(await file.slice(0,12).arrayBuffer());
+ const starts=(signature:number[])=>signature.every((byte,index)=>bytes[index]===byte);
+ if(file.type==='application/pdf') return starts([37,80,68,70,45]);
+ if(file.type==='image/png') return starts([137,80,78,71,13,10,26,10]);
+ if(file.type==='image/jpeg') return starts([255,216,255]);
+ if(file.type==='image/webp') return starts([82,73,70,70]) && [87,69,66,80].every((byte,index)=>bytes[index+8]===byte);
+ return false;
 }
