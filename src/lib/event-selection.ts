@@ -8,3 +8,7 @@ export function parseCatalogSelection(value: string): CatalogSelection | null {
 export function isSelectableCatalogEvent(event: { status: string; starts_at: string | null; ends_at: string | null }, kind: CatalogSelection["kind"], today: string) {
   return event.status === (kind === "organizer" ? "published" : "approved") && Boolean(event.starts_at && event.ends_at && event.ends_at >= today);
 }
+
+export function isUpcomingDateRange(startsAt: string, endsAt: string, today: string) {
+  return Boolean(startsAt && endsAt && endsAt >= startsAt && endsAt >= today);
+}

@@ -67,7 +67,8 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
 
   // Close drawer on route change
   useEffect(() => {
-    closeDrawer();
+    const frame = requestAnimationFrame(() => closeDrawer());
+    return () => cancelAnimationFrame(frame);
   }, [pathname, closeDrawer]);
 
   const mainTabs = [
