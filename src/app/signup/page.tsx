@@ -4,12 +4,14 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { AuthMessage, resolveAuthMessage } from "@/components/auth/auth-message";
 import { TopNav } from "@/components/top-nav";
 import { getSupabaseServerConfig } from "@/lib/supabase/env";
+import { getCurrentAccount } from "@/lib/auth";
 
 export default async function SignupPage({
   searchParams,
 }: {
   searchParams?: Promise<{ message?: string; role?: string }>;
 }) {
+  if (await getCurrentAccount()) redirect("/dashboard");
   const params = await searchParams;
   const supabaseConfigured = getSupabaseServerConfig().isConfigured;
   if (params?.message === "configure-supabase" && supabaseConfigured) {

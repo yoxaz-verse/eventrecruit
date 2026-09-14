@@ -3,6 +3,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/auth";
+import { validateOnboarding } from "@/lib/onboarding-rules";
+import type { UserRole } from "@/lib/types";
+
+const value = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
 
 export async function completeOnboarding(_state: { error: string }, formData: FormData): Promise<{ error: string }> {
   const supabase = await createClient();
@@ -21,18 +25,26 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
   if (profileError) return { error: "Unable to load your profile. Please try again." };
 
   if (profile.role === "organizer") redirect("/dashboard/organizer/company");
+  if (!["talent", "agency", "exhibitor"].includes(profile.role)) return { error: "This account type cannot use this form." };
+
+  const validationError = validateOnboarding(profile.role as UserRole, formData);
+  if (validationError) return { error: validationError };
+  const city = value(formData, "city");
+  const phone = value(formData, "phone");
+  const experience = value(formData, "experience_years");
+  const commission = value(formData, "commission_value");
 
   const { error: cityError } = await supabase
     .from("profiles")
     .update({
-      city: String(formData.get("city") ?? ""),
+      city,
     })
     .eq("id", user.id);
   if (cityError) return { error: "Unable to save your location. Please try again." };
 
   const { error: contactError } = await supabase.from("contact_details").upsert({
     profile_id: user.id,
-    phone: String(formData.get("phone") ?? ""),
+    phone,
   });
   if (contactError) return { error: "Unable to save your contact details. Please try again." };
 
@@ -48,13 +60,13 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
 
     const { error } = await supabase.from("talent_profiles").upsert({
       profile_id: user.id,
-      headline: String(formData.get("headline") ?? ""),
-      bio: String(formData.get("bio") ?? ""),
+      headline: value(formData, "headline"),
+      bio: value(formData, "bio"),
       skills,
       languages,
-      availability: String(formData.get("availability") ?? ""),
-      experience_years: Number(formData.get("experience_years") ?? 0),
-      documents_note: String(formData.get("documents_note") ?? ""),
+      availability: value(formData, "availability"),
+      experience_years: Number(experience || 0),
+      documents_note: value(formData, "documents_note"),
     });
     if (error) return { error: "Unable to save your talent profile. Please try again." };
   }
@@ -63,9 +75,9 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
     const { error } = await supabase.from("agencies").upsert(
       {
       owner_id: user.id,
-      name: String(formData.get("business_name") ?? ""),
-      commission_type: String(formData.get("commission_type") ?? "percentage"),
-      commission_value: Number(formData.get("commission_value") ?? 10),
+      name: value(formData, "business_name"),
+      commission_type: value(formData, "commission_type"),
+      commission_value: Number(commission || 10),
       },
       { onConflict: "owner_id" },
     );
@@ -76,13 +88,16 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
     const { error } = await supabase.from("exhibitors").upsert(
       {
         owner_id: user.id,
-        company_name: String(formData.get("business_name") ?? ""),
-        industry: String(formData.get("industry") ?? ""),
+        company_name: value(formData, "business_name"),
+        industry: value(formData, "industry"),
       },
       { onConflict: "owner_id" },
     );
     if (error) return { error: "Unable to save your exhibitor profile. Please try again." };
   }
 
+  const { error: completionError } = await supabase.from("profiles")
+    .update({ onboarding_completed_at: new Date().toISOString() }).eq("id", user.id);
+  if (completionError) return { error: "Your profile was saved, but setup could not be completed. Please try again." };
   redirect(`/dashboard/${profile.role}`);
 }

@@ -14,6 +14,9 @@ import { OtpInput } from "@/components/auth/otp-input";
 import { ResendButton } from "@/components/auth/resend-button";
 import { TopNav } from "@/components/top-nav";
 import { getSupabaseServerConfig } from "@/lib/supabase/env";
+import { getCurrentAccount } from "@/lib/auth";
+import { nextAccountPath } from "@/lib/onboarding";
+import { RefreshRestoredOtp } from "@/components/auth/refresh-restored-otp";
 
 const labels: Record<string, string> = {
   signup: "Verify signup",
@@ -27,6 +30,8 @@ export default async function VerifyOtpPage({
 }: {
   searchParams?: Promise<{ email?: string; message?: string; type?: string }>;
 }) {
+  const account = await getCurrentAccount();
+  if (account) redirect(await nextAccountPath(account.id));
   const params = await searchParams;
   const type = params?.type ?? "magiclink";
   const email = params?.email ?? "";
@@ -44,6 +49,7 @@ export default async function VerifyOtpPage({
 
   return (
     <div className="shell">
+      <RefreshRestoredOtp />
       <TopNav />
       <AuthCard
         badge="Email OTP"

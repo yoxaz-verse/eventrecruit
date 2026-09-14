@@ -25,6 +25,8 @@ export async function saveCompany(_state: FormState, data: FormData): Promise<Fo
  if (contactError) return {error:'Unable to save contact details. Please retry.'};
  const { error } = await db.from('organizer_companies').upsert({owner_id:user.id,name,city,description,website},{onConflict:'owner_id'});
  if (error) return {error:'Unable to save company details. Please retry.'};
+ const {error:completionError}=await db.from('profiles').update({onboarding_completed_at:new Date().toISOString()}).eq('id',user.id);
+ if (completionError) return {error:'Company saved, but setup could not be completed. Please retry.'};
  } catch (error) { return {error: error instanceof Error ? error.message : 'Unable to save. Please retry.'}; }
  revalidatePath('/dashboard/organizer'); revalidatePath('/events','layout');
  redirect('/dashboard/organizer?message=Company+saved');

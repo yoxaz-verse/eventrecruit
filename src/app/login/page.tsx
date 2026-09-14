@@ -9,12 +9,14 @@ import { LoginTabs } from "@/components/auth/login-tabs";
 import { PasswordField } from "@/components/auth/password-field";
 import { TopNav } from "@/components/top-nav";
 import { getSupabaseServerConfig } from "@/lib/supabase/env";
+import { getCurrentAccount } from "@/lib/auth";
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams?: Promise<{ message?: string; mode?: string }>;
 }) {
+  if (await getCurrentAccount()) redirect("/dashboard");
   const params = await searchParams;
   const mode = params?.mode === "otp" ? "otp" : "password";
   const supabaseConfigured = getSupabaseServerConfig().isConfigured;
@@ -57,9 +59,6 @@ export default async function LoginPage({
               <input autoComplete="email" className="input" name="email" required type="email" />
             </label>
             <SubmitButton className="button button-primary" pendingText="Sending code…">Send OTP</SubmitButton>
-            <p className="text-sm text-[var(--muted)]">
-              OTP login works only for existing accounts, so unknown emails are not auto-created.
-            </p>
           </AuthActionForm>
         )}
       </AuthCard>

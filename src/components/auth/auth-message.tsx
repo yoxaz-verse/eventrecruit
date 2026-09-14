@@ -1,4 +1,5 @@
 const authMessages: Record<string, string> = {
+  "account-exists": "An account with this email already exists. Log in below.",
   "configure-supabase":
     "Authentication is not configured. Confirm the server database credentials and app auth secret, then redeploy.",
 };

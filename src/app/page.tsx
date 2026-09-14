@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TopNav } from "@/components/top-nav";
 import { openRoles } from "@/lib/mock-data";
+import { getCurrentAccount } from "@/lib/auth";
 
 const services = [
   {
@@ -107,7 +108,8 @@ const landingMetrics = [
   { label: "Placements", value: "418", detail: "Tracked this quarter" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const signedIn = Boolean(await getCurrentAccount());
   return (
     <div className="shell">
       <TopNav />
@@ -126,11 +128,11 @@ export default function Home() {
                 the people can be coordinated.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link className="button button-primary" href="/signup">
+                <Link className="button button-primary" href={signedIn ? "/dashboard" : "/signup"}>
                   Find people <ArrowRight size={18} aria-hidden />
                 </Link>
-                <Link className="button button-secondary" href="/signup">
-                  Join as talent
+                <Link className="button button-secondary" href={signedIn ? "/browse" : "/signup?role=talent"}>
+                  {signedIn ? "Browse roles" : "Join as talent"}
                 </Link>
               </div>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -327,8 +329,8 @@ export default function Home() {
                   records visible.
                 </p>
               </div>
-              <Link className="button button-light" href="/signup">
-                Get started <ArrowRight size={18} aria-hidden />
+              <Link className="button button-light" href={signedIn ? "/dashboard" : "/signup"}>
+                {signedIn ? "Go to dashboard" : "Get started"} <ArrowRight size={18} aria-hidden />
               </Link>
             </div>
           </div>
