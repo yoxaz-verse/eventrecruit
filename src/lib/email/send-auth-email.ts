@@ -1,10 +1,13 @@
 import "server-only";
 
 import type { AuthEmailPurpose } from "./message";
-import { deliverAuthCode } from "./delivery";
-import { createAuthTransport } from "./smtp";
+import { sendMxrouteEmail } from "./mxroute-api";
 
 export async function sendAuthEmail(email: string, code: string, purpose: AuthEmailPurpose) {
-  const { transport, from } = createAuthTransport();
-  await deliverAuthCode(transport, from, email, code, purpose);
+  await sendMxrouteEmail({
+    server: process.env.SMTP_HOST?.trim() ?? "",
+    username: process.env.SMTP_AUTH_USER?.trim() ?? "",
+    password: process.env.SMTP_AUTH_PASS ?? "",
+    from: process.env.SMTP_FROM?.trim() ?? "",
+  }, email, code, purpose);
 }

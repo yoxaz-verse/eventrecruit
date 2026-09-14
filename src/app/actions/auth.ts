@@ -24,7 +24,7 @@ function isEmail(email: string) { return email.length <= 254 && /^[^\s@<>]+@[^\s
 function url(path: string, message: string, extra?: Record<string,string>) { return `${path}?${new URLSearchParams({message,...extra})}`; }
 function log(event: string, error: unknown) {
   const diagnostic = error instanceof AuthEmailStageError ? authEmailDiagnostic(error) : { stage: "unexpected", category: "service_error" };
-  console.error(JSON.stringify({event, request_id: randomUUID(), ...diagnostic}));
+  console.error(JSON.stringify({event, request_id: randomUUID(), ...(diagnostic.stage === "smtp_delivery" ? {transport:"mxroute_https_api"} : {}), ...diagnostic}));
 }
 async function rateLimit(email: string) {
   try { const result = await consumeAuthEmailLimit(email); return result.allowed ? null : `Please wait ${result.retry_after_seconds} seconds before requesting another code.`; }

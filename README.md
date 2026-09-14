@@ -41,14 +41,12 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 APP_AUTH_SECRET=
 SMTP_HOST=chocobo.mxrouting.net
-SMTP_PORT=587
-SMTP_SECURE=false
 SMTP_AUTH_USER=
 SMTP_AUTH_PASS=
 SMTP_FROM=
 ```
 
-4. Generate a random `APP_AUTH_SECRET` of at least 32 characters and configure MXroute. The Next.js server generates six-digit OTPs that expire in 10 minutes. Supabase Auth email settings are not used.
+4. Generate a random `APP_AUTH_SECRET` of at least 32 characters and configure MXroute. Next.js generates six-digit OTPs that expire in 10 minutes and submits messages through MXroute's HTTPS API. `SMTP_HOST` names your MXroute server; `SMTP_PORT` and `SMTP_SECURE` from older configurations are ignored. Supabase Auth email settings are not used.
 
 Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL=https://eventrecruit.vercel.app` in production.
 
@@ -60,7 +58,7 @@ Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL
 npm run dev
 ```
 
-To check SMTP connection and authentication without sending an email, run `npm run diagnose:email`. It reports a safe category such as `smtp_auth`, `smtp_timeout`, or `smtp_configuration`. Signup failures report a request ID, stage, and category without credentials or OTPs. After a verified account signs up, use `npm run auth:grant-admin -- email@example.com` locally to designate its owner as the first administrator.
+Run `npm run diagnose:email` to check HTTPS API reachability without sending credentials or email. It cannot verify mailbox authentication or actual delivery. Signup failures report a request ID, transport, stage, and safe category; a successful provider response confirms API acceptance, not inbox arrival. After a verified account signs up, use `npm run auth:grant-admin -- email@example.com` locally to designate its owner as the first administrator.
 
 The public role browser and admin verification queue now read live database records. Other dashboard cards and actions built from `src/lib/mock-data.ts` are illustrative preview data; they are not reliable representations of a new account's records and need database-backed replacements before production use.
 
