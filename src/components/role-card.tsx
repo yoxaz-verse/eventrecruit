@@ -41,13 +41,13 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
       <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--line)]">
         <div className="flex flex-wrap gap-1.5">
           {role.skills.map((skill) => (
-            <span className="badge badge-light text-[11px]" key={skill}>
+            <span className="badge badge-surface text-[11px]" key={skill}>
               {skill}
             </span>
           ))}
         </div>
         <div className="shrink-0 font-black text-sm text-[var(--accent)] bg-[var(--surface)] px-3 py-1.5 rounded-lg border border-[var(--line)]">
-          ${role.rate}/{rateUnit}
+          ₹{role.rate.toLocaleString("en-IN")}/{rateUnit}
         </div>
       </div>
 

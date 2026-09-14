@@ -110,13 +110,38 @@ a:focus-visible {
 
 .input {
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 11px;
   background: white;
   padding: 0 15px;
   color: var(--foreground);
   transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.input-with-icon {
+  padding-left: 44px !important;
+}
+
+.input-icon-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon-wrap .input {
+  padding-left: 44px !important;
+}
+
+.input-icon-wrap > svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .input:focus {
@@ -215,22 +240,28 @@ a:focus-visible {
   border-radius: 999px;
   border: 1px solid var(--line);
   background: white;
-  padding: 5px 10px;
-  color: var(--muted);
+  padding: 5px 11px;
+  color: var(--foreground);
   font-size: 12px;
   font-weight: 700;
   text-transform: capitalize;
 }
 
 .badge-accent {
-  border-color: rgba(13, 107, 95, 0.2);
-  background: white;
+  border-color: rgba(13, 107, 95, 0.25);
+  background: rgba(13, 107, 95, 0.08);
   color: var(--accent);
+}
+
+.badge-surface {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--foreground);
 }
 
 .badge-light {
   border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.16);
   color: white;
 }
 

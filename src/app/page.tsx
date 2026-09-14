@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { TopNav } from "@/components/top-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { openRoles } from "@/lib/mock-data";
 import { getCurrentAccount } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -120,60 +121,90 @@ export default async function Home() {
     <div className="shell">
       <TopNav />
       <main>
-        <section className="hero-band border-b border-[var(--line)]">
-          <div className="page hero-layout grid items-center gap-12 py-16 lg:grid-cols-[.9fr_1.1fr] lg:py-24">
+        <section className="hero-band border-b border-[var(--line)] relative overflow-hidden">
+          <div className="page hero-layout grid items-center gap-12 py-16 lg:grid-cols-[.95fr_1.05fr] lg:py-24">
             <div className="max-w-2xl">
-              <span className="badge badge-accent">India-wide people operations</span>
-              <h1 className="hero-title mt-6">
-                The right people make <em>every moment</em> matter.
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-extrabold text-[var(--accent)] shadow-xs">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span>India-Wide Event & Retail Talent Ops</span>
+              </div>
+
+              <h1 className="hero-title mt-6 tracking-tight font-black">
+                The right people make{" "}
+                <em className="bg-gradient-to-r from-[var(--accent)] via-emerald-600 to-[var(--accent-2)] bg-clip-text text-transparent not-italic">
+                  every moment
+                </em>{" "}
+                matter.
               </h1>
-              <p className="hero-description mt-6 max-w-2xl text-[var(--muted)]">
+
+              <p className="hero-description mt-6 max-w-2xl text-[var(--muted)] leading-relaxed text-lg">
                 expo sphere helps brands, exhibitors, agencies, and store teams find
                 verified people for exhibitions, retail stores, launches, roadshows,
-                pop-ups, and campaign days. Wherever the work is happening in India,
-                the people can be coordinated.
+                pop-ups, and campaign days across 10+ Indian cities.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link className="button button-primary" href={signedIn ? "/dashboard" : "/signup"}>
-                  Find people <ArrowRight size={18} aria-hidden />
+
+              <div className="mt-8 flex flex-wrap gap-3.5">
+                <Link className="button button-primary gap-2 shadow-md hover:shadow-xl transition-all" href={signedIn ? "/dashboard" : "/signup"}>
+                  <span>Find verified talent</span>
+                  <ArrowRight size={18} aria-hidden />
                 </Link>
-                <Link className="button button-secondary" href={signedIn ? "/browse" : "/signup?role=talent"}>
-                  {signedIn ? "Browse roles" : "Join as talent"}
+                <Link className="button button-secondary gap-2 font-bold hover:bg-white" href={signedIn ? "/browse" : "/signup?role=talent"}>
+                  <Sparkles size={17} className="text-[var(--accent-2)]" aria-hidden />
+                  <span>{signedIn ? "Browse open roles" : "Join as talent"}</span>
                 </Link>
               </div>
-              <div className="hero-signals mt-10 grid gap-3 sm:grid-cols-2">
+
+              <div className="hero-signals mt-10 grid gap-3.5 sm:grid-cols-2">
                 {[
-                  "Event staff, promoters, hosts, and brand reps",
-                  "Coverage for events, stores, malls, and launches",
-                  "Verified profiles and placement records",
-                  "India-wide coordination from one workflow",
+                  "Event staff, promoters, hosts & brand reps",
+                  "Exhibitions, stores, malls & product launches",
+                  "Verified profiles & placement track records",
+                  "India-wide coordination from single portal",
                 ].map((signal) => (
-                  <div className="trust-line" key={signal}>
-                    <ShieldCheck size={18} aria-hidden />
+                  <div className="trust-line text-sm font-semibold flex items-center gap-2.5" key={signal}>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                      <ShieldCheck size={15} aria-hidden />
+                    </div>
                     <span>{signal}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="hero-visual">
+
+            <div className="hero-visual relative">
               <Image
                 src="/brand/expo-sphere-event-team.webp"
                 width={1672}
                 height={941}
                 priority
+                className="rounded-2xl shadow-2xl border border-white/60 object-cover"
                 sizes="(max-width: 1023px) 100vw, 55vw"
                 alt="Indian event staff welcoming visitors and helping with registration at an exhibition booth"
               />
-              <div className="hero-brief panel">
-                <p className="text-sm font-bold text-[var(--muted)]">Live India demand</p>
-                <div className="mt-3 grid gap-3">
+
+              <div className="hero-brief panel backdrop-blur-md bg-white/95 border border-[var(--line)] shadow-xl p-5 rounded-2xl">
+                <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                    <p className="text-xs font-black uppercase tracking-wider text-[var(--accent)]">Live India demand</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-[var(--muted)]">214+ Active</span>
+                </div>
+
+                <div className="grid gap-2.5">
                   {openRoles.slice(0, 2).map((role) => (
-                    <div className="brief-row" key={role.id}>
+                    <div className="brief-row flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--line)]/50" key={role.id}>
                       <div>
-                        <strong>{role.role}</strong>
-                        <p>{role.eventTitle}</p>
+                        <strong className="text-sm font-bold block">{role.role}</strong>
+                        <p className="text-xs text-[var(--muted)]">{role.eventTitle}</p>
                       </div>
-                      <span>{role.headcount} needed</span>
+                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">{role.headcount} needed</span>
                     </div>
                   ))}
                 </div>
@@ -351,6 +382,7 @@ export default async function Home() {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

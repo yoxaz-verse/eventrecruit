@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { checkNewPassword, MIN_NEW_PASSWORD_LENGTH } from "@/lib/password-strength";
 
 export function PasswordField({
@@ -22,8 +22,11 @@ export function PasswordField({
 
   return (
     <div className="password-field">
-      <label className="label" htmlFor={id}>{label}</label>
-      <div className="password-input-wrap">
+      <label className="label text-xs" htmlFor={id}>
+        <span>{label} <span className="text-red-500">*</span></span>
+      </label>
+      <div className="password-input-wrap input-icon-wrap">
+        <Lock size={17} aria-hidden />
         <input
           autoComplete={autoComplete}
           aria-describedby={showStrength ? feedbackId : undefined}
@@ -48,7 +51,7 @@ export function PasswordField({
           onClick={() => setVisible((current) => !current)}
           type="button"
         >
-          {visible ? <EyeOff aria-hidden="true" size={19} /> : <Eye aria-hidden="true" size={19} />}
+          {visible ? <EyeOff aria-hidden="true" size={18} /> : <Eye aria-hidden="true" size={18} />}
         </button>
       </div>
       {showStrength ? (
