@@ -36,10 +36,12 @@ export default async function ResetPasswordPage({
         footer={profile ? undefined : { text: "Need a new recovery code?", href: "/forgot-password", label: "Send again" }}
       >
         <AuthMessage message={message ?? (profile ? undefined : "Verify the recovery code from your email before updating your password.")} />
-        <AuthActionForm action={updatePassword}>
+        <AuthActionForm action={updatePassword} className="grid gap-4 mt-3">
           <PasswordField autoComplete="new-password" label="New password" showStrength />
           <PasswordField autoComplete="new-password" label="Confirm password" name="confirm_password" />
-          <SubmitButton className="button button-primary" pendingText="Updating password…">Update password</SubmitButton>
+          <SubmitButton className="button button-primary w-full mt-2 font-extrabold text-sm py-3 shadow-md" pendingText="Updating password…">
+            Update password
+          </SubmitButton>
         </AuthActionForm>
         {profile ? (
           <Link className="text-sm font-bold text-[var(--accent)]" href="/dashboard">

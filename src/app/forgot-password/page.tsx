@@ -32,19 +32,21 @@ export default async function ForgotPasswordPage({
         description="Enter your account email. We will send a 6 digit recovery code to confirm ownership."
       >
         <AuthMessage message={message} />
-        <AuthActionForm action={requestPasswordReset}>
-          <label className="label">
-            Email
-            <input autoComplete="email" className="input" name="email" required type="email" />
+        <AuthActionForm action={requestPasswordReset} className="grid gap-4 mt-3">
+          <label className="label text-xs">
+            <span>Email address</span>
+            <input autoComplete="email" className="input" name="email" placeholder="you@company.com" required type="email" />
           </label>
-          <SubmitButton className="button button-primary" pendingText="Sending code…">Send recovery code</SubmitButton>
+          <SubmitButton className="button button-primary w-full mt-2 font-extrabold text-sm py-3 shadow-md" pendingText="Sending code…">
+            Send recovery code
+          </SubmitButton>
         </AuthActionForm>
-        <p className="text-sm text-[var(--muted)]">
-          Remembered it?{" "}
-          <Link className="font-bold text-[var(--accent)]" href="/login">
-            Log in
+        <div className="mt-4 pt-4 border-t border-[var(--line)] text-center text-xs text-[var(--muted)]">
+          Remembered your password?{" "}
+          <Link className="font-extrabold text-[var(--accent)] hover:underline" href="/login">
+            Log in to account
           </Link>
-        </p>
+        </div>
       </AuthCard>
     </div>
   );

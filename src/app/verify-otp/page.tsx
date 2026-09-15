@@ -58,10 +58,10 @@ export default async function VerifyOtpPage({
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
       >
         <AuthMessage message={message} />
-        <AuthActionForm action={verifyEmailOtp}>
+        <AuthActionForm action={verifyEmailOtp} className="grid gap-4 mt-3">
           <input name="type" type="hidden" value={type} />
-          <label className="label">
-            Email
+          <label className="label text-xs">
+            <span>Email address</span>
             <input
               autoComplete="email"
               className="input"
@@ -72,22 +72,23 @@ export default async function VerifyOtpPage({
             />
           </label>
           <OtpInput />
-          <SubmitButton className="button button-primary" pendingText="Verifying…">Verify and continue</SubmitButton>
+          <SubmitButton className="button button-primary w-full mt-2 font-extrabold text-sm py-3 shadow-md" pendingText="Verifying…">
+            Verify and continue
+          </SubmitButton>
         </AuthActionForm>
-        <div className="auth-resend">
-          <AuthActionForm
-            action={
-              type === "recovery"
-                ? resendRecoveryOtp
-                : type === "signup" || type === "activation"
-                  ? resendSignupOtp
-                  : resendLoginOtp
-            }
-          >
+
+        <div className="auth-resend mt-6 pt-5 border-t border-[var(--line)] grid gap-3 sm:grid-cols-2">
+          <AuthActionForm action={
+            type === "recovery"
+              ? resendRecoveryOtp
+              : type === "signup" || type === "activation"
+                ? resendSignupOtp
+                : resendLoginOtp
+          }>
             <input name="email" type="hidden" value={email} />
             <ResendButton key={`${email}:${params?.message ?? ""}`} disabled={!email} />
           </AuthActionForm>
-          <Link className="button button-secondary" href="/forgot-password">
+          <Link className="button button-secondary w-full text-xs font-bold min-h-[42px] justify-center" href="/forgot-password">
             Forgot password
           </Link>
         </div>

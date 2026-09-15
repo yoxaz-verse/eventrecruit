@@ -89,16 +89,23 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 48px;
-  border-radius: 999px;
+  min-height: 44px;
+  border-radius: 12px;
   border: 1px solid transparent;
-  padding: 0 22px;
+  padding: 0 20px;
   font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
 
 .button:hover {
   transform: translateY(-1px);
+}
+
+.button:active {
+  transform: scale(0.98);
 }
 
 .button:disabled, .button[data-pending] { cursor: wait; opacity: .7; transform: none; }
@@ -115,14 +122,26 @@ a:focus-visible {
 }
 
 .button-primary {
-  background: var(--accent);
-  color: white;
-  box-shadow: 0 10px 24px rgba(13, 107, 95, 0.2);
+  background: var(--ink);
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 59, 49, 0.2);
+}
+
+.button-primary:hover {
+  background: #0d3229;
+  box-shadow: 0 6px 18px rgba(16, 59, 49, 0.28);
 }
 
 .button-secondary {
-  background: white;
+  background: #ffffff;
   border-color: var(--line);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.button-secondary:hover {
+  background: var(--surface);
+  border-color: #c0ccc0;
   color: var(--foreground);
 }
 
