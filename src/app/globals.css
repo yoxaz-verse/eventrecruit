@@ -851,6 +851,203 @@ a:focus-visible {
   text-transform: uppercase;
 }
 
+.admin-page-heading {
+  margin-bottom: 24px;
+}
+
+.data-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--panel) 96%, var(--surface));
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.data-table tbody tr {
+  transition: background 140ms ease;
+}
+
+.data-table tbody tr:hover,
+.data-table tbody tr:focus-within {
+  background: color-mix(in srgb, var(--surface) 50%, white);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table-left { text-align: left; }
+.data-table-center { text-align: center; }
+.data-table-right { text-align: right; }
+.data-table-nowrap { white-space: nowrap; }
+.data-table-truncate {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table-empty {
+  padding: 28px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.data-table-actions-heading,
+.data-table-actions {
+  width: 1%;
+  min-width: 116px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-action-wrap,
+.admin-delete-wrap {
+  position: relative;
+}
+
+.admin-action-trigger,
+.admin-delete-trigger {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: white;
+  padding: 6px 9px;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-action-trigger:hover { border-color: var(--accent); color: var(--accent); }
+.admin-action-trigger:focus-visible,
+.admin-delete-trigger:focus-visible,
+.admin-status-option:focus-visible,
+.admin-dialog-close:focus-visible { outline: none; box-shadow: var(--focus); }
+
+.admin-action-menu {
+  position: fixed;
+  z-index: 30;
+  right: auto;
+  bottom: auto;
+  width: 210px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  box-shadow: var(--shadow-lg);
+  white-space: normal;
+}
+
+.admin-action-label {
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.admin-status-options { display: grid; gap: 5px; }
+.admin-status-option {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 7px 9px;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.admin-status-option:hover { border-color: var(--accent); background: var(--surface); color: var(--accent); }
+.admin-status-option:disabled { cursor: wait; opacity: .55; }
+.admin-action-message,
+.admin-action-error,
+.admin-action-success { margin-top: 7px; font-size: 11px; white-space: normal; }
+.admin-action-message { color: var(--muted); }
+.admin-action-error { color: var(--danger); }
+.admin-action-success { color: var(--success); font-weight: 800; }
+
+.admin-delete-trigger { color: var(--danger); }
+.admin-delete-trigger:hover { border-color: var(--danger); background: rgba(185,28,28,.04); }
+.admin-delete-dialog {
+  width: min(430px, calc(100vw - 28px));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+  color: var(--foreground);
+  box-shadow: var(--shadow-lg);
+}
+.admin-delete-dialog::backdrop { background: rgba(10,35,30,.55); backdrop-filter: blur(3px); }
+.admin-delete-dialog h2 { margin: 12px 0 6px; font-size: 22px; font-weight: 900; }
+.admin-delete-dialog p { color: var(--muted); }
+.admin-delete-dialog strong { color: var(--foreground); }
+.admin-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.admin-delete-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 12px; background: rgba(185,28,28,.09); color: var(--danger); }
+.admin-delete-warning { margin-top: 16px; padding: 12px; border-radius: 10px; background: rgba(185,28,28,.06); font-size: 13px; line-height: 1.5; }
+.admin-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.admin-dialog-button { min-height: 40px; padding: 0 16px; font-size: 12px; }
+.admin-delete-confirm { border-color: var(--danger); background: var(--danger); color: white; }
+
 .status-verified,
 .status-accepted,
 .status-completed {

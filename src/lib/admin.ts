@@ -49,3 +49,15 @@ export function allowedAdminTransition(entity:string,current:string,next:string)
   if(entity==="staffing_role"&&current==="filled")return next==="closed";
   return true;
 }
+
+const adminUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function validateAdminUserDeletion(id:string,currentAdminId:string){
+ if(!adminUuid.test(id))return "Invalid user account.";
+ if(id===currentAdminId)return "You cannot delete your own administrator account.";
+ return "";
+}
+
+export function adminUserDeleteFailure(error?:{code?:string;message?:string}|null){
+ const dependencyBlocked=error?.code==="23503"||/foreign key|still referenced/i.test(error?.message??"");
+ return dependencyBlocked?"This user has dependent platform records that must be reassigned before deletion.":"Unable to delete this user. Refresh and retry.";
+}

@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { allowedAdminTransition } from "@/lib/admin";
+import { adminUserDeleteFailure,allowedAdminTransition,validateAdminUserDeletion } from "@/lib/admin";
 import {todayInIndia} from "@/lib/exhibitor-listings";
 
 export type AdminActionState={error:string;success:string;phone?:string;email?:string};
@@ -56,6 +56,20 @@ export async function cancelAdminBooking(_state:AdminActionState,data:FormData):
  if(error||!cancelled)return {error:"Unable to cancel this booking.",success:""};
  revalidatePath("/dashboard/admin");revalidatePath("/dashboard/admin/bookings");revalidatePath("/events","layout");
  return {error:"",success:"Booking cancelled."};
+}
+
+export async function deleteAdminUser(_state:AdminActionState,data:FormData):Promise<AdminActionState>{
+ const admin=await requireRole(["admin"]);const db=await createClient();
+ if(!db)return {error:"Admin service is unavailable.",success:""};
+ const id=String(data.get("id")??"");
+ const validationError=validateAdminUserDeletion(id,admin.id);
+ if(validationError)return {error:validationError,success:""};
+ const {data:account,error:loadError}=await db.from("app_accounts").select("id").eq("id",id).maybeSingle();
+ if(loadError||!account)return {error:"This user account is no longer available.",success:""};
+ const {data:deleted,error}=await db.from("app_accounts").delete().eq("id",id).select("id").maybeSingle();
+ if(error||!deleted)return {error:adminUserDeleteFailure(error),success:""};
+ revalidatePath("/dashboard/admin");revalidatePath("/dashboard/admin/users");
+ return {error:"",success:"User deleted."};
 }
 
 export async function revealAdminContact(_state:AdminActionState,data:FormData):Promise<AdminActionState>{

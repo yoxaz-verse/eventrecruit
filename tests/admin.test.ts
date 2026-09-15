@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {allowedAdminTransition,maskEmail,maskPhone,parseAdminListParams} from "../src/lib/admin";
+import {adminUserDeleteFailure,allowedAdminTransition,maskEmail,maskPhone,parseAdminListParams,validateAdminUserDeletion} from "../src/lib/admin";
 
 test("admin list parameters are bounded and normalized",()=>{
  assert.deepEqual(parseAdminListParams({q:"  expo  ",status:"pending_verification",sort:"oldest",page:"3",view:"applications"}),{q:"expo",status:"pending_verification",sort:"oldest",page:3,view:"applications"});
@@ -20,4 +20,14 @@ test("admin status transitions protect terminal workflow states",()=>{
  assert.equal(allowedAdminTransition("organizer_event","cancelled","draft"),false);
  assert.equal(allowedAdminTransition("review","published","hidden"),true);
  assert.equal(allowedAdminTransition("profile","verified","made_up"),false);
+});
+
+test("admin user deletion validates identity and reports dependency failures",()=>{
+ const target="11111111-1111-4111-8111-111111111111";
+ assert.equal(validateAdminUserDeletion("not-a-uuid",target),"Invalid user account.");
+ assert.equal(validateAdminUserDeletion(target,target),"You cannot delete your own administrator account.");
+ assert.equal(validateAdminUserDeletion("22222222-2222-4222-8222-222222222222",target),"");
+ assert.match(adminUserDeleteFailure({code:"23503"}),/dependent platform records/);
+ assert.match(adminUserDeleteFailure({message:"still referenced by a foreign key"}),/dependent platform records/);
+ assert.match(adminUserDeleteFailure(null),/Unable to delete/);
 });
