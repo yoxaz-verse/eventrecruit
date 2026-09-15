@@ -7,12 +7,14 @@ export function parseAdminListParams(input: Record<string,string|string[]|undefi
   const rawFilter=Array.isArray(input.status)?input.status[0]:input.status;
   const rawSort=Array.isArray(input.sort)?input.sort[0]:input.sort;
   const rawPage=Array.isArray(input.page)?input.page[0]:input.page;
+  const rawView=Array.isArray(input.view)?input.view[0]:input.view;
   const parsed=Number(rawPage);
   return {
     q:String(rawQuery??"").trim().slice(0,120),
     status:/^[a-z_]{1,40}$/.test(String(rawFilter??""))?String(rawFilter):"",
     sort:rawSort==="oldest"?"oldest" as const:"newest" as const,
     page:Number.isSafeInteger(parsed)&&parsed>0?Math.min(parsed,10000):1,
+    view:/^[a-z_]{1,40}$/.test(String(rawView??""))?String(rawView):"",
   };
 }
 

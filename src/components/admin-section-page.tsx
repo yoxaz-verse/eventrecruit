@@ -1,10 +1,11 @@
+import Link from "next/link";
 import {DashboardShell} from "@/components/dashboard-shell";
 import {AdminFilters,AdminPagination,AdminTable,DateCell,StatusCell,type AdminColumn} from "@/components/admin-records";
 import {AdminCancelBooking} from "@/components/admin-action-form";
 import {ContactReveal} from "@/components/contact-reveal";
 import {requireRole} from "@/lib/auth";
-import {loadAdminSection} from "@/lib/admin-data";
-import {adminSections,maskEmail,maskPhone,parseAdminListParams,type AdminSection} from "@/lib/admin";
+import {adminSectionViews,loadAdminSection} from "@/lib/admin-data";
+import {adminSections,adminStatusOptions,maskEmail,maskPhone,parseAdminListParams,type AdminSection} from "@/lib/admin";
 
 const titles:Record<AdminSection,string>={users:"Users & contacts",organizations:"Organizations",events:"Events",workforce:"Staffing & placements",bookings:"Bookings & inquiries",network:"Agency & finance network",reputation:"Reviews & reputation"};
 const status=(key="status"):AdminColumn=>({key,label:"Status",format:value=><StatusCell value={value}/>});
@@ -30,9 +31,9 @@ const columns:Record<string,AdminColumn[]>={
 };
 
 export async function AdminSectionPage({section,searchParams}:{section:AdminSection;searchParams:Promise<Record<string,string|string[]|undefined>>}){
- await requireRole(["admin"]);const params=parseAdminListParams(await searchParams);const {datasets,hasNext}=await loadAdminSection(section,params);
- const statuses=[...new Set(datasets.flatMap(d=>d.rows.map(r=>String(r[d.statusKey??"status"]??"")).filter(Boolean)))];
- return <DashboardShell active="admin" current={`/dashboard/admin/${section}`}><span className="badge">Admin control</span><h1 className="mt-3 text-4xl font-black">{titles[section]}</h1><p className="mb-6 mt-2 text-[var(--muted)]">Live platform records with protected, server-authorized controls.</p><AdminFilters q={params.q} sort={params.sort} status={params.status} statuses={statuses}/><div className="grid gap-6">{datasets.map(dataset=><AdminTable columns={columns[dataset.key]??[]} entity={dataset.entity} key={dataset.key} rows={dataset.rows} statusKey={dataset.statusKey} title={dataset.title}/>)}</div><AdminPagination hasNext={hasNext} page={params.page} q={params.q} sort={params.sort} status={params.status}/></DashboardShell>;
+ await requireRole(["admin"]);const params=parseAdminListParams(await searchParams);const {dataset,hasNext}=await loadAdminSection(section,params);const views=adminSectionViews(section);
+ const statuses=dataset.entity?adminStatusOptions[dataset.entity]??[]:[];
+ return <DashboardShell active="admin" current={`/dashboard/admin/${section}`}><span className="badge">Admin control</span><h1 className="mt-3 text-4xl font-black">{titles[section]}</h1><p className="mb-6 mt-2 text-[var(--muted)]">Live platform records with protected, server-authorized controls.</p>{views.length>1&&<nav aria-label="Data views" className="mb-5 flex gap-2 overflow-x-auto pb-1">{views.map(view=><Link className={`button whitespace-nowrap ${view.key===dataset.key?"button-primary":"button-secondary"}`} href={`?view=${view.key}`} key={view.key} prefetch={false}>{view.title}</Link>)}</nav>}<AdminFilters q={params.q} sort={params.sort} status={params.status} statuses={statuses} view={dataset.key}/><AdminTable columns={columns[dataset.key]??[]} entity={dataset.entity} rows={dataset.rows} statusKey={dataset.statusKey} title={dataset.title} total={dataset.total}/><AdminPagination hasNext={hasNext} page={params.page} q={params.q} sort={params.sort} status={params.status} view={dataset.key}/></DashboardShell>;
 }
 
 export function validAdminSection(value:string):value is AdminSection{return adminSections.includes(value as AdminSection);}

@@ -904,7 +904,7 @@ a:focus-visible {
 .brand-orbit-two { right: 4px; bottom: 7px; transform: rotate(32deg) scaleX(.56); }
 .brand-core { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #e4a866; }
 .brand-wordmark { font-size: 1.36rem; line-height: 1; font-weight: 800; }
-.brand-wordmark span { margin-left: 3px; color: var(--accent); }
+.brand-wordmark span { color: var(--accent); }
 .site-header { background: rgba(248, 247, 242, .94); }
 .site-header nav { gap: 5px; }
 .site-header nav .button-secondary { border-color: transparent; background: transparent; box-shadow: none; }

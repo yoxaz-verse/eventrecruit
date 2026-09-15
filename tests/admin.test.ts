@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import {allowedAdminTransition,maskEmail,maskPhone,parseAdminListParams} from "../src/lib/admin";
 
 test("admin list parameters are bounded and normalized",()=>{
- assert.deepEqual(parseAdminListParams({q:"  expo  ",status:"pending_verification",sort:"oldest",page:"3"}),{q:"expo",status:"pending_verification",sort:"oldest",page:3});
- assert.deepEqual(parseAdminListParams({status:"not valid!",sort:"sideways",page:"-4"}),{q:"",status:"",sort:"newest",page:1});
+ assert.deepEqual(parseAdminListParams({q:"  expo  ",status:"pending_verification",sort:"oldest",page:"3",view:"applications"}),{q:"expo",status:"pending_verification",sort:"oldest",page:3,view:"applications"});
+ assert.deepEqual(parseAdminListParams({status:"not valid!",sort:"sideways",page:"-4",view:"not valid!"}),{q:"",status:"",sort:"newest",page:1,view:""});
  assert.equal(parseAdminListParams({page:"999999"}).page,10000);
 });
 

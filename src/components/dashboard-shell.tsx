@@ -20,7 +20,7 @@ export function DashboardShell({
   const activeExploreHref = activeNavigationHref(currentPath, exploreNavigation);
 
   return (
-    <div className="dashboard-shell grid min-h-screen grid-cols-1 md:grid-cols-[285px_1fr] bg-[var(--background)]">
+    <div className="dashboard-shell min-h-screen bg-[var(--background)]">
       
       {/* Mobile Top App Bar */}
       <header className="dashboard-mobile-header md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[var(--line)] px-4 py-3 flex items-center justify-between shadow-xs">
@@ -44,10 +44,10 @@ export function DashboardShell({
       </header>
 
       {/* Desktop Floating Segmented Sidebar (Hidden on Mobile) */}
-      <aside className="dashboard-sidebar hidden md:flex p-4 md:py-6 md:pl-6 md:pr-3 flex-col justify-between gap-4 sticky top-0 h-screen">
+      <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-20 hidden w-[285px] flex-col justify-between gap-4 p-4 md:flex md:py-6 md:pl-6 md:pr-3">
         
         {/* Top Section Box: Brand Header & Navigation */}
-        <div className="panel p-5 rounded-2xl bg-white shadow-sm border border-[var(--line)] flex flex-col justify-between overflow-y-auto">
+        <div className="panel min-h-0 p-5 rounded-2xl bg-white shadow-sm border border-[var(--line)] flex flex-col justify-between">
           <div>
             <Link className="brand-link mb-5 inline-flex items-center gap-3" href="/">
               <span className="brand-mark shadow-xs" aria-hidden="true">
@@ -137,7 +137,7 @@ export function DashboardShell({
       </aside>
 
       {/* Main Content Viewport (Mobile Safe Padding) */}
-      <main className="p-4 md:p-8 pb-24 md:pb-8">{children}</main>
+      <main className="p-4 pb-24 md:ml-[285px] md:p-8">{children}</main>
 
       {/* Mobile Bottom App Navigation Dock */}
       <MobileAppDock activeRole={active} currentPath={currentPath} />
