@@ -13,22 +13,25 @@ export default async function BrowsePage({
   searchParams?: Promise<{ city?: string; q?: string }>;
 }) {
   const { city = "", q = "" } = (await searchParams) ?? {};
-  const db = await createClient();
-  const user = await getCurrentAccount();
-  const [result, profileResult] = user
-    ? await Promise.all([db!.from("staffing_roles")
-        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,starts_at)")
+  const [db, user] = await Promise.all([createClient(), getCurrentAccount()]);
+  const [result, profileResult] = user && db
+    ? await Promise.all([db.from("staffing_roles")
+        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,starts_at,exhibitors(company_name),agencies(name))")
         .eq("status", "open")
         .order("created_at", { ascending: false })
-        .limit(100), db!.from("profiles").select("role,verification_status").eq("id", user.id).maybeSingle()])
+        .limit(100), db.from("profiles").select("role,verification_status").eq("id", user.id).maybeSingle()])
     : [null, null];
   const mayApply = profileResult?.data?.role === "talent" && profileResult.data.verification_status === "verified";
   const roles: EventRole[] = (result?.data ?? []).flatMap((record) => {
     const event = Array.isArray(record.events) ? record.events[0] : record.events;
     if (!event) return [];
+    const exhibitor = Array.isArray(event.exhibitors) ? event.exhibitors[0] : event.exhibitors;
+    const agency = Array.isArray(event.agencies) ? event.agencies[0] : event.agencies;
     return [{
       id: record.id,
       eventTitle: event.title,
+      company: exhibitor?.company_name,
+      agency: agency?.name,
       location: `${event.venue}, ${event.city}`,
       date: `${record.work_starts_on} – ${record.work_ends_on}`,
       shift: `${record.shift_start} – ${record.shift_end}`,

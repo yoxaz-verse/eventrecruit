@@ -10,7 +10,7 @@ import { PasswordField } from "@/components/auth/password-field";
 import { TopNav } from "@/components/top-nav";
 import { getSupabaseServerConfig } from "@/lib/supabase/env";
 import { getCurrentAccount } from "@/lib/auth";
-import { Mail, KeyRound, Building2 } from "lucide-react";
+import { Mail, Building2 } from "lucide-react";
 
 export default async function LoginPage({
   searchParams,
@@ -88,4 +88,3 @@ export default async function LoginPage({
     </div>
   );
 }
-

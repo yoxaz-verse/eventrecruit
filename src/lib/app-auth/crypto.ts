@@ -1,9 +1,7 @@
 import "server-only";
-import { createHash, createHmac, randomBytes, scrypt as callbackScrypt, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
+import { createHash, createHmac, randomBytes } from "node:crypto";
+export {hashPassword,verifyPassword} from "@/lib/password-hash";
 export { generateOtp } from "./otp-code";
-
-const scrypt = promisify(callbackScrypt);
 
 export function authSecret() {
   const secret = process.env.APP_AUTH_SECRET;
@@ -21,18 +19,4 @@ export function generateToken() {
 
 export function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
-}
-
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16);
-  const key = (await scrypt(password, salt, 64)) as Buffer;
-  return `scrypt:${salt.toString("hex")}:${key.toString("hex")}`;
-}
-
-export async function verifyPassword(password: string, encoded: string) {
-  const [algorithm, saltHex, keyHex] = encoded.split(":");
-  if (algorithm !== "scrypt" || !/^[0-9a-f]{32}$/.test(saltHex ?? "") || !/^[0-9a-f]{128}$/.test(keyHex ?? "")) return false;
-  const expected = Buffer.from(keyHex, "hex");
-  const actual = (await scrypt(password, Buffer.from(saltHex, "hex"), expected.length)) as Buffer;
-  return timingSafeEqual(expected, actual);
 }

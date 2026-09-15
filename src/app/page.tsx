@@ -113,15 +113,34 @@ const landingMetrics = [
 ];
 
 export default async function Home() {
-  const signedIn = Boolean(await getCurrentAccount());
-  const db = await createClient();
-  const upcomingResult = db ? await db.from('organizer_events').select('id,title,city,starts_at,ends_at,staffing_needs').eq('status','published').gte('ends_at',indiaToday()).order('starts_at').limit(3) : null;
+  const upcomingResultPromise = createClient().then((db) =>
+    db
+      ? db
+          .from("organizer_events")
+          .select("id,title,city,starts_at,ends_at,staffing_needs")
+          .eq("status", "published")
+          .gte("ends_at", indiaToday())
+          .order("starts_at")
+          .limit(3)
+      : null,
+  );
+  const [account, upcomingResult] = await Promise.all([
+    getCurrentAccount(),
+    upcomingResultPromise,
+  ]);
+  const signedIn = Boolean(account);
   const upcomingEvents = (upcomingResult?.data ?? []) as Pick<OrganizerEvent,'id'|'title'|'city'|'starts_at'|'ends_at'|'staffing_needs'>[];
   return (
     <div className="shell">
-      <TopNav />
-      <main>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <TopNav signedIn={signedIn} />
+      <main id="main-content">
         <section className="hero-band border-b border-[var(--line)] relative overflow-hidden">
+          <div className="hero-pattern" aria-hidden="true">
+            <span className="hero-orbit hero-orbit-one" />
+            <span className="hero-orbit hero-orbit-two" />
+            <span className="hero-coordinate">28.6139° N · 77.2090° E</span>
+          </div>
           <div className="page hero-layout grid items-center gap-12 py-16 lg:grid-cols-[.95fr_1.05fr] lg:py-24">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-extrabold text-[var(--accent)] shadow-xs">
@@ -175,6 +194,7 @@ export default async function Home() {
             </div>
 
             <div className="hero-visual relative">
+              <span className="hero-image-label" aria-hidden="true">FIELD / 01</span>
               <Image
                 src="/brand/expo-sphere-event-team.webp"
                 width={1672}
@@ -213,15 +233,25 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="page py-14" aria-labelledby="upcoming-events-heading">
+        <div className="venue-ribbon" aria-label="Event and activation formats">
+          <div className="venue-ribbon-track">
+            {[...places, ...places].map((place, index) => (
+              <span key={`${place}-${index}`}>
+                <Sparkles size={13} aria-hidden /> {place}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <section className="home-section patterned-section page py-14" aria-labelledby="upcoming-events-heading">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="section-heading"><span className="badge">Find your next opportunity</span><h2 id="upcoming-events-heading">Upcoming events</h2><p className="mt-4 text-[var(--muted)]">See who is hiring and how many people each position needs.</p></div>
             <Link className="button button-secondary" href="/events">View all events <ArrowRight size={18} aria-hidden /></Link>
           </div>
-          {!db || upcomingResult?.error ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(event=><article className="panel event-card gap-4 p-6" key={event.id}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>)}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
+          {!upcomingResult || upcomingResult.error ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(event=><article className="panel event-card gap-4 p-6" key={event.id}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>)}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
         </section>
 
-        <section className="page py-14">
+        <section className="home-section page py-14 section-numbered">
           <div className="section-heading">
             <span className="badge">What we do</span>
             <h2>We take care of the people behind your event, store, or campaign.</h2>
@@ -240,7 +270,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="coverage-band border-y border-[var(--line)]">
+        <section className="home-section coverage-band border-y border-[var(--line)] section-numbered">
           <div className="page grid items-center gap-10 py-14 lg:grid-cols-[.95fr_1.05fr]">
             <div className="section-heading">
               <span className="badge">Where we help</span>
@@ -304,7 +334,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="page py-14">
+        <section className="home-section page py-14 section-numbered">
           <div className="section-heading">
             <span className="badge">Who we serve</span>
             <h2>Built for the teams responsible for getting people on the ground.</h2>
@@ -323,7 +353,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="process-band border-y border-[var(--line)]">
+        <section className="home-section process-band border-y border-[var(--line)] section-numbered">
           <div className="page py-14">
             <div className="section-heading">
               <span className="badge">How it works</span>
@@ -344,7 +374,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="page py-14">
+        <section className="home-section page py-14 section-numbered metrics-section">
           <div className="section-heading">
             <span className="badge">Marketplace signals</span>
             <h2>Real operating context for teams that need people quickly.</h2>
@@ -360,7 +390,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="cta-band">
+        <section className="home-section cta-band">
           <div className="page py-14">
             <div className="cta-content">
               <div>

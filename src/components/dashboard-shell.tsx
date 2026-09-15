@@ -1,40 +1,10 @@
 import Link from "next/link";
-import { Building2, Sparkles, ShieldCheck, Users, CalendarDays, ClipboardList, UserCheck, Star, Compass, Briefcase, Globe, Menu } from "lucide-react";
+import { Compass } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 import { SidebarLiveWidget } from "@/components/sidebar-live-widget";
 import { SidebarMiddleCard } from "@/components/sidebar-middle-card";
 import { MobileAppDock } from "@/components/mobile-app-dock";
-
-const mainNav = {
-  organizer: [
-    { href: "/dashboard/organizer", label: "Overview", icon: Building2 },
-    { href: "/dashboard/organizer/events/new", label: "Create event", icon: CalendarDays },
-    { href: "/dashboard/organizer/company", label: "Company Profile", icon: Building2 },
-  ],
-  admin: [
-    { href: "/dashboard/admin", label: "Overview", icon: ShieldCheck },
-    { href: "/dashboard/admin/events", label: "Event reviews", icon: CalendarDays },
-  ],
-  agency: [
-    { href: "/dashboard/agency", label: "Overview", icon: Users },
-  ],
-  exhibitor: [
-    { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
-    { href: "/dashboard/exhibitor/events", label: "My Events", icon: CalendarDays },
-    { href: "/dashboard/exhibitor/space-inquiries", label: "Space Inquiries", icon: ClipboardList },
-    { href: "/dashboard/exhibitor/requests", label: "Staff Requests", icon: ClipboardList },
-    { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck },
-    { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star },
-  ],
-  talent: [
-    { href: "/dashboard/talent", label: "Overview", icon: Sparkles },
-  ],
-};
-
-const exploreNav = [
-  { href: "/browse", label: "Browse Open Roles", icon: Briefcase },
-  { href: "/events", label: "Public Events", icon: Globe },
-];
+import { activeNavigationHref, exploreNavigation, roleNavigation } from "@/lib/navigation";
 
 export function DashboardShell({
   active,
@@ -46,12 +16,14 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const currentPath = current ?? `/dashboard/${active}`;
+  const activeManagementHref = activeNavigationHref(currentPath, roleNavigation[active]);
+  const activeExploreHref = activeNavigationHref(currentPath, exploreNavigation);
 
   return (
     <div className="dashboard-shell grid min-h-screen grid-cols-1 md:grid-cols-[285px_1fr] bg-[var(--background)]">
       
       {/* Mobile Top App Bar */}
-      <header className="md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[var(--line)] px-4 py-3 flex items-center justify-between shadow-xs">
+      <header className="dashboard-mobile-header md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[var(--line)] px-4 py-3 flex items-center justify-between shadow-xs">
         <Link className="brand-link flex items-center gap-2.5" href="/">
           <span className="brand-mark shadow-xs" aria-hidden="true">
             <span className="brand-orbit brand-orbit-one" />
@@ -103,9 +75,9 @@ export function DashboardShell({
                   Management
                 </p>
                 <nav className="grid gap-1">
-                  {mainNav[active].map((item) => {
+                  {roleNavigation[active].map((item) => {
                     const Icon = item.icon;
-                    const isActive = item.href === currentPath;
+                    const isActive = item.href === activeManagementHref;
                     return (
                       <Link
                         key={item.href}
@@ -130,9 +102,9 @@ export function DashboardShell({
                   Quick Explore
                 </p>
                 <nav className="grid gap-1">
-                  {exploreNav.map((item) => {
+                  {exploreNavigation.map((item) => {
                     const Icon = item.icon;
-                    const isActive = item.href === currentPath;
+                    const isActive = item.href === activeExploreHref;
                     return (
                       <Link
                         key={item.href}
@@ -172,4 +144,3 @@ export function DashboardShell({
     </div>
   );
 }
-

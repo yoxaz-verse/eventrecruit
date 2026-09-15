@@ -2,7 +2,28 @@ export type Company = { id: string; name: string; city: string; description: str
 export type StaffingNeed = { title: string; people_needed: number | null };
 export type BookingSlot = { id?: string; slot_date: string; start_time: string; end_time: string; capacity: number; booked_count?: number };
 export type SpaceOffer = { id?: string; name: string; description: string; inclusions: string; area_sqft: number | null; unit_count: number | null; price_type: 'fixed' | 'per_sqft' | 'quote'; price_inr: number | null; is_active?: boolean };
-export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; starts_at: string | null; ends_at: string | null; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; pricing_chart_path?: string | null; floor_layout_path?: string | null };
+export const eventTypes = ['expo','exhibition','activation','fair_festival','conference','other'] as const;
+export type EventType = typeof eventTypes[number];
+export const eventTypeLabels: Record<EventType,string> = { expo:'Expo / Trade Show', exhibition:'Exhibition / Showcase', activation:'Pop-up / Brand Activation', fair_festival:'Fair / Mela / Festival', conference:'Conference / Corporate Event', other:'Other' };
+export const venueSettings = ['convention_centre','mall_retail','hotel_banquet','outdoor_public_ground','store_showroom','office_campus','other'] as const;
+export type VenueSetting = typeof venueSettings[number];
+export const venueSettingLabels: Record<VenueSetting,string> = { convention_centre:'Convention / exhibition centre', mall_retail:'Mall / retail', hotel_banquet:'Hotel / banquet', outdoor_public_ground:'Outdoor / public ground', store_showroom:'Store / showroom', office_campus:'Office / campus', other:'Other' };
+export function eventTypeLabel(value:string) { return eventTypeLabels[value as EventType]??eventTypeLabels.other; }
+export function venueSettingLabel(value:string) { return venueSettingLabels[value as VenueSetting]??venueSettingLabels.other; }
+export const requirementSections = ['exhibitor_spaces','staffing','attendee_booking','venue_infrastructure','utilities_equipment','compliance_safety','logistics'] as const;
+export type RequirementSection = typeof requirementSections[number];
+export const requirementSectionLabels: Record<RequirementSection,string> = { exhibitor_spaces:'Exhibitor / stall spaces', staffing:'Talent / staffing', attendee_booking:'Attendee booking', venue_infrastructure:'Venue infrastructure', utilities_equipment:'Utilities / equipment', compliance_safety:'Compliance / safety', logistics:'Logistics' };
+export const eventRequirementTemplates: Record<EventType,RequirementSection[]> = {
+ expo:['exhibitor_spaces','attendee_booking','staffing','venue_infrastructure','utilities_equipment','logistics'],
+ exhibition:['exhibitor_spaces','attendee_booking','staffing','venue_infrastructure'],
+ activation:['staffing','utilities_equipment','logistics'],
+ fair_festival:['exhibitor_spaces','staffing','venue_infrastructure','utilities_equipment','compliance_safety','logistics'],
+ conference:['attendee_booking','staffing','venue_infrastructure','logistics'],
+ other:[],
+};
+export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; starts_at: string | null; ends_at: string | null; event_type: EventType; venue_setting: VenueSetting; requirement_sections: RequirementSection[]; requirement_details: Partial<Record<RequirementSection,string>>; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; pricing_chart_path?: string | null; floor_layout_path?: string | null };
+export function validEventClassification(eventType:string,venueSetting:string) { return eventTypes.includes(eventType as EventType) && venueSettings.includes(venueSetting as VenueSetting); }
+export function validRequirementSections(sections:string[]) { return sections.length<=requirementSections.length && new Set(sections).size===sections.length && sections.every(section=>requirementSections.includes(section as RequirementSection)); }
 export function validSpaceOffer(offer: SpaceOffer) {
  return offer.name.trim().length > 0 && offer.name.length <= 160 && offer.description.length <= 3000 && offer.inclusions.length <= 3000 &&
   (offer.area_sqft === null || (Number.isFinite(offer.area_sqft) && offer.area_sqft > 0 && offer.area_sqft <= 1000000)) &&

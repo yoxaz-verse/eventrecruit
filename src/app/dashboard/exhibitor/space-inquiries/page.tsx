@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 export default async function SpaceInquiriesPage() {
  const profile=await requireRole(['exhibitor']);
  const db=await createClient(); if(!db) throw new Error('Inquiries are temporarily unavailable.');
- const {data:inquiries,error}=await db.from('event_space_inquiries').select('id,event_id,offer_id,requested_area_sqft,requested_units,message,status,created_at').eq('exhibitor_id',profile.id).order('created_at',{ascending:false});
+ const {data:exhibitor}=await db.from('exhibitors').select('id').eq('owner_id',profile.id).maybeSingle();
+ const {data:inquiries,error}=exhibitor?await db.from('event_space_inquiries').select('id,event_id,offer_id,requested_area_sqft,requested_units,message,status,created_at').eq('exhibitor_id',exhibitor.id).order('created_at',{ascending:false}):{data:[],error:null};
  if(error) throw new Error('Unable to load space inquiries.');
  const eventIds=[...new Set((inquiries??[]).map(inquiry=>inquiry.event_id))], offerIds=[...new Set((inquiries??[]).map(inquiry=>inquiry.offer_id))];
  const {data:events}=eventIds.length?await db.from('organizer_events').select('id,title').in('id',eventIds):{data:[]};

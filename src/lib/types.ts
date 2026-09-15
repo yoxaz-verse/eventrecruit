@@ -1,5 +1,16 @@
 export type UserRole = "organizer" | "admin" | "agency" | "exhibitor" | "talent";
 
+export type ExhibitorKind = "platform" | "external";
+export type AgencyExhibitorRelationshipStatus = "pending" | "active" | "declined" | "revoked";
+export type SelectedClientContext = {
+  exhibitorId: string;
+  companyName: string;
+  kind: ExhibitorKind;
+  agencyId?: string;
+  agencyName?: string;
+};
+export type ActorPrincipalAttribution = { actorId: string; exhibitorId: string };
+
 export type VerificationStatus = "pending" | "verified" | "rejected";
 
 export type ApplicationStatus =

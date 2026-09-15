@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentAccount } from '@/lib/auth';
-import { validBookingSlot, validDate, validSpaceAttachment, validSpaceOffer, validStaffingNeeds, type BookingSlot, type SpaceOffer, type StaffingNeed } from '@/lib/organizer';
+import { requirementSections, validBookingSlot, validDate, validEventClassification, validRequirementSections, validSpaceAttachment, validSpaceOffer, validStaffingNeeds, type BookingSlot, type RequirementSection, type SpaceOffer, type StaffingNeed } from '@/lib/organizer';
 export type FormState = { error: string };
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
 async function session() {
@@ -41,6 +41,18 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  if (id && !/^[0-9a-f-]{36}$/i.test(id)) return {error:'Invalid event.'};
  const status = value(data,'status');
  if (!['draft','published','cancelled'].includes(status)) return {error:'Choose a valid event status.'};
+ const eventType=value(data,'event_type'), venueSetting=value(data,'venue_setting');
+ if(!validEventClassification(eventType,venueSetting)) return {error:'Choose a valid event type and venue setting.'};
+ const sections=data.getAll('requirement_sections').map(String);
+ if(!validRequirementSections(sections)) return {error:'Choose valid requirement sections.'};
+ let rawDetails:unknown;
+ try { rawDetails=JSON.parse(value(data,'requirement_details')||'{}'); } catch { return {error:'Check the requirement notes and retry.'}; }
+ if(!rawDetails||Array.isArray(rawDetails)||typeof rawDetails!=='object') return {error:'Check the requirement notes and retry.'};
+ const requirementDetails:Partial<Record<RequirementSection,string>>={};
+ for(const [key,detail] of Object.entries(rawDetails)) {
+   if(!requirementSections.includes(key as RequirementSection)||typeof detail!=='string'||detail.length>3000) return {error:'Requirement notes must use the available sections and stay within 3,000 characters.'};
+   if(detail.trim()) requirementDetails[key as RequirementSection]=detail.trim();
+ }
  const title=value(data,'title'), description=value(data,'description'), venue=value(data,'venue'), city=value(data,'city'), start=value(data,'starts_at'), end=value(data,'ends_at');
  const bookingUrl=value(data,'booking_url');
  if (bookingUrl) { try { if (new URL(bookingUrl).protocol !== 'https:') return {error:'Booking link must use HTTPS.'}; } catch { return {error:'Enter a valid booking URL.'}; } }
@@ -74,9 +86,9 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if (slots.some(slot=>slot.id && !existing?.some(old=>old.id===slot.id))) return {error:'Invalid slot.'};
    if (existing?.some(old=>old.booked_count>0 && (slots.some(slot=>slot.id===old.id && (slot.slot_date!==old.slot_date || slot.start_time!==old.start_time.slice(0,5) || slot.end_time!==old.end_time.slice(0,5) || slot.capacity<old.booked_count)) || (requestedIds.has(old.id) && (old.slot_date<start || old.slot_date>end))))) return {error:'Booked slots cannot be rescheduled or moved outside event dates, and capacity cannot fall below reservations.'};
  }
- const payload={title,description,venue,city,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl};
+ const payload={title,description,venue,city,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails};
  const {data:savedId,error}=await db.rpc('save_organizer_event_with_spaces',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots,p_offers:offers.map((offer,position)=>({...offer,position}))});
- if (error || !savedId) return {error:error?.message?.includes('Published exhibitor spaces')?'Add at least one complete exhibitor offer before publishing a new event.':'Unable to save event, slots, and offers. Check for conflicting reservations and retry.'};
+ if (error || !savedId) return {error:error?.message?.includes('Published exhibitor spaces')?'Add at least one complete exhibitor offer or turn off the exhibitor / stall spaces section before publishing.':'Unable to save event, slots, and offers. Check for conflicting reservations and retry.'};
  eventId=savedId;
  for (const {kind,file} of uploads) {
    const column=kind==='pricing_chart'?'pricing_chart_path':'floor_layout_path';

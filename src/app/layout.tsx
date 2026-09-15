@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -10,8 +10,32 @@ const geist = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "exporb",
-  description: "Event services and expo recruitment marketplace for exhibitors, agencies, and verified event talent.",
+  title: {
+    default: "exporb | Verified event and retail talent across India",
+    template: "%s | exporb",
+  },
+  description: "Find and coordinate verified talent for exhibitions, retail activations, product launches, roadshows, and brand campaigns across India.",
+  applicationName: "exporb",
+  keywords: ["event staffing India", "exhibition staff", "retail promoters", "brand activation talent"],
+  openGraph: {
+    title: "exporb | Verified event and retail talent across India",
+    description: "Find and coordinate verified people for events, stores, launches, and activations across India.",
+    siteName: "exporb",
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "exporb | Verified event and retail talent across India",
+    description: "Find and coordinate verified people for events, stores, launches, and activations across India.",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f8f7f2",
 };
 
 export default function RootLayout({

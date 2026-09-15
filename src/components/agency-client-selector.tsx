@@ -1,0 +1,5 @@
+import type { SelectedClientContext } from "@/lib/types";
+
+export function AgencyClientSelector({ clients, selected, path }: { clients: SelectedClientContext[]; selected: SelectedClientContext | null; path: string }) {
+  return <div className="panel mb-6 flex flex-wrap items-end justify-between gap-4 p-4"><div><p className="text-xs font-black uppercase tracking-wider text-[var(--muted)]">Working on behalf of</p>{selected?<><h2 className="mt-1 text-xl font-black">{selected.companyName}</h2><span className="badge mt-2">{selected.kind === "platform" ? "Platform exhibitor" : "External exhibitor"}</span></>:<p className="mt-1 font-bold">No active client selected</p>}</div>{clients.length?<form action={path}><label className="label">Switch client<select className="input" name="client" defaultValue={selected?.exhibitorId}>{clients.map(client=><option key={client.exhibitorId} value={client.exhibitorId}>{client.companyName} · {client.kind}</option>)}</select></label><button className="button button-secondary mt-2" type="submit">Open workspace</button></form>:null}</div>;
+}

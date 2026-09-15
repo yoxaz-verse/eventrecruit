@@ -1,117 +1,75 @@
-"use client";
-
 import Link from "next/link";
-import { Zap, TrendingUp, CheckCircle2, ArrowRight } from "lucide-react";
+import { ArrowRight, Check, Circle } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 
-const roleCards: Record<UserRole, {
-  badge: string;
+type Guide = {
   title: string;
-  subtitle: string;
-  statLabel: string;
-  statValue: string;
-  tip: string;
+  description: string;
+  steps: [string, string, string];
   actionText: string;
   actionHref: string;
-}> = {
+};
+
+const roleGuides: Record<UserRole, Guide> = {
   talent: {
-    badge: "Level 2 Verified",
-    title: "Priority Placement",
-    subtitle: "High Demand Active",
-    statLabel: "Match Score",
-    statValue: "98%",
-    tip: "Delhi & Mumbai expos actively hiring Product Demonstrators & Hosts.",
-    actionText: "Browse Top Openings",
+    title: "Find your next role",
+    description: "Open roles are the quickest place to start.",
+    steps: ["Complete your profile", "Choose a suitable role", "Send your application"],
+    actionText: "Browse open roles",
     actionHref: "/browse",
   },
   exhibitor: {
-    badge: "Instant Staffing",
-    title: "Booth Crew Dispatch",
-    subtitle: "Avg response < 15 mins",
-    statLabel: "Fill Rate",
-    statValue: "99.4%",
-    tip: "Request verified promoters 48h before expo for guaranteed placement.",
-    actionText: "Request Crew Now",
-    actionHref: "/dashboard/exhibitor/requests/new",
+    title: "Get ready for an event",
+    description: "Start with the event, then add people or space.",
+    steps: ["Add your event", "Request staff or space", "Review responses"],
+    actionText: "Add an event",
+    actionHref: "/dashboard/exhibitor/events/new",
   },
   organizer: {
-    badge: "Ops Overwatch",
-    title: "Event Approvals",
-    subtitle: "Real-time Verification",
-    statLabel: "Active Hubs",
-    statValue: "10 Cities",
-    tip: "Review exhibitor requests promptly to optimize floor layout.",
-    actionText: "Create New Event",
+    title: "Publish your event",
+    description: "Create it once, then manage everything from its page.",
+    steps: ["Create the event", "Add space and staffing", "Publish and manage"],
+    actionText: "Create an event",
     actionHref: "/dashboard/organizer/events/new",
   },
   agency: {
-    badge: "Verified Agency",
-    title: "Roster Management",
-    subtitle: "Full Compliance",
-    statLabel: "Active Talent",
-    statValue: "48 Crew",
-    tip: "Keep crew availability updated for instant match notifications.",
-    actionText: "Explore Roles",
-    actionHref: "/browse",
+    title: "Manage a client job",
+    description: "Keep each client's activity together from the start.",
+    steps: ["Add a client", "Create their request", "Track applicants"],
+    actionText: "Add a client",
+    actionHref: "/dashboard/agency/clients",
   },
   admin: {
-    badge: "System Overwatch",
-    title: "Platform Monitor",
-    subtitle: "Zero Disruptions",
-    statLabel: "Health Status",
-    statValue: "100%",
-    tip: "All booking gateways and security policies are active.",
-    actionText: "Review Events",
+    title: "Review what needs attention",
+    description: "Start with submitted events awaiting a decision.",
+    steps: ["Open the review queue", "Check event details", "Approve or return"],
+    actionText: "Review events",
     actionHref: "/dashboard/admin/events",
   },
 };
 
 export function SidebarMiddleCard({ active }: { active: UserRole }) {
-  const card = roleCards[active] || roleCards.talent;
+  const guide = roleGuides[active];
 
   return (
-    <div className="panel p-4 rounded-2xl bg-gradient-to-br from-white via-white to-[var(--surface)] shadow-xs border border-[var(--line)] space-y-3">
-      {/* Header Badge & Title */}
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
-          <CheckCircle2 size={11} className="text-emerald-600" />
-          {card.badge}
-        </span>
-        <span className="text-[10px] font-bold text-[var(--accent)] flex items-center gap-0.5">
-          <TrendingUp size={12} />
-          Active
-        </span>
-      </div>
-
-      <div>
-        <h4 className="text-xs font-black tracking-tight text-[var(--foreground)] flex items-center gap-1.5">
-          <Zap size={14} className="text-[var(--accent)] fill-[var(--accent)]/20" />
-          {card.title}
-        </h4>
-        <p className="text-[11px] font-medium text-[var(--muted)] mt-0.5">
-          {card.subtitle}
-        </p>
-      </div>
-
-      {/* Mini Stat Pill */}
-      <div className="p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--line)]/60 flex items-center justify-between">
-        <span className="text-[11px] font-bold text-[var(--muted)]">{card.statLabel}</span>
-        <span className="text-xs font-black text-[var(--foreground)] font-mono">{card.statValue}</span>
-      </div>
-
-      {/* Tip / Highlight */}
-      <p className="text-[10px] leading-relaxed text-[var(--muted)] font-medium">
-        {card.tip}
-      </p>
-
-      {/* Action Button */}
-      <Link
-        href={card.actionHref}
-        className="inline-flex items-center justify-between w-full text-[11px] font-extrabold text-[var(--accent)] hover:text-emerald-900 bg-[var(--accent)]/8 hover:bg-[var(--accent)]/15 border border-[var(--accent)]/20 rounded-xl py-2 px-3 transition-all group"
-      >
-        <span>{card.actionText}</span>
-        <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+    <section className="panel rounded-2xl border border-[var(--line)] bg-white p-4 shadow-xs" aria-label="Quick start">
+      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)]">Quick start</p>
+      <h2 className="mt-1 text-sm font-black tracking-tight">{guide.title}</h2>
+      <p className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">{guide.description}</p>
+      <ol className="mt-3 grid gap-2" aria-label="Recommended steps">
+        {guide.steps.map((step, index) => (
+          <li className="flex items-center gap-2 text-[11px] font-bold" key={step}>
+            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${index === 0 ? "bg-[var(--accent)] text-white" : "border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)]"}`} aria-hidden="true">
+              {index === 0 ? <Check size={12} /> : <Circle size={8} />}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <Link href={guide.actionHref} className="mt-4 inline-flex w-full items-center justify-between rounded-xl bg-[var(--ink)] px-3 py-2.5 text-[11px] font-extrabold text-white transition-transform active:scale-[.98]">
+        <span>{guide.actionText}</span>
+        <ArrowRight size={14} aria-hidden="true" />
       </Link>
-    </div>
+    </section>
   );
 }

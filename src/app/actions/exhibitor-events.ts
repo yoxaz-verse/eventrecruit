@@ -7,9 +7,10 @@ import { createClient } from "@/lib/supabase/server";
 import { validDate } from "@/lib/organizer";
 import { todayInIndia } from "@/lib/exhibitor-listings";
 import { isUpcomingDateRange } from "@/lib/event-selection";
+import { canManageExhibitor } from "@/lib/agency-workspace";
 
 export async function submitExhibitorEvent(formData: FormData) {
-  const profile = await requireRole(["exhibitor"]);
+  const profile = await requireRole(["exhibitor","agency"]);
   const db = await createClient();
   if (!db) throw new Error("Event submission is temporarily unavailable.");
   const title = String(formData.get("title") ?? "").trim();
@@ -19,13 +20,15 @@ export async function submitExhibitorEvent(formData: FormData) {
   const starts_at = String(formData.get("starts_at") ?? "");
   const ends_at = String(formData.get("ends_at") ?? "");
   if (!title || title.length > 160 || !venue || venue.length > 200 || !city || city.length > 120 || description.length > 10000 || !validDate(starts_at) || !validDate(ends_at) || !isUpcomingDateRange(starts_at, ends_at, todayInIndia())) throw new Error("Check the event details and use current or upcoming dates.");
-  const { data: exhibitor } = await db.from("exhibitors").select("id").eq("owner_id", profile.id).maybeSingle();
+  const { data: owned } = await db.from("exhibitors").select("id").eq("owner_id", profile.id).maybeSingle();
+  const exhibitorId = profile.role === "agency" ? String(formData.get("exhibitor_id") ?? "") : owned?.id ?? "";
+  const exhibitor = exhibitorId && await canManageExhibitor(db, profile.id, exhibitorId) ? {id:exhibitorId} : null;
   if (!exhibitor) throw new Error("Complete your exhibitor profile first.");
-  const { error } = await db.from("exhibitor_event_submissions").insert({ exhibitor_id: exhibitor.id, title, description, venue, city, starts_at, ends_at, status: "pending" });
+  const { error } = await db.from("exhibitor_event_submissions").insert({ exhibitor_id: exhibitor.id, actor_id: profile.id, title, description, venue, city, starts_at, ends_at, status: "pending" });
   if (error) throw new Error("Unable to submit event.");
   revalidatePath("/dashboard/exhibitor/events");
   revalidatePath("/dashboard/admin/events");
-  redirect("/dashboard/exhibitor/events?submitted=1");
+  redirect(profile.role === "agency" ? `/dashboard/agency/events?client=${exhibitor.id}&submitted=1` : "/dashboard/exhibitor/events?submitted=1");
 }
 
 export async function reviewExhibitorEvent(formData: FormData) {

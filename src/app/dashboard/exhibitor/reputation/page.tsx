@@ -1,12 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
-import { ScoreSummaryCard } from "@/components/reputation/score-summary-card";
-import { CategoryScoreBars } from "@/components/reputation/category-score-bars";
-import { TestimonialList } from "@/components/reputation/testimonial-list";
 import { requireRole } from "@/lib/auth";
-import { reputations, testimonials } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function ExhibitorReputation() {
-  await requireRole(["exhibitor"]);
-  const example = reputations.find(item => item.role === "exhibitor")!;
-  return <DashboardShell active="exhibitor" current="/dashboard/exhibitor/reputation"><span className="badge">Exhibitor panel</span><h1 className="mt-3 mb-3 text-4xl font-black">Reputation</h1><p className="mb-6 text-[var(--muted)]">Illustrative reputation preview. Account-specific scores will appear when live review records are connected.</p><div className="grid gap-6 lg:grid-cols-2"><ScoreSummaryCard reputation={example}/><CategoryScoreBars reputation={example}/></div><div className="mt-8"><TestimonialList testimonials={testimonials.filter(item => item.revieweeName === example.displayName)}/></div></DashboardShell>;
-}
+export default async function ExhibitorReputation(){const profile=await requireRole(["exhibitor"]),db=await createClient();if(!db)throw new Error("Reputation unavailable.");const {data:x}=await db.from("exhibitors").select("id,company_name").eq("owner_id",profile.id).maybeSingle();const {data:r,error}=x?await db.from("exhibitor_reputation").select("*").eq("exhibitor_id",x.id).maybeSingle():{data:null,error:null};if(error)throw new Error("Unable to load reputation.");const metrics=[["Trust score",r?.trust_score??100],["Average rating",Number(r?.average_rating??0).toFixed(2)],["Completed",r?.completed_count??0],["Reliability",r?.reliability_score??100],["Communication",r?.communication_score??100],["Professionalism",r?.professionalism_score??100]];return <DashboardShell active="exhibitor" current="/dashboard/exhibitor/reputation"><span className="badge">Exhibitor panel</span><h1 className="mt-3 text-4xl font-black">{x?.company_name??"Exhibitor"} reputation</h1><p className="mt-2 text-[var(--muted)]">Live scores belong to the exhibitor business, including work handled by authorized agencies.</p><div className="mt-7 grid gap-4 md:grid-cols-3">{metrics.map(([label,value])=><article className="panel p-5" key={label}><p className="text-sm font-bold text-[var(--muted)]">{label}</p><strong className="text-3xl font-black">{value}</strong></article>)}</div></DashboardShell>}

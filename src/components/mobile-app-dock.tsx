@@ -1,42 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Calendar, Menu, X, Sparkles, Building2, ShieldCheck, Users, Star, ClipboardList, UserCheck } from "lucide-react";
+import { Home, Briefcase, CalendarDays, Menu, X } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 import { SidebarLiveWidget } from "@/components/sidebar-live-widget";
 import { SidebarMiddleCard } from "@/components/sidebar-middle-card";
+import { activeNavigationHref, isNavigationItemActive, roleNavigation } from "@/lib/navigation";
 
 interface MobileAppDockProps {
   activeRole?: UserRole;
   currentPath?: string;
 }
-
-const roleNavItems = {
-  organizer: [
-    { href: "/dashboard/organizer", label: "Overview", icon: Building2 },
-    { href: "/dashboard/organizer/events/new", label: "Create Event", icon: Calendar },
-    { href: "/dashboard/organizer/company", label: "Company", icon: Building2 },
-  ],
-  admin: [
-    { href: "/dashboard/admin", label: "Overview", icon: ShieldCheck },
-    { href: "/dashboard/admin/events", label: "Event Reviews", icon: Calendar },
-  ],
-  agency: [
-    { href: "/dashboard/agency", label: "Overview", icon: Users },
-  ],
-  exhibitor: [
-    { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
-    { href: "/dashboard/exhibitor/events", label: "My Events", icon: Calendar },
-    { href: "/dashboard/exhibitor/requests", label: "Requests", icon: ClipboardList },
-    { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck },
-    { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star },
-  ],
-  talent: [
-    { href: "/dashboard/talent", label: "Overview", icon: Sparkles },
-  ],
-};
 
 export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppDockProps) {
   const pathname = usePathname();
@@ -45,6 +21,8 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
   // Modal state management for smooth enter & exit transitions
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const openDrawer = useCallback(() => {
     setMounted(true);
@@ -65,6 +43,38 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDrawer();
+        menuButtonRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab" || !sheetRef.current) return;
+      const focusable = Array.from(sheetRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    requestAnimationFrame(() => sheetRef.current?.querySelector<HTMLElement>("button")?.focus());
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mounted, closeDrawer]);
+
   // Close drawer on route change
   useEffect(() => {
     const frame = requestAnimationFrame(() => closeDrawer());
@@ -72,56 +82,59 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
   }, [pathname, closeDrawer]);
 
   const mainTabs = [
-    { href: `/dashboard/${activeRole}`, label: "Portal", icon: LayoutDashboard },
+    { href: "/", label: "Home", icon: Home },
     { href: "/browse", label: "Roles", icon: Briefcase },
-    { href: "/events", label: "Events", icon: Calendar },
+    { href: "/events", label: "Events", icon: CalendarDays },
   ];
+  const activeRoleHref = activeNavigationHref(active, roleNavigation[activeRole]);
 
   return (
     <>
       {/* Fixed Bottom App Bar for Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-[var(--line)] shadow-2xl px-3 py-2 flex items-center justify-around">
+      <nav className="mobile-tab-bar md:hidden" aria-label="Dashboard mobile navigation">
+        <div className="mobile-tab-list">
         {mainTabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = active === tab.href || (tab.href.startsWith("/dashboard") && active.startsWith("/dashboard"));
+          const isActive = isNavigationItemActive(active, tab.href);
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 ${
-                isActive
-                  ? "text-[var(--accent)] font-black"
-                  : "text-[var(--muted)] font-bold hover:text-[var(--foreground)]"
-              }`}
+              className={`mobile-tab ${isActive ? "mobile-tab-active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
             >
-              <Icon size={20} className={isActive ? "stroke-[2.5]" : "stroke-[1.8]"} />
-              <span className="text-[10px] tracking-tight">{tab.label}</span>
+              <Icon size={21} aria-hidden />
+              <span>{tab.label}</span>
             </Link>
           );
         })}
 
         {/* Menu Toggle for Mobile Sheet */}
         <button
+          ref={menuButtonRef}
           onClick={mounted ? closeDrawer : openDrawer}
           type="button"
           aria-label="Toggle portal navigation menu"
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all active:scale-95 ${
-            mounted && visible ? "text-[var(--accent)] font-black" : "text-[var(--muted)] font-bold"
-          }`}
+          className={`mobile-tab ${mounted && visible ? "mobile-tab-active" : ""}`}
+          aria-expanded={mounted && visible}
+          aria-controls="dashboard-mobile-sheet"
         >
-          <div className="relative">
-            <Menu size={20} className="stroke-[1.8]" />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--accent)]" />
-          </div>
-          <span className="text-[10px] tracking-tight">Menu</span>
+          <Menu size={21} aria-hidden />
+          <span>More</span>
         </button>
-      </div>
+        </div>
+      </nav>
 
       {/* Slide-over Mobile Drawer / Sheet with smooth enter & exit animation */}
       {mounted && (
-        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end">
           {/* Backdrop with fade transition */}
           <div
+            ref={sheetRef}
+            id="dashboard-mobile-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-mobile-sheet-title"
             className={`fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
               visible ? "opacity-100" : "opacity-0"
             }`}
@@ -131,7 +144,7 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
 
           {/* Sheet container with slide up & slide down transition */}
           <div
-            className={`relative bg-[var(--background)] w-full max-h-[85vh] rounded-t-3xl border-t border-[var(--line)] shadow-2xl overflow-y-auto p-5 space-y-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            className={`mobile-sheet relative bg-[var(--background)] w-full max-h-[85vh] rounded-t-3xl border-t border-[var(--line)] shadow-2xl overflow-y-auto p-5 space-y-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               visible ? "translate-y-0" : "translate-y-full"
             }`}
           >
@@ -139,7 +152,7 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
             <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
               <div className="flex items-center gap-2">
                 <span className="w-8 h-1 rounded-full bg-neutral-300 inline-block" />
-                <span className="text-xs font-black uppercase tracking-wider text-[var(--accent)]">
+                <span id="dashboard-mobile-sheet-title" className="text-xs font-black uppercase tracking-wider text-[var(--accent)]">
                   {activeRole} menu
                 </span>
               </div>
@@ -157,9 +170,9 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
               <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted)] px-1 mb-1">
                 Portal Shortcuts
               </p>
-              {(roleNavItems[activeRole] || roleNavItems.talent).map((item) => {
+              {roleNavigation[activeRole].map((item) => {
                 const Icon = item.icon;
-                const isActive = active === item.href;
+                const isActive = item.href === activeRoleHref;
                 return (
                   <Link
                     key={item.href}

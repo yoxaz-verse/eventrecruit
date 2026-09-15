@@ -2,15 +2,17 @@ import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { CalendarDays, ClipboardList, Users, PlusCircle, ArrowRight, Building2 } from "lucide-react";
+import { CalendarDays, ClipboardList, Users, PlusCircle, ArrowRight } from "lucide-react";
 
 export default async function ExhibitorDashboard() {
   const profile = await requireRole(["exhibitor"]);
   const db = await createClient();
   if (!db) throw new Error("Workspace is temporarily unavailable.");
   const { data: exhibitor } = await db.from("exhibitors").select("id,company_name").eq("owner_id", profile.id).maybeSingle();
-  const submissions = exhibitor ? await db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id) : { data: [], error: null };
-  const requests = await db.from("events").select("id,staffing_roles(id)").eq("created_by", profile.id);
+  const [submissions, requests] = await Promise.all([
+    exhibitor ? db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id) : Promise.resolve({ data: [], error: null }),
+    db.from("events").select("id,staffing_roles(id)").eq("created_by", profile.id),
+  ]);
   if (submissions.error || requests.error) throw new Error("Unable to load workspace summary.");
   const requestCount = (requests.data ?? []).reduce((sum, event) => sum + (event.staffing_roles?.length ?? 0), 0);
 
@@ -83,4 +85,3 @@ export default async function ExhibitorDashboard() {
     </DashboardShell>
   );
 }
-

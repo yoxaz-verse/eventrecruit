@@ -8,11 +8,13 @@ export function ReviewForm({
   revieweeId,
   revieweeRole,
   title,
+  exhibitorId,
 }: {
   placementId: string;
   revieweeId: string;
   revieweeRole: Extract<UserRole, "talent" | "exhibitor">;
   title: string;
+  exhibitorId?: string;
 }) {
   return (
     <WorkflowActionForm action={createPlacementReview} className="panel grid gap-4 p-5">
@@ -20,6 +22,7 @@ export function ReviewForm({
       <input name="placement_id" type="hidden" value={placementId} />
       <input name="reviewee_id" type="hidden" value={revieweeId} />
       <input name="reviewee_role" type="hidden" value={revieweeRole} />
+      {exhibitorId ? <input name="exhibitor_id" type="hidden" value={exhibitorId} /> : null}
       {[
         ["rating", "Overall rating"],
         ["communication_rating", "Communication"],

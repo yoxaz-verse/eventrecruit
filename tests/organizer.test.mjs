@@ -4,7 +4,18 @@ import ts from 'typescript';
 import fs from 'node:fs';
 const moduleOutput = { exports: {} };
 new Function('exports', ts.transpileModule(fs.readFileSync('src/lib/organizer.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(moduleOutput.exports);
-const { eventPhase, validDate, indiaToday, validStaffingNeeds, validBookingSlot, validSpaceOffer, validSpaceAttachment } = moduleOutput.exports;
+const { eventPhase, eventRequirementTemplates, validDate, indiaToday, validEventClassification, validRequirementSections, validStaffingNeeds, validBookingSlot, validSpaceOffer, validSpaceAttachment } = moduleOutput.exports;
+test('event classifications and editable requirement templates use controlled values', () => {
+ assert.equal(validEventClassification('expo','convention_centre'),true);
+ assert.equal(validEventClassification('activation','mall_retail'),true);
+ assert.equal(validEventClassification('unknown','mall_retail'),false);
+ assert.equal(validRequirementSections(['staffing','logistics']),true);
+ assert.equal(validRequirementSections(['staffing','staffing']),false);
+ assert.equal(validRequirementSections(['catering']),false);
+ assert.deepEqual(eventRequirementTemplates.other,[]);
+ assert.equal(eventRequirementTemplates.fair_festival.includes('compliance_safety'),true);
+ assert.equal(eventRequirementTemplates.conference.includes('exhibitor_spaces'),false);
+});
 test('event date boundaries include start and end days', () => {
  const e = { status:'published', starts_at:'2026-09-06', ends_at:'2026-09-08' };
  assert.equal(eventPhase(e,'2026-09-05'),'upcoming');

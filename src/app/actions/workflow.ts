@@ -11,6 +11,7 @@ import { todayInIndia } from "@/lib/exhibitor-listings";
 import { isSelectableCatalogEvent, parseCatalogSelection } from "@/lib/event-selection";
 import { sendRolePush } from "@/lib/talent-push";
 import { workDaysOverlap } from "@/lib/talent-jobs";
+import { canManageExhibitor } from "@/lib/agency-workspace";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -35,8 +36,8 @@ async function actor() {
 async function staffingOwner(db: NonNullable<Awaited<ReturnType<typeof createClient>>>, roleId: string, actorId: string) {
   const { data: role } = await db.from("staffing_roles").select("event_id").eq("id", roleId).maybeSingle();
   if (!role) return false;
-  const { data: event } = await db.from("events").select("created_by").eq("id", role.event_id).maybeSingle();
-  return ownsStaffingEvent(event?.created_by, actorId);
+  const { data: event } = await db.from("events").select("created_by,exhibitor_id").eq("id", role.event_id).maybeSingle();
+  return ownsStaffingEvent(event?.created_by, actorId) || Boolean(event?.exhibitor_id && await canManageExhibitor(db, actorId, event.exhibitor_id));
 }
 
 function ratingValue(formData: FormData, key: string) {
@@ -66,8 +67,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const workEndsOn = String(formData.get("work_ends_on") ?? "");
   const headcount = Number(formData.get("headcount"));
   const hourlyRate = Number(formData.get("hourly_rate"));
-  if ((source === "agency" && (!eventTitle || !venue || !city || eventTitle.length > 160 || !validDate(startsAt) || !validDate(endsAt) || endsAt < startsAt)) ||
-    !title || title.length > 160 || !validDate(workStartsOn) || !validDate(workEndsOn) || workEndsOn < workStartsOn ||
+  if (!title || title.length > 160 || !validDate(workStartsOn) || !validDate(workEndsOn) || workEndsOn < workStartsOn ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftStart) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftEnd) ||
     !Number.isInteger(headcount) || headcount < 1 || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
     return { error: "Check the event dates, shift times, headcount, and hourly rate before publishing.", success: "" };
@@ -85,7 +85,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     .eq("id", user.id)
     .single();
 
-  const { data: exhibitor } = await supabase
+  const { data: ownedExhibitor } = await supabase
     .from("exhibitors")
     .select("id")
     .eq("owner_id", user.id)
@@ -97,12 +97,14 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (profile?.role !== source || (source === "agency" ? !agency?.id : !exhibitor?.id)) {
+  const requestedExhibitorId = source === "agency" ? String(formData.get("exhibitor_id") ?? "") : ownedExhibitor?.id ?? "";
+  const authorized = requestedExhibitorId ? await canManageExhibitor(supabase, user.id, requestedExhibitorId) : false;
+  if (profile?.role !== source || (source === "agency" ? !agency?.id : !ownedExhibitor?.id) || !authorized) {
     return { error: "Complete your business profile before posting a staffing request.", success: "" };
   }
 
   let eventFields = { title: eventTitle, venue, city, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null };
-  if (source === "exhibitor") {
+  {
     const selection = parseCatalogSelection(selectedEvent);
     if (!selection) return { error: "Choose an approved event from the list.", success: "" };
     const { kind, id } = selection;
@@ -118,23 +120,24 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const catalogColumn = eventFields.organizer_event_id ? "organizer_event_id" : "exhibitor_event_submission_id";
   const catalogId = eventFields.organizer_event_id ?? eventFields.exhibitor_event_submission_id;
   const findExisting = async () => {
-    if (source !== "exhibitor" || !catalogId || !exhibitor?.id) return null;
-    const { data } = await supabase.from("events").select("id").eq("exhibitor_id", exhibitor.id).eq(catalogColumn, catalogId).maybeSingle();
+    if (!catalogId || !requestedExhibitorId) return null;
+    const { data } = await supabase.from("events").select("id").eq("exhibitor_id", requestedExhibitorId).eq(catalogColumn, catalogId).maybeSingle();
     return data;
   };
   let event = await findExisting();
   let createdEvent = false;
   if (!event) {
     const inserted = await supabase.from("events").insert({
-      exhibitor_id: exhibitor?.id ?? null,
+      exhibitor_id: requestedExhibitorId,
       agency_id: profile?.role === "agency" ? agency?.id ?? null : null,
       ...eventFields,
       created_by: user.id,
+      actor_id: user.id,
     }).select("id").single();
     event = inserted.data;
     createdEvent = Boolean(event);
     // The unique catalog index protects simultaneous requests for the same event.
-    if (inserted.error && source === "exhibitor" && inserted.error.code === "23505") event = await findExisting();
+    if (inserted.error?.code === "23505") event = await findExisting();
   }
   if (!event) {
     console.error(JSON.stringify({ event: "staffing_request_failed", stage: "event_insert", category: "database_error" }));
@@ -159,7 +162,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
 
   if (error) {
     console.error(JSON.stringify({ event: "staffing_request_failed", stage: "role_insert", category: "database_error" }));
-    if (createdEvent && source === "agency") {
+    if (createdEvent) {
       const { error: cleanupError } = await supabase.from("events").delete().eq("id", event.id);
       if (cleanupError) console.error(JSON.stringify({ event: "staffing_request_cleanup_failed", category: "database_error" }));
     }
@@ -241,12 +244,14 @@ export async function createPlacementReview(_state: WorkflowFormState, formData:
   if (!user) redirect("/login");
   const profile = await actor();
   const placementId = String(formData.get("placement_id") ?? "");
-  if (!["talent", "exhibitor"].includes(profile.role)) return { error: "Only placement participants can submit reviews.", success: "" };
+  if (!["talent", "exhibitor", "agency"].includes(profile.role)) return { error: "Only placement participants can submit reviews.", success: "" };
   const { data: placement } = await supabase.from("placements").select("talent_id,staffing_role_id,status").eq("id",placementId).maybeSingle();
   if (!placement || placement.status !== "completed" || (placement.talent_id !== profile.id && !await staffingOwner(supabase,placement.staffing_role_id,profile.id))) return { error: "A completed placement you participated in is required.", success: "" };
   const { data: placementRole } = await supabase.from("staffing_roles").select("event_id").eq("id",placement.staffing_role_id).maybeSingle();
-  const { data: placementEvent } = placementRole ? await supabase.from("events").select("created_by").eq("id",placementRole.event_id).maybeSingle() : { data: null };
+  const { data: placementEvent } = placementRole ? await supabase.from("events").select("created_by,exhibitor_id").eq("id",placementRole.event_id).maybeSingle() : { data: null };
   const revieweeId = String(formData.get("reviewee_id") ?? "");
+  const exhibitorPrincipal = String(formData.get("exhibitor_id") ?? placementEvent?.exhibitor_id ?? "");
+  if (profile.role === "agency" && (!placementEvent?.exhibitor_id || exhibitorPrincipal !== placementEvent.exhibitor_id || !await canManageExhibitor(supabase,profile.id,exhibitorPrincipal))) return { error: "You cannot review for this exhibitor.", success: "" };
   const expectedReviewee = placement.talent_id === profile.id ? placementEvent?.created_by : placement.talent_id;
   if (!expectedReviewee || revieweeId !== expectedReviewee) return { error: "Choose the other participant in this placement.", success: "" };
 
@@ -271,6 +276,8 @@ export async function createPlacementReview(_state: WorkflowFormState, formData:
   const { error } = await supabase.from("placement_reviews").insert({
     placement_id: placementId,
     reviewer_id: user.id,
+    actor_id: user.id,
+    reviewer_exhibitor_id: profile.role === "talent" ? null : exhibitorPrincipal,
     reviewee_id: revieweeId,
     reviewee_role: revieweeRole,
     rating: ratings[0],

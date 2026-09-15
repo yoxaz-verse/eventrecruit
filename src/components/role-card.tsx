@@ -1,6 +1,6 @@
 import { WorkflowActionForm } from "@/components/workflow-action-form";
 import { SubmitButton } from "@/components/submit-button";
-import { CalendarDays, MapPin, DollarSign, Users, Clock, Send } from "lucide-react";
+import { CalendarDays, MapPin, Users, Clock, Send } from "lucide-react";
 import { applyForRole } from "@/app/actions/workflow";
 import type { EventRole } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";

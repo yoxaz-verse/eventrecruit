@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:auth": "node --import tsx --test tests/*.test.ts",
     "diagnose:email": "node --env-file=.env.local --import tsx scripts/check-email.ts",
-    "auth:grant-admin": "node --env-file=.env.local --import tsx scripts/grant-admin.ts"
+    "auth:provision-admin": "node --env-file=.env.local --import tsx scripts/grant-admin.ts",
+    "auth:grant-admin": "npm run auth:provision-admin"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

@@ -85,14 +85,12 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
   }
 
   if (profile.role === "exhibitor") {
-    const { error } = await supabase.from("exhibitors").upsert(
-      {
-        owner_id: user.id,
-        company_name: value(formData, "business_name"),
-        industry: value(formData, "industry"),
-      },
-      { onConflict: "owner_id" },
-    );
+    const normalizedEmail = user.email.trim().toLowerCase();
+    const { data: claimable } = await supabase.from("exhibitors").select("id").eq("kind", "external").eq("claim_email", normalizedEmail).is("owner_id", null).maybeSingle();
+    const payload = { owner_id: user.id, company_name: value(formData, "business_name"), industry: value(formData, "industry"), kind: "platform", claimed_at: new Date().toISOString() };
+    const { error } = claimable
+      ? await supabase.from("exhibitors").update(payload).eq("id", claimable.id).is("owner_id", null)
+      : await supabase.from("exhibitors").upsert(payload, { onConflict: "owner_id" });
     if (error) return { error: "Unable to save your exhibitor profile. Please try again." };
   }
 
