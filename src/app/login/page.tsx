@@ -10,7 +10,7 @@ import { PasswordField } from "@/components/auth/password-field";
 import { TopNav } from "@/components/top-nav";
 import { getSupabaseServerConfig } from "@/lib/supabase/env";
 import { getCurrentAccount } from "@/lib/auth";
-import { Mail, Building2 } from "lucide-react";
+import { Mail } from "lucide-react";
 
 export default async function LoginPage({
   searchParams,
@@ -38,12 +38,7 @@ export default async function LoginPage({
         description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >
-        <div className="callout-banner callout-banner-blue mb-4 p-3 rounded-xl">
-          <div className="flex items-center gap-2.5 text-xs font-medium">
-            <Building2 size={16} className="text-blue-700 shrink-0" aria-hidden />
-            <span>Event organizer? Use your company email below or <Link href="/signup?role=organizer" className="font-bold underline">register your company</Link>.</span>
-          </div>
-        </div>
+        <p className="mb-4 text-xs text-[var(--muted)]">Event organizer? <Link href="/signup?role=organizer" className="font-bold text-[var(--accent)] hover:underline">Create an organizer account</Link>.</p>
 
         <LoginTabs mode={mode} />
         <AuthMessage message={message} />

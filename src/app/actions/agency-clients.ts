@@ -22,9 +22,12 @@ export async function createExternalClient(_state: AgencyClientState, formData: 
   const { profile, db, agency } = await agencyActor();
   const companyName = String(formData.get("company_name") ?? "").trim();
   const industry = String(formData.get("industry") ?? "").trim();
+  const companyType=String(formData.get("company_type")??"").trim(),primaryContactName=String(formData.get("primary_contact_name")??"").trim(),contactPhone=String(formData.get("contact_phone")??"").trim(),contactEmail=String(formData.get("contact_email")??"").trim().toLowerCase();
   const claimEmail = String(formData.get("claim_email") ?? "").trim().toLowerCase();
-  if (!companyName || companyName.length > 160 || industry.length > 160 || (claimEmail && !emailPattern.test(claimEmail))) return { error: "Enter a valid company name and optional claim email.", success: "" };
-  const { data: exhibitor, error } = await db.from("exhibitors").insert({ owner_id: null, company_name: companyName, industry: industry || null, kind: "external", created_by_agency_id: agency.id, claim_email: claimEmail || null, verification_status: "pending_verification" }).select("id").single();
+  if (!companyName || companyName.length > 160 || industry.length > 160 || companyType.length>120||primaryContactName.length>160||contactPhone.length>40||(contactEmail&&!emailPattern.test(contactEmail)) || (claimEmail && !emailPattern.test(claimEmail))) return { error: "Enter valid client and contact details.", success: "" };
+  const {data:duplicate}=await db.from("exhibitors").select("id").ilike("company_name",companyName).limit(1).maybeSingle();
+  if(duplicate)return {error:"A matching client already exists. Invite or link the existing platform client instead.",success:""};
+  const { data: exhibitor, error } = await db.from("exhibitors").insert({ owner_id: null, company_name: companyName, industry: industry || null, company_type:companyType||null,primary_contact_name:primaryContactName||null,contact_phone:contactPhone||null,contact_email:contactEmail||null,kind: "external", created_by_agency_id: agency.id, claim_email: claimEmail || null, verification_status: "pending_verification" }).select("id").single();
   if (error || !exhibitor) return { error: "Unable to create this client. The claim email may already be in use.", success: "" };
   const linked = await db.from("agency_exhibitor_relationships").insert({ agency_id: agency.id, exhibitor_id: exhibitor.id, status: "active", invited_email: claimEmail || null, invited_by: profile.id, responded_by: profile.id, responded_at: new Date().toISOString() });
   if (linked.error) return { error: "Client created, but agency access could not be activated.", success: "" };

@@ -1,11 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { CalendarPlus, AlertCircle, PlusCircle, ShieldAlert } from "lucide-react";
+import { CalendarPlus, ShieldAlert } from "lucide-react";
 import { createStaffingRole } from "@/app/actions/workflow";
 import { SubmitButton } from "@/components/submit-button";
 import { usePreserveFormValues } from "@/components/use-preserve-form-values";
-import Link from "next/link";
 import type { SelectableEvent } from "@/lib/exhibitor-events";
 import { containsContactDetails } from "@/lib/contact-detector";
 
@@ -15,6 +14,8 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
 
   const [description, setDescription] = useState("");
   const [skills, setSkills] = useState("");
+  const [eventMode,setEventMode]=useState<"existing"|"inline">(events.length?"existing":"inline");
+  const [rateMode,setRateMode]=useState<"fixed"|"range"|"negotiable">("fixed");
 
   const descCheck = containsContactDetails(description);
   const skillsCheck = containsContactDetails(skills);
@@ -33,6 +34,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
       ref={formRef}
     >
       <input type="hidden" name="source" value={source} />
+      <input type="hidden" name="event_mode" value={eventMode}/>
       {exhibitorId ? <input type="hidden" name="exhibitor_id" value={exhibitorId} /> : null}
       <div className="flex items-center gap-3 border-b border-[var(--line)] pb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface)] text-[var(--accent)]">
@@ -43,34 +45,28 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
           <p className="text-xs text-[var(--muted)]">Specify shift times, headcount, and required capabilities.</p>
         </div>
       </div>
-      <>
+      <fieldset className="grid gap-4">
+        <legend className="label">Event</legend>
+        <div className="flex flex-wrap gap-2">
+          <button className={`button ${eventMode==='existing'?'button-primary':'button-secondary'}`} type="button" disabled={!events.length} onClick={()=>setEventMode('existing')}>Link existing event</button>
+          <button className={`button ${eventMode==='inline'?'button-primary':'button-secondary'}`} type="button" onClick={()=>setEventMode('inline')}>Add event details</button>
+        </div>
+      {eventMode==='existing' ? <>
         <label className="label">
           <span>Event <span className="text-red-500">*</span></span>
-          <select className="input font-medium" name="selected_event" required disabled={!events.length} defaultValue="">
-            <option value="">{events.length ? "Select an approved event" : "No approved upcoming events available"}</option>
+          <select className="input font-medium" name="selected_event" required defaultValue="">
+            <option value="">Select an event</option>
             {events.map(event => <option key={event.value} value={event.value}>{event.title} · {event.city} · {event.starts_at} · {event.attribution}</option>)}
           </select>
         </label>
-        {!events.length && (
-          <div className="callout-banner callout-banner-amber my-1">
-            <div className="flex items-start gap-3">
-              <div className="callout-icon">
-                <AlertCircle size={22} aria-hidden />
-              </div>
-              <div className="callout-content">
-                <h4 className="callout-title">No approved events found</h4>
-                <p className="callout-desc">
-                  You need an approved upcoming event before publishing a staffing request.
-                </p>
-              </div>
-            </div>
-            <Link href="/dashboard/exhibitor/events/new" className="callout-btn">
-              <PlusCircle size={17} aria-hidden />
-              <span>Submit event for review</span>
-            </Link>
-          </div>
-        )}
-      </>
+      </> : <div className="grid gap-4 rounded-xl border border-[var(--line)] p-4">
+        <p className="text-sm text-[var(--muted)]">The request can be submitted now. Its event will be marked Verification required for admin review.</p>
+        <label className="label">Event title <input className="input" name="event_title" required maxLength={160}/></label>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="label">City <input className="input" name="city" required maxLength={120}/></label><label className="label">Venue or address <input className="input" name="venue" required maxLength={200}/></label></div>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="label">Event starts <input className="input" name="starts_at" required type="date"/></label><label className="label">Event ends <input className="input" name="ends_at" required type="date"/></label></div>
+        <label className="label">Shareable map link <span className="field-optional">Optional</span><input className="input" name="map_url" type="url" placeholder="https://maps.google.com/..."/></label>
+      </div>}
+      </fieldset>
       <label className="label">
         <span>Role title <span className="text-red-500">*</span></span>
         <input className="input" name="title" placeholder="e.g. Lead Generation Specialist" required />
@@ -108,11 +104,9 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
           <span>Headcount <span className="text-red-500">*</span></span>
           <input className="input" min="1" name="headcount" required type="number" placeholder="1" />
         </label>
-        <label className="label">
-          <span>Hourly rate (₹ / INR) <span className="text-red-500">*</span></span>
-          <input className="input" min="0" name="hourly_rate" required type="number" placeholder="500" />
-        </label>
+        <label className="label"><span>Rate type</span><select className="input" name="rate_mode" value={rateMode} onChange={e=>setRateMode(e.target.value as typeof rateMode)}><option value="fixed">Fixed</option><option value="range">Range</option><option value="negotiable">Negotiable</option></select></label>
       </div>
+      {rateMode!=='negotiable'?<div className="grid gap-3 sm:grid-cols-2"><label className="label">Proposed rate minimum (₹)<input className="input" min="0" name="proposed_rate_min" required type="number" step="0.01"/></label><label className="label">Proposed rate maximum (₹)<input className="input" min="0" name="proposed_rate_max" required={rateMode==='range'} type="number" step="0.01"/></label></div>:null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="label">
@@ -126,7 +120,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
       </div>
 
       <label className="label">
-        <span>Required skills</span>
+          <span>Mandatory skills</span>
         <input
           className={`input ${skillsCheck.hasContact ? "border-amber-500 ring-2 ring-amber-400/30 bg-amber-50/30" : ""}`}
           name="required_skills"
@@ -141,6 +135,8 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
           </p>
         )}
       </label>
+      <label className="label">Preferred skills<input className="input" name="preferred_skills" placeholder="Hospitality, POS experience"/></label>
+      <div className="grid gap-3 sm:grid-cols-2"><label className="label">Required languages<input className="input" name="required_languages" placeholder="English, Hindi"/></label><label className="label">Worker standard<input className="input" name="worker_standard" placeholder="Experienced promoter"/></label></div>
 
       {contactDetected && (
         <div className="callout-banner callout-banner-amber my-1">
@@ -160,11 +156,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
 
       {!pending && state.error ? <p className="alert" role="alert">{state.error}</p> : null}
       {!pending && state.success ? <p className="alert" role="status">{state.success}</p> : null}
-      {events.length ? (
-        <SubmitButton disabled={contactDetected} pendingText="Publishing request…">
-          Publish request
-        </SubmitButton>
-      ) : null}
+      <SubmitButton disabled={contactDetected} pendingText="Submitting request…">Submit staffing request</SubmitButton>
     </form>
   );
 }

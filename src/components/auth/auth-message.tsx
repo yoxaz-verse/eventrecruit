@@ -20,7 +20,7 @@ export function AuthMessage({ message }: { message?: string }) {
   const displayMessage = authMessages[message] ?? message;
 
   return (
-    <p className="alert" role="status">
+    <p className="mt-3 text-sm text-[var(--muted)]" role="status">
       {displayMessage}
     </p>
   );

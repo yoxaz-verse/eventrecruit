@@ -12,8 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 import { indiaToday } from "@/lib/organizer";
 import type { EventRole } from "@/lib/types";
 
-type RoleRow={id:string;title:string;description:string|null;headcount:number;hourly_rate:number;shift_start:string;shift_end:string;work_starts_on:string;work_ends_on:string;required_skills:string[]|null;status:string;events:{title:string;venue:string;city:string;location_id:string|null}|{title:string;venue:string;city:string;location_id:string|null}[]|null};
-const roleView=(record:RoleRow):EventRole|null=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return event?{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}:null;};
+type RoleRow={id:string;title:string;description:string|null;headcount:number;hourly_rate:number;shift_start:string;shift_end:string;work_starts_on:string;work_ends_on:string;required_skills:string[]|null;status:string;events:{title:string;venue:string;city:string;location_id:string|null;map_url:string|null}|{title:string;venue:string;city:string;location_id:string|null;map_url:string|null}[]|null};
+const roleView=(record:RoleRow):EventRole|null=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return event?{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,mapUrl:event.map_url??undefined,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}:null;};
 
 export default async function TalentDashboard({searchParams}:{searchParams:Promise<{view?:string}>}) {
  const talent=await requireRole(["talent"]),db=await createClient();if(!db)throw new Error("Talent opportunities are unavailable.");
@@ -22,7 +22,7 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
   db.from("talent_job_preferences").select("is_online,notify_push").eq("talent_id",talent.id).maybeSingle(),
   db.from("talent_preferred_locations").select("location_id,locations(name)").eq("talent_id",talent.id),
   db.from("profiles").select("home_location_id").eq("id",talent.id).single(),
-  db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id)").eq("status","open").order("created_at",{ascending:false}).limit(100),
+  db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id,map_url)").eq("status","open").order("created_at",{ascending:false}).limit(100),
   db.from("applications").select("id,staffing_role_id,status,cancellation_requested_at").eq("talent_id",talent.id),
   db.from("talent_job_alerts").select("id,staffing_role_id,created_at").eq("talent_id",talent.id).order("created_at",{ascending:false}).limit(20),
   db.from("organizer_events").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","published").gte("ends_at",today).order("starts_at"),
@@ -35,7 +35,7 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  const roles=(rolesResult.data??[]).filter(record=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return include(event?.location_id??null);}).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item));
  const events=[...(organizerEvents.data??[]).map(event=>({...event,href:`/events/${event.id}`,source:"Organizer event"})),...(submittedEvents.data??[]).map(event=>({...event,href:`/events/exhibitor/${event.id}`,source:"Exhibitor-submitted"}))].filter(event=>include(event.location_id));
  const bookingIds=[...applications.entries()].filter(([,app])=>["accepted","completed"].includes(app.status)).map(([id])=>id);
- const booked=bookingIds.length?await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id)").in("id",bookingIds):{data:[],error:null};
+ const booked=bookingIds.length?await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id,map_url)").in("id",bookingIds):{data:[],error:null};
  if(booked.error)throw new Error("Unable to load bookings.");
  const bookings=(booked.data??[]).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item)),profileComplete=Boolean(profile.data?.home_location_id&&preferredIds.size);
  return <DashboardShell active="talent"><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Opportunities</h1><p className="mt-2 text-[var(--muted)]">Events and staffing requirements organized around the cities where you can work.</p></div><TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
@@ -61,7 +61,7 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  <section className="mb-8">
    <h2 className="text-2xl font-bold">Staffing requirements</h2>
    {roles.length ? (
-     <div className="mt-4 grid gap-4 md:grid-cols-2">{roles.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} apply={!app&&talent.verification_status==="verified"} showDate/><p className="mt-2 text-sm">{app?`Your status: ${app.status}`:""}</p></div>;})}</div>
+     <div className="mt-4 grid gap-4 md:grid-cols-2">{roles.map(role=>{const app=applications.get(role.id);return <RoleCard key={role.id} role={{...role,applicationStatus:app?.status}} apply={!app&&talent.verification_status==="verified"} showDate/>;})}</div>
    ) : (
      <EmptyState
        icon={Briefcase}

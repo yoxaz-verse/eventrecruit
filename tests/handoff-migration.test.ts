@@ -1,0 +1,4 @@
+import test from "node:test";import assert from "node:assert/strict";import {readFileSync} from "node:fs";
+const sql=readFileSync(new URL("../supabase/migrations/020_developer_handoff_workflows.sql",import.meta.url),"utf8");
+test("handoff migration models connected workflows",()=>{for(const token of ["organizer_company_memberships","verification_requests","agency_staff_contacts","staffing_settlements","settlement_payouts","platform_fee_rules"])assert.match(sql,new RegExp(token));assert.match(sql,/verification_required/);assert.match(sql,/application_workflow_status/);});
+test("settlements support central receipt verification and split payouts",()=>{assert.match(sql,/payer_type[\s\S]*exhibitor[\s\S]*agency/);assert.match(sql,/recipient_type[\s\S]*agency[\s\S]*talent/);assert.match(sql,/partially_paid/);assert.match(sql,/refresh_settlement_status/);});

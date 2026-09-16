@@ -16,7 +16,7 @@ export default async function BrowsePage({
   const [db, user] = await Promise.all([createClient(), getCurrentAccount()]);
   const [result, profileResult] = user && db
     ? await Promise.all([db.from("staffing_roles")
-        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,starts_at,exhibitors(company_name),agencies(name))")
+        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,map_url,starts_at,exhibitors(company_name),agencies(name))")
         .eq("status", "open")
         .order("created_at", { ascending: false })
         .limit(100), db.from("profiles").select("role,verification_status").eq("id", user.id).maybeSingle()])
@@ -33,6 +33,7 @@ export default async function BrowsePage({
       company: exhibitor?.company_name,
       agency: agency?.name,
       location: `${event.venue}, ${event.city}`,
+      mapUrl:event.map_url??undefined,
       date: `${record.work_starts_on} – ${record.work_ends_on}`,
       shift: `${record.shift_start} – ${record.shift_end}`,
       role: record.title,

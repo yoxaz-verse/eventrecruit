@@ -13,14 +13,16 @@ import { sendRolePush } from "@/lib/talent-push";
 import { workDaysOverlap } from "@/lib/talent-jobs";
 import { canManageExhibitor } from "@/lib/agency-workspace";
 import { containsContactDetails } from "@/lib/contact-detector";
+import { applicationProfileCheck } from "@/lib/application-profile";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
+  "under_review",
   "shortlisted",
-  "accepted",
+  "confirmed",
   "rejected",
   "completed",
-  "cancelled",
+  "closed",
 ];
 
 const recommendationStatuses = ["recommended", "accepted", "rejected", "withdrawn"];
@@ -76,7 +78,11 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const workStartsOn = String(formData.get("work_starts_on") ?? "");
   const workEndsOn = String(formData.get("work_ends_on") ?? "");
   const headcount = Number(formData.get("headcount"));
-  const hourlyRate = Number(formData.get("hourly_rate"));
+  const eventMode=String(formData.get("event_mode")??"existing");
+  const rateMode=String(formData.get("rate_mode")??"fixed");
+  const proposedRateMin=formData.get("proposed_rate_min")?Number(formData.get("proposed_rate_min")):null;
+  const proposedRateMax=formData.get("proposed_rate_max")?Number(formData.get("proposed_rate_max")):proposedRateMin;
+  const mapUrl=String(formData.get("map_url")??"").trim();
 
   // Contact detail auto-detector check
   const descCheck = containsContactDetails(description);
@@ -94,9 +100,11 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
 
   if (!title || title.length > 160 || !validDate(workStartsOn) || !validDate(workEndsOn) || workEndsOn < workStartsOn ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftStart) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftEnd) ||
-    !Number.isInteger(headcount) || headcount < 1 || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
-    return { error: "Check the event dates, shift times, headcount, and hourly rate before publishing.", success: "" };
+    !Number.isInteger(headcount) || headcount < 1 || !["fixed","range","negotiable"].includes(rateMode) ||
+    (rateMode!=="negotiable"&&(!Number.isFinite(proposedRateMin)||proposedRateMin!<0||!Number.isFinite(proposedRateMax)||proposedRateMax!<proposedRateMin!))) {
+    return { error: "Check the event dates, shift times, headcount, and proposed rate before publishing.", success: "" };
   }
+  if(mapUrl){try{if(new URL(mapUrl).protocol!=="https:")return {error:"The map link must use HTTPS.",success:""};}catch{return {error:"Enter a valid shareable map link.",success:""};}}
   const supabase = await createClient();
   if (!supabase) return { error: "Posting is temporarily unavailable. Please try again later.", success: "" };
 
@@ -128,18 +136,19 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     return { error: "Complete your business profile before posting a staffing request.", success: "" };
   }
 
-  let eventFields = { title: eventTitle, venue, city, location_id:null as string|null, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null };
-  {
+  let eventFields = { title: eventTitle, venue, city, location_id:null as string|null, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null, verification_status:"verification_required", map_url:mapUrl||null, payer_type:source };
+  if(eventMode==="existing") {
     const selection = parseCatalogSelection(selectedEvent);
-    if (!selection) return { error: "Choose an approved event from the list.", success: "" };
+    if (!selection) return { error: "Choose an event from the list.", success: "" };
     const { kind, id } = selection;
     const result = kind === "organizer"
-      ? await supabase.from("organizer_events").select("id,title,venue,city,location_id,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
-      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,starts_at,ends_at,status").eq("id", id).eq("status", "approved").maybeSingle();
+      ? await supabase.from("organizer_events").select("id,title,venue,city,location_id,map_url,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
+      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,map_url,starts_at,ends_at,status").eq("id", id).in("status",["pending","approved"]).maybeSingle();
     const selected = result.data;
-    if (result.error || !selected || !isSelectableCatalogEvent(selected, kind, todayInIndia())) return { error: "This event is not available for requests. Choose another event.", success: "" };
-    if(!selected.location_id) return {error:"This event does not have a supported Kerala city. Choose another event.",success:""};
-    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, location_id:selected.location_id, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null };
+    if (result.error || !selected || (selected.status!=="pending"&&!isSelectableCatalogEvent(selected, kind, todayInIndia()))) return { error: "This event is not available for requests. Choose another event.", success: "" };
+    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, location_id:selected.location_id, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null, verification_status:selected.status==="pending"?"pending":"verified",map_url:selected.map_url??null,payer_type:source };
+  } else {
+    if(!eventTitle||!venue||!city||!validDate(startsAt)||!validDate(endsAt)||endsAt<startsAt) return {error:"Complete the event title, venue, city, and valid dates.",success:""};
   }
   if (workStartsOn < eventFields.starts_at || workEndsOn > eventFields.ends_at) return { error: "Work days must fall within the event dates.", success: "" };
 
@@ -175,7 +184,10 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     title,
     description: String(formData.get("description") ?? ""),
     headcount,
-    hourly_rate: hourlyRate,
+    hourly_rate: proposedRateMin??0,
+    rate_mode:rateMode,
+    proposed_rate_min:proposedRateMin,
+    proposed_rate_max:proposedRateMax,
     shift_start: shiftStart,
     shift_end: shiftEnd,
     work_starts_on: workStartsOn,
@@ -184,6 +196,9 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
       .split(",")
       .map((skill) => skill.trim())
       .filter(Boolean),
+    preferred_skills:String(formData.get("preferred_skills")??"").split(",").map(x=>x.trim()).filter(Boolean),
+    required_languages:String(formData.get("required_languages")??"").split(",").map(x=>x.trim()).filter(Boolean),
+    worker_standard:String(formData.get("worker_standard")??"").trim()||null,
   }).select("id").single();
 
   if (error) {
@@ -199,7 +214,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/requests");
   revalidatePath("/dashboard/agency");
-  return { error: "", success: "Staffing request published." };
+  if(eventFields.verification_status!=="verified"){const {data:pending}=await supabase.from("verification_requests").select("id").eq("entity_type","event").eq("entity_id",event.id).eq("status","pending").maybeSingle();if(!pending)await supabase.from("verification_requests").insert({entity_type:"event",entity_id:event.id,requester_id:user.id,status:"pending",notes:"Staffing request submitted with an event requiring verification"});}
+  return { error: "", success: eventFields.verification_status==="verified"?"Staffing request submitted.":"Staffing request submitted. The event is awaiting verification." };
 }
 
 export async function applyForRole(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
@@ -211,9 +227,18 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
   if (!user) redirect("/login");
   const profile = await actor();
   const roleId = String(formData.get("staffing_role_id") ?? "");
-  const { data: openRole } = await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on").eq("id", roleId).eq("status", "open").maybeSingle();
+  const { data: openRole } = await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on,required_skills,preferred_skills,required_languages").eq("id", roleId).eq("status", "open").maybeSingle();
   if (!canApply(profile.role,profile.verification_status,openRole ? "open" : "closed")) return { error: "A verified talent account and open role are required.", success: "" };
-  const {data:existing}=await supabase.from("applications").select("id,staffing_role_id,status").eq("talent_id",user.id).eq("status","accepted");
+  const [profileData,contactData,talentData]=await Promise.all([
+    supabase.from("profiles").select("avatar_url,home_location_id,profile_updated_at").eq("id",user.id).single(),
+    supabase.from("contact_details").select("phone").eq("profile_id",user.id).maybeSingle(),
+    supabase.from("talent_profiles").select("skills,languages,availability,documents_note").eq("profile_id",user.id).maybeSingle(),
+  ]);
+  if(profileData.error||contactData.error||talentData.error)return {error:"Unable to check your profile. Please retry.",success:""};
+  const check=applicationProfileCheck({avatarUrl:profileData.data.avatar_url,homeLocationId:profileData.data.home_location_id,profileUpdatedAt:profileData.data.profile_updated_at,phone:contactData.data?.phone,skills:talentData.data?.skills,languages:talentData.data?.languages,availability:talentData.data?.availability,documentsNote:talentData.data?.documents_note},{requiredSkills:openRole!.required_skills,preferredSkills:openRole!.preferred_skills,requiredLanguages:openRole!.required_languages});
+  if(!check.canApply)return {error:`Complete these required profile items first: ${check.required.join(", ")}.`,success:""};
+  if(check.stale&&formData.get("profile_current")!=="1")return {error:"Review your profile or confirm that the current information is still accurate.",success:""};
+  const {data:existing}=await supabase.from("applications").select("id,staffing_role_id,status").eq("talent_id",user.id).eq("status","confirmed");
   if (existing?.length) {
     const {data:booked}=await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on").in("id",existing.map(item=>item.staffing_role_id));
     if (booked?.some(item=>workDaysOverlap(item,openRole!))) return {error:"You are already booked on one or more of these days.",success:""};
@@ -241,6 +266,8 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
   if (!supabase) redirect("/login");
 
   const status = String(formData.get("status") ?? "applied") as ApplicationStatus;
+  const agreedRateRaw=String(formData.get("agreed_rate")??"").trim();
+  const agreedRate=agreedRateRaw?Number(agreedRateRaw):null;
   const applicationId = String(formData.get("application_id") ?? "");
   const profile = await actor();
 
@@ -248,19 +275,20 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
     return { error: "Choose a valid application status.", success: "" };
   }
   if (!["exhibitor", "agency"].includes(profile.role)) return { error: "You cannot update this application.", success: "" };
+  if(profile.role==="agency"&&status==="confirmed"&&(agreedRate===null||!Number.isFinite(agreedRate)||agreedRate<0))return {error:"Enter the agreed worker payout before confirming.",success:""};
   const { data: application } = await supabase.from("applications").select("staffing_role_id,status,cancellation_requested_at").eq("id", applicationId).maybeSingle();
   if (!application || !await staffingOwner(supabase, application.staffing_role_id, profile.id)) return { error: "You cannot update this application.", success: "" };
-  if (application.status === "accepted" && !["accepted","cancelled","completed"].includes(status)) return {error:"Confirmed bookings may only be completed or cancelled.",success:""};
-  if (status === "cancelled" && application.status !== "accepted") return {error:"Only confirmed bookings can be cancelled.",success:""};
+  if (application.status === "confirmed" && !["confirmed","closed","completed"].includes(status)) return {error:"Confirmed bookings may only be completed or closed.",success:""};
 
   const { data: updated, error } = await supabase
     .from("applications")
-    .update({ status, cancellation_requested_at: status === "cancelled" ? null : application.cancellation_requested_at, updated_at: new Date().toISOString() })
+    .update({ status, cancellation_requested_at: status === "closed" ? null : application.cancellation_requested_at, updated_at: new Date().toISOString() })
     .eq("id", applicationId).select("id").maybeSingle();
 
   if (error?.message.includes("Role is full")) return {error:"This role has no remaining openings.",success:""};
   if (error?.message.includes("Talent is already booked")) return {error:"This talent is already booked on those days.",success:""};
   if (error || !updated) return { error: "Unable to update this application. Please retry.", success: "" };
+  if(profile.role==="agency"&&status==="confirmed"&&agreedRate!==null){const {data:placement}=await supabase.from("placements").update({agreed_rate:agreedRate}).eq("application_id",applicationId).select("id").maybeSingle();if(placement)await supabase.from("settlement_payouts").update({amount:agreedRate}).eq("placement_id",placement.id);}
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/applicants");
   revalidatePath("/dashboard/agency");

@@ -10,13 +10,11 @@ export function NavigationProgressBar() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Reset progress on route change completion
-    setLoading(false);
-    setProgress(100);
+    const frame=requestAnimationFrame(()=>{setLoading(false);setProgress(100);});
     const timer = setTimeout(() => {
       setProgress(0);
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {cancelAnimationFrame(frame);clearTimeout(timer);};
   }, [pathname, searchParams]);
 
   useEffect(() => {

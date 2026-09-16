@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Briefcase, CalendarDays, Home, LayoutDashboard, LogIn } from "lucide-react";
@@ -21,11 +21,7 @@ export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
-  useEffect(() => {
-    setOptimisticPath(null);
-  }, [pathname]);
-
-  const activePath = optimisticPath ?? pathname;
+  const activePath = optimisticPath&&optimisticPath!==pathname ? optimisticPath : pathname;
   const accountHref = signedIn ? "/dashboard" : "/login";
   const accountLabel = signedIn ? "Portal" : "Account";
   const pageLabel = pageLabels.find(([path]) => isNavigationItemActive(activePath, path))?.[1] ?? "exporb";

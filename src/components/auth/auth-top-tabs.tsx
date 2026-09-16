@@ -1,19 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export function AuthTopTabs({ currentHref }: { currentHref: string }) {
   const pathname = usePathname();
-  const [activeHref, setActiveHref] = useState(currentHref);
   const [loadingHref, setLoadingHref] = useState<string | null>(null);
-
-  useEffect(() => {
-    setActiveHref(pathname);
-    setLoadingHref(null);
-  }, [pathname]);
+  const activeHref=loadingHref&&loadingHref!==pathname?loadingHref:pathname||currentHref;
 
   const tabs = [
     { href: "/login", label: "Log in" },
@@ -24,14 +19,13 @@ export function AuthTopTabs({ currentHref }: { currentHref: string }) {
     <div className="auth-tabs grid grid-cols-2 p-1 bg-[var(--surface)] rounded-xl mb-4" role="tablist">
       {tabs.map((tab) => {
         const isActive = activeHref === tab.href || activeHref.startsWith(tab.href);
-        const isLoading = loadingHref === tab.href;
+        const isLoading = loadingHref === tab.href && pathname!==tab.href;
 
         return (
           <Link
             key={tab.href}
             href={tab.href}
             onClick={() => {
-              setActiveHref(tab.href);
               if (tab.href !== pathname) {
                 setLoadingHref(tab.href);
               }

@@ -1,7 +1,5 @@
-import { WorkflowActionForm } from "@/components/workflow-action-form";
-import { SubmitButton } from "@/components/submit-button";
 import { CalendarDays, MapPin, Users, Clock, Send } from "lucide-react";
-import { applyForRole } from "@/app/actions/workflow";
+import Link from "next/link";
 import type { EventRole } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 
@@ -29,6 +27,7 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
           <MapPin size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
           <span>{role.location}</span>
         </span>
+        {role.mapUrl?<a className="font-bold text-[var(--accent)] hover:underline" href={role.mapUrl} target="_blank" rel="noopener noreferrer">Open location in maps</a>:null}
         <span className="flex items-center gap-2">
           <Users size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
           <span>{role.headcount} {role.headcount === 1 ? "position" : "positions"} open</span>
@@ -54,19 +53,15 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
 
       {role.agency ? <p className="text-xs text-[var(--muted)] italic">Managed by {role.agency}</p> : null}
 
-      {apply ? (
-        <WorkflowActionForm action={applyForRole} className="grid gap-3 mt-2 pt-3 border-t border-[var(--line)]">
-          <input name="staffing_role_id" type="hidden" value={role.id} />
-          <textarea
-            className="input textarea text-xs"
-            name="cover_note"
-            placeholder="Share brief background or relevant experience for this role..."
-          />
-          <SubmitButton className="button button-primary gap-2" pendingText="Applying…">
+      {role.applicationStatus?<p className="badge justify-self-start capitalize">Application: {role.applicationStatus.replaceAll("_"," ")}</p>:null}
+
+      {apply && !role.applicationStatus ? (
+        <div className="grid gap-3 mt-2 pt-3 border-t border-[var(--line)]">
+          <Link className="button button-primary gap-2" href={`/dashboard/talent/apply/${role.id}`}>
             <Send size={15} aria-hidden />
-            <span>Apply for position</span>
-          </SubmitButton>
-        </WorkflowActionForm>
+            <span>Review and apply</span>
+          </Link>
+        </div>
       ) : null}
     </article>
   );

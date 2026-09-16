@@ -76,6 +76,7 @@ export async function signUpWithEmailVerification(_state:AuthFormState,data:Form
       found={id:created.id,email,password_hash:hashed,email_verified_at:null};
       const {error:profileError}=await db().from("profiles").insert({id:found.id,full_name:fullName,role});
       if(profileError){await db().from("app_accounts").delete().eq("id",found.id);throw new AuthEmailStageError("otp_store","database_error");}
+      if(role!=="talent")await db().from("verification_requests").insert({entity_type:"account",entity_id:found.id,requester_id:found.id,status:"pending",notes:`New ${role} account verification`});
       if(role==="talent"){
         const {error:talentError}=await db().from("talent_profiles").insert({profile_id:found.id});
         const {error:reputationError}=await db().from("profile_reputation").upsert({profile_id:found.id,role:"talent"});

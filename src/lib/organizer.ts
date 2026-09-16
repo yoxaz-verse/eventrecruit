@@ -35,7 +35,7 @@ export const eventRequirementTemplates: Record<EventType,RequirementSection[]> =
  conference:['attendee_booking','staffing','venue_infrastructure','logistics'],
  other:[],
 };
-export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; location_id?: string | null; latitude?: number | null; longitude?: number | null; location_label?: string | null; location_country_code?: string | null; starts_at: string | null; ends_at: string | null; event_type: EventType; venue_setting: VenueSetting; requirement_sections: RequirementSection[]; requirement_details: Partial<Record<RequirementSection,string>>; amenities: Amenity[]; custom_amenities: string[]; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; logo_path?: string | null; pricing_chart_path?: string | null; floor_layout_path?: string | null };
+export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; location_id?: string | null; latitude?: number | null; longitude?: number | null; location_label?: string | null; location_country_code?: string | null; map_url?:string|null; starts_at: string | null; ends_at: string | null; event_type: EventType; venue_setting: VenueSetting; requirement_sections: RequirementSection[]; requirement_details: Partial<Record<RequirementSection,string>>; amenities: Amenity[]; custom_amenities: string[]; status: 'draft' | 'submitted' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; logo_path?: string | null; pricing_chart_path?: string | null; floor_layout_path?: string | null };
 export function validEventClassification(eventType:string,venueSetting:string) { return eventTypes.includes(eventType as EventType) && venueSettings.includes(venueSetting as VenueSetting); }
 export function validRequirementSections(sections:string[]) { return sections.length<=requirementSections.length && new Set(sections).size===sections.length && sections.every(section=>requirementSections.includes(section as RequirementSection)); }
 export function validSpaceOffer(offer: SpaceOffer) {
@@ -54,7 +54,7 @@ export function validStaffingNeeds(needs: StaffingNeed[]) {
 export function indiaToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
 export function eventPhase(event: OrganizerEvent, today = indiaToday()) {
  if (event.status !== 'published') return event.status;
- if (event.ends_at && event.ends_at < today) return 'past';
+ if (event.ends_at && event.ends_at < today) return 'completed';
  if (event.starts_at && event.starts_at > today) return 'upcoming';
  return 'ongoing';
 }

@@ -21,6 +21,9 @@ exporb is a Next.js app backed by Supabase Postgres for event services and expo 
 - Category scores for reliability, communication, and professionalism
 - Admin verification and score management surfaces
 - Agency client and commission tracking surfaces
+- Application-specific talent profile checks and reusable application profiles
+- Multi-company organizer workspaces and independent event verification
+- Admin-verified manual staffing settlements with agency and per-worker payouts
 - Supabase Postgres schema and server-side authorization
 
 ## Setup
@@ -65,7 +68,7 @@ Image sources may be up to 7 MB (the UI recommends staying under 5 MB). The brow
 
 Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL=https://eventrecruit.vercel.app` in production.
 
-5. Apply migrations in order through `supabase/migrations/007_password_login_rate_limit.sql`. **Migration 006 deletes existing Supabase Auth-linked account and portal records**, as requested for a fresh start. Do not run the old seed file after this migration; it contains legacy identities. Migration 007 adds a separate password-login attempt limit and is required before deploying the updated login action. The service-role key must remain server-only. The application uses a server-only database client; all portal actions must check the app session, role, and record ownership before querying or changing protected records.
+5. Apply all migrations in filename order through `supabase/migrations/020_developer_handoff_workflows.sql`. **Migration 006 deletes existing Supabase Auth-linked account and portal records**, as requested for a fresh start. Do not run the old seed file after this migration; it contains legacy identities. Migration 020 adds connected staffing, verification, multi-company organizer, and manual settlement workflows. The service-role key must remain server-only. The application uses a server-only database client; all portal actions must check the app session, role, and record ownership before querying or changing protected records.
 
 6. Start the app:
 

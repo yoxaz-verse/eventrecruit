@@ -82,11 +82,7 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
 
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
-  useEffect(() => {
-    setOptimisticPath(null);
-  }, [pathname]);
-
-  const active = optimisticPath ?? currentPath ?? pathname;
+  const active = optimisticPath&&optimisticPath!==pathname ? optimisticPath : currentPath ?? pathname;
 
   const mainTabs = [
     { href: "/", label: "Home", icon: Home },

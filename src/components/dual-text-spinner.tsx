@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, ShieldCheck, Building2, Users } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 const DEFAULT_QUOTES = [
   "The right people make every moment matter.",

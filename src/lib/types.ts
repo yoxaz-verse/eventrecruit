@@ -15,11 +15,18 @@ export type VerificationStatus = "pending" | "verified" | "rejected";
 
 export type ApplicationStatus =
   | "applied"
+  | "under_review"
   | "shortlisted"
-  | "accepted"
+  | "confirmed"
   | "rejected"
   | "completed"
-  | "cancelled";
+  | "closed";
+
+export type EventLifecycleStatus = "draft" | "submitted" | "published" | "cancelled";
+export type RateMode = "fixed" | "range" | "negotiable";
+export type VerificationRequestStatus = "pending" | "verified" | "rejected" | "cancelled";
+export type SettlementStatus = "pending" | "sent" | "received" | "processing" | "partially_paid" | "paid" | "failed" | "refunded";
+export type PayoutRecipientType = "agency" | "talent";
 
 export type EventRole = {
   id: string;
@@ -33,6 +40,10 @@ export type EventRole = {
   headcount: number;
   rate: number;
   skills: string[];
+  preferredSkills?: string[];
+  languages?: string[];
+  applicationStatus?: ApplicationStatus;
+  mapUrl?: string;
   status: "open" | "filled" | "closed";
   agency?: string;
 };

@@ -22,13 +22,16 @@ async function session() {
 export async function saveCompany(_state: FormState, data: FormData): Promise<FormState> {
  try {
  const { db, user } = await session();
- const name = value(data,'name'), city = value(data,'city'), description = value(data,'description'), website = value(data,'website'), phone = value(data,'phone');
+ const id=value(data,'id'),name = value(data,'name'), city = value(data,'city'), description = value(data,'description'), website = value(data,'website'), phone = value(data,'phone');
  if (name.length < 2 || name.length > 160 || !city || city.length > 120 || !description || description.length > 5000 || !phone || phone.length > 40) return {error:'Enter company name, city, description, and contact phone within the displayed limits.'};
  if (website) { try { const url = new URL(website); if (!['https:','http:'].includes(url.protocol)) throw new Error(); } catch { return {error:'Enter a valid http or https website URL.'}; } }
  const { error: contactError } = await db.from('contact_details').upsert({profile_id:user.id, phone});
  if (contactError) return {error:'Unable to save contact details. Please retry.'};
- const { error } = await db.from('organizer_companies').upsert({owner_id:user.id,name,city,description,website},{onConflict:'owner_id'});
- if (error) return {error:'Unable to save company details. Please retry.'};
+ let companyId=id;
+ if(id){const {data:membership}=await db.from('organizer_company_memberships').select('permission').eq('company_id',id).eq('profile_id',user.id).maybeSingle();if(!membership)return {error:'You cannot edit this company.'};const {error}=await db.from('organizer_companies').update({name,city,description,website,public_phone:phone}).eq('id',id);if(error)return {error:'Unable to save company details. Please retry.'};}
+ else {const {data:created,error}=await db.from('organizer_companies').insert({owner_id:user.id,name,city,description,website,public_phone:phone}).select('id').single();if(error||!created)return {error:'Unable to create company. Please retry.'};companyId=created.id;const member=await db.from('organizer_company_memberships').insert({company_id:companyId,profile_id:user.id,permission:'owner'});if(member.error)return {error:'Company created, but access could not be assigned.'};}
+ const {data:pendingVerification}=await db.from('verification_requests').select('id').eq('entity_type','company').eq('entity_id',companyId).eq('status','pending').maybeSingle();
+ if(!pendingVerification)await db.from('verification_requests').insert({entity_type:'company',entity_id:companyId,requester_id:user.id,status:'pending',notes:'Organizer company verification'});
  const {error:completionError}=await db.from('profiles').update({onboarding_completed_at:new Date().toISOString()}).eq('id',user.id);
  if (completionError) return {error:'Company saved, but setup could not be completed. Please retry.'};
  } catch (error) { return {error: error instanceof Error ? error.message : 'Unable to save. Please retry.'}; }
@@ -39,12 +42,14 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  let eventId = '';
  try {
  const {db,user} = await session();
- const {data:company} = await db.from('organizer_companies').select('id').eq('owner_id',user.id).single();
+ const companyId=value(data,'company_id');
+ const {data:membership}=await db.from('organizer_company_memberships').select('company_id').eq('company_id',companyId).eq('profile_id',user.id).maybeSingle();
+ const company=membership?{id:companyId}:null;
  if (!company) return {error:'Complete your company setup first.'};
  const id = value(data,'id');
  if (id && !/^[0-9a-f-]{36}$/i.test(id)) return {error:'Invalid event.'};
  const status = value(data,'status');
- if (!['draft','published','cancelled'].includes(status)) return {error:'Choose a valid event status.'};
+ if (!['draft','submitted','published','cancelled'].includes(status)) return {error:'Choose a valid event status.'};
  const {data:existingEvent}=id?await db.from('organizer_events').select('status').eq('id',id).eq('company_id',company.id).maybeSingle():{data:null};
  if(id&&!existingEvent) return {error:'Event unavailable.'};
  const eventType=value(data,'event_type'), venueSetting=value(data,'venue_setting');
@@ -67,10 +72,11 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  const locationRequired=status==='published'||existingEvent?.status==='published';
  if(locationRequired&&!location.valid) return {error:'Choose and lock an Indian venue location before publishing.'};
  if(location.locked&&!location.valid) return {error:'The locked venue location is invalid. Unlock it and choose the location again.'};
- const bookingUrl=value(data,'booking_url');
+ const bookingUrl=value(data,'booking_url'),mapUrl=value(data,'map_url');
  const amenities=data.getAll('amenities').map(String), rawCustomAmenities=data.getAll('custom_amenities').map(String), customAmenities=normalizeCustomAmenities(rawCustomAmenities);
  if(!validEventAmenities(amenities,rawCustomAmenities)) return {error:'Choose valid amenities and add no more than 10 unique custom amenities.'};
  if (bookingUrl) { try { if (new URL(bookingUrl).protocol !== 'https:') return {error:'Booking link must use HTTPS.'}; } catch { return {error:'Enter a valid booking URL.'}; } }
+ if (mapUrl) { try { if (new URL(mapUrl).protocol !== 'https:') return {error:'Map link must use HTTPS.'}; } catch { return {error:'Enter a valid map URL.'}; } }
  const slotIds=data.getAll('slot_id').map(String), slotDates=data.getAll('slot_date').map(String), slotStarts=data.getAll('slot_start').map(String), slotEnds=data.getAll('slot_end').map(String), slotCapacities=data.getAll('slot_capacity').map(String);
  if ([slotDates,slotStarts,slotEnds,slotCapacities].some(items=>items.length!==slotIds.length) || slotIds.length>100) return {error:'Add no more than 100 complete slots.'};
  const slots:BookingSlot[]=slotIds.map((slotId,index)=>({id:slotId||undefined,slot_date:slotDates[index],start_time:slotStarts[index],end_time:slotEnds[index],capacity:Number(slotCapacities[index])}));
@@ -104,11 +110,11 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if (slots.some(slot=>slot.id && !existing?.some(old=>old.id===slot.id))) return {error:'Invalid slot.'};
    if (existing?.some(old=>old.booked_count>0 && (slots.some(slot=>slot.id===old.id && (slot.slot_date!==old.slot_date || slot.start_time!==old.start_time.slice(0,5) || slot.end_time!==old.end_time.slice(0,5) || slot.capacity<old.booked_count)) || (requestedIds.has(old.id) && (old.slot_date<start || old.slot_date>end))))) return {error:'Booked slots cannot be rescheduled or moved outside event dates, and capacity cannot fall below reservations.'};
  }
- const payload={title,description,venue,city,location_id:locationId||null,latitude:location.valid?location.latitude:null,longitude:location.valid?location.longitude:null,location_label:location.valid?location.locationLabel:null,location_country_code:location.valid?location.countryCode:null,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails,amenities,custom_amenities:customAmenities};
+ const payload={title,description,venue,city,location_id:locationId||null,latitude:location.valid?location.latitude:null,longitude:location.valid?location.longitude:null,location_label:location.valid?location.locationLabel:null,location_country_code:location.valid?location.countryCode:null,map_url:mapUrl||null,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails,amenities,custom_amenities:customAmenities};
  const {data:savedId,error}=await db.rpc('save_organizer_event_with_spaces',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots,p_offers:offers.map((offer,position)=>({...offer,position}))});
  if (error || !savedId) return {error:error?.message?.includes('Published exhibitor spaces')?'Add at least one complete exhibitor offer or turn off the exhibitor / stall spaces section before publishing.':'Unable to save event, slots, and offers. Check for conflicting reservations and retry.'};
  eventId=savedId;
- const {error:locationError}=await db.from('organizer_events').update({location_id:locationId||null}).eq('id',eventId).eq('company_id',company.id);
+ const {error:locationError}=await db.from('organizer_events').update({location_id:locationId||null,map_url:mapUrl||null}).eq('id',eventId).eq('company_id',company.id);
  if(locationError) return {error:'Event saved, but its city could not be linked. Please retry.'};
  if ((logo instanceof File && logo.size>0) || data.get('remove_logo')==='1') {
    const {data:current}=await db.from('organizer_events').select('logo_path').eq('id',eventId).eq('company_id',company.id).single();

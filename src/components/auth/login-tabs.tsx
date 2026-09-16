@@ -1,19 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export function LoginTabs({ mode }: { mode: "password" | "otp" }) {
-  const searchParams = useSearchParams();
-  const [activeMode, setActiveMode] = useState<"password" | "otp">(mode);
   const [loadingMode, setLoadingMode] = useState<string | null>(null);
-
-  useEffect(() => {
-    setActiveMode(mode);
-    setLoadingMode(null);
-  }, [mode, searchParams]);
+  const activeMode=loadingMode&&loadingMode!==mode?loadingMode:mode;
 
   const tabs = [
     { mode: "password" as const, href: "/login", label: "Password" },
@@ -24,14 +17,13 @@ export function LoginTabs({ mode }: { mode: "password" | "otp" }) {
     <div className="auth-tabs grid grid-cols-2 p-1 bg-[var(--surface-2)]/60 rounded-xl" role="tablist" aria-label="Login method">
       {tabs.map((tab) => {
         const isActive = activeMode === tab.mode;
-        const isLoading = loadingMode === tab.mode;
+        const isLoading = loadingMode === tab.mode && mode!==tab.mode;
 
         return (
           <Link
             key={tab.mode}
             href={tab.href}
             onClick={() => {
-              setActiveMode(tab.mode);
               if (tab.mode !== mode) {
                 setLoadingMode(tab.mode);
               }

@@ -67,17 +67,7 @@ export function ProgressiveImage({
   );
 
   useEffect(() => {
-    setLoaded(false);
-    setError(false);
-
-    if (!src) {
-      setError(true);
-      return;
-    }
-
-    if (imgRef.current) {
-      checkComplete(imgRef.current);
-    }
+    const frame=requestAnimationFrame(()=>{setLoaded(false);setError(!src);if(src&&imgRef.current)checkComplete(imgRef.current);});
 
     // Fallback safety check if network event does not fire within 5s
     const timer = setTimeout(() => {
@@ -86,7 +76,7 @@ export function ProgressiveImage({
       }
     }, 5000);
 
-    return () => clearTimeout(timer);
+    return () => {cancelAnimationFrame(frame);clearTimeout(timer);};
   }, [src, checkComplete]);
 
   return (
@@ -104,7 +94,7 @@ export function ProgressiveImage({
           {fallbackIcon || <ImageIcon size={20} className="opacity-50" />}
         </div>
       ) : (
-        /* Actual Image with Fade-in Animation */
+        /* eslint-disable-next-line @next/next/no-img-element -- private authenticated media bypasses the public optimizer */
         <img
           ref={setRef}
           src={src}
@@ -120,4 +110,3 @@ export function ProgressiveImage({
     </div>
   );
 }
-

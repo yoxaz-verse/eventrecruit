@@ -24,7 +24,7 @@ export async function saveTalentProfile(_state:{error:string},data:FormData):Pro
   const skills=value(data,"skills").split(",").map(item=>item.trim()).filter(Boolean);
   const languages=value(data,"languages").split(",").map(item=>item.trim()).filter(Boolean);
   const results=await Promise.all([
-    db.from("profiles").update({city,home_location_id:homeLocationId}).eq("id",talent.id),
+    db.from("profiles").update({city,home_location_id:homeLocationId,profile_updated_at:new Date().toISOString()}).eq("id",talent.id),
     db.from("contact_details").upsert({profile_id:talent.id,phone}),
     db.from("talent_profiles").upsert({profile_id:talent.id,headline:value(data,"headline"),bio:value(data,"bio"),skills,languages,availability:value(data,"availability"),experience_years:Number(experience||0),documents_note:value(data,"documents_note")}),
   ]);
@@ -35,5 +35,6 @@ export async function saveTalentProfile(_state:{error:string},data:FormData):Pro
   if(inserted.error)return {error:"Unable to update work locations."};
   revalidatePath("/dashboard/talent");
   revalidatePath("/dashboard/talent/profile");
-  redirect("/dashboard/talent/profile?saved=1");
+  const returnTo=value(data,"return_to");
+  redirect(returnTo.startsWith("/dashboard/talent/")?returnTo:"/dashboard/talent/profile?saved=1");
 }

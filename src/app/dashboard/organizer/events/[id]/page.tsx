@@ -5,8 +5,8 @@ import { organizerContext } from '@/lib/organizer-server';
 import { updateSpaceInquiryStatus } from '@/app/actions/space-inquiries';
 import { SubmitButton } from '@/components/submit-button';
 export default async function EditEvent({params}:{params:Promise<{id:string}>}) {
- const {id}=await params; const {db,company}=await organizerContext();
- const {data:event,error}=await db.from('organizer_events').select('*').eq('id',id).eq('company_id',company!.id).maybeSingle();
+ const {id}=await params; const {db,companies}=await organizerContext();
+ const {data:event,error}=await db.from('organizer_events').select('*').eq('id',id).in('company_id',companies.map(company=>company.id)).maybeSingle();
  if (error) throw new Error('Unable to load event.'); if (!event) notFound();
  const {data:slots,error:slotsError}=await db.from('event_booking_slots').select('*').eq('event_id',id).order('slot_date').order('start_time');
  const {data:offers,error:offersError}=await db.from('event_space_offers').select('*').eq('event_id',id).eq('is_active',true).order('position');

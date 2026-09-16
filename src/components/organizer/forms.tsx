@@ -10,6 +10,7 @@ import { CompressedImageInput } from '@/components/compressed-image-input';
 export function CompanyForm({company}:{company?:Company}) {
  const [state,action]=useActionState(saveCompany,{error:''});
  return <form action={action} className="panel grid gap-4 p-6">
+ <input type="hidden" name="id" value={company?.id??""}/>
  <label className="label">Company name<input className="input" name="name" required minLength={2} maxLength={160} defaultValue={company?.name}/></label>
  <label className="label">City<input className="input" name="city" required maxLength={120} defaultValue={company?.city}/></label>
  <label className="label">About the company<textarea className="input textarea" name="description" required maxLength={5000} defaultValue={company?.description}/></label>
@@ -18,7 +19,7 @@ export function CompanyForm({company}:{company?:Company}) {
  {state.error && <p className="alert" role="alert">{state.error}</p>}<SubmitButton pendingText="Saving company…">Save company</SubmitButton>
  </form>;
 }
-export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:OrganizerEvent;slots?:BookingSlot[];offers?:SpaceOffer[];locations?:LocationOption[]}) {
+export function EventForm({event,slots=[],offers=[],locations=[],companies=[]}:{event?:OrganizerEvent;slots?:BookingSlot[];offers?:SpaceOffer[];locations?:LocationOption[];companies?:Company[]}) {
  const [state,action]=useActionState(saveEvent,{error:''});
  const [eventType,setEventType]=useState<EventType>(event?.event_type??'other');
  const [logoStatus,setLogoStatus]=useState<'idle'|'compressing'|'ready'|'error'>('idle');
@@ -43,6 +44,7 @@ export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:Organi
  };
  return <form action={action} className="panel grid gap-4 p-6">
  <input type="hidden" name="id" value={event?.id ?? ''}/>
+ <label className="label">Publishing company<select className="input" name="company_id" required defaultValue={event?.company_id??companies[0]?.id??""}><option value="" disabled>Select a company</option>{event&&!companies.some(company=>company.id===event.company_id)?<option value={event.company_id}>Current company</option>:null}{companies.map(company=><option key={company.id} value={company.id}>{company.name}</option>)}</select></label>
  <input type="hidden" name="requirement_details" value={JSON.stringify(requirementDetails)}/>
  <label className="label">Event title<input className="input" name="title" required maxLength={160} defaultValue={event?.title}/></label>
  <div className="grid gap-3 rounded-xl border border-[var(--line)] p-4"><CompressedImageInput name="logo" label="Event logo (optional)" currentImageUrl={event?.logo_path?`/api/media/event/${event.id}`:null} onStatusChange={setLogoStatus}/>{event?.logo_path?<label className="text-sm"><input type="checkbox" name="remove_logo" value="1"/> Remove current logo</label>:null}</div>
@@ -50,6 +52,7 @@ export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:Organi
  <fieldset className="grid gap-3 border-t border-[var(--line)] pt-5"><legend className="text-lg font-bold">Requirement sections</legend><p className="text-sm text-[var(--muted)]">The event type preselects recommendations. Adjust them for this event.</p><div className="grid gap-3 sm:grid-cols-2">{requirementSections.map(section=><label className="flex items-center gap-2" key={section}><input type="checkbox" name="requirement_sections" value={section} checked={enabledSections.includes(section)} onChange={e=>toggleSection(section,e.target.checked)}/>{requirementSectionLabels[section]}</label>)}</div>{enabledSections.map(section=><label className="label" key={section}>{requirementSectionLabels[section]} notes (optional)<textarea className="input textarea" maxLength={3000} value={requirementDetails[section]??''} onChange={e=>setRequirementDetails(current=>({...current,[section]:e.target.value}))} placeholder="Add instructions, facilities, timings, or other requirements"/></label>)}</fieldset>
  <label className="label">Description<textarea className="input textarea" name="description" maxLength={10000} defaultValue={event?.description}/></label>
  <VenueLocationPicker locations={locations} initialLocationId={event?.location_id} initial={event ? {venue:event.venue,city:event.city,label:event.location_label??undefined,latitude:event.latitude??undefined,longitude:event.longitude??undefined,countryCode:event.location_country_code==='IN'?'IN':undefined} : undefined}/>
+ <label className="label">Shareable map link <span className="field-optional">Optional</span><input className="input" name="map_url" type="url" defaultValue={event?.map_url??""} placeholder="https://maps.google.com/..."/></label>
  <div className="grid gap-4 sm:grid-cols-2"><label className="label">Start date<input className="input" name="starts_at" type="date" defaultValue={event?.starts_at??''}/></label><label className="label">End date<input className="input" name="ends_at" type="date" defaultValue={event?.ends_at??''}/></label></div>
  <EventAmenitiesField initialAmenities={event?.amenities} initialCustomAmenities={event?.custom_amenities}/>
  {enabledSections.includes('attendee_booking')&&<fieldset className="grid gap-3 border-t border-[var(--line)] pt-5"><legend className="text-lg font-bold">Attendee booking</legend><p className="text-sm text-[var(--muted)]">Add an external booking page, in-app time slots, or both. Times use India time.</p>
@@ -87,7 +90,7 @@ export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:Organi
  </div>)}
  <button className="button button-secondary justify-self-start" type="button" onClick={()=>{setNeeds(rows=>[...rows,{key:nextKey,title:'',people_needed:''}]);setNextKey(key=>key+1);}}>Add position</button></fieldset>}
  <p className="text-sm text-[var(--muted)]">Description, venue, city, and dates are required to publish. Dates use India time. Save as draft to remove an event from public view.</p>
- <label className="label">Status<select className="input" name="status" defaultValue={event?.status??'draft'}><option value="draft">Draft — private</option><option value="published">Published — public</option><option value="cancelled">Cancelled</option></select></label>
+ <label className="label">Status<select className="input" name="status" defaultValue={event?.status??'draft'}><option value="draft">Draft — private</option><option value="submitted">Submitted for review</option><option value="published">Published — public</option><option value="cancelled">Cancelled</option></select></label>
  {state.error && <p className="alert" role="alert">{state.error}</p>}<SubmitButton pendingText="Saving event…" disabled={logoStatus==='compressing'||logoStatus==='error'}>Save event</SubmitButton>
  </form>;
 }
