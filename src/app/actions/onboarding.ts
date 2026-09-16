@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/auth";
 import { validateOnboarding } from "@/lib/onboarding-rules";
 import type { UserRole } from "@/lib/types";
+import { resolveActiveLocations } from "@/lib/locations";
 
 const value = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
 
@@ -29,15 +30,23 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
 
   const validationError = validateOnboarding(profile.role as UserRole, formData);
   if (validationError) return { error: validationError };
-  const city = value(formData, "city");
+  let city = value(formData, "city");
   const phone = value(formData, "phone");
   const experience = value(formData, "experience_years");
   const commission = value(formData, "commission_value");
 
+  const preferredLocationIds = formData.getAll("preferred_location_ids").map(String).filter(Boolean);
+  const homeLocationId = value(formData, "home_location_id");
+  if (profile.role === "talent") {
+    const locations = await resolveActiveLocations([homeLocationId, ...preferredLocationIds]);
+    if (!locations) return { error: "Choose valid active home and work cities without duplicates." };
+    city = locations.find(location=>location.id===homeLocationId)?.name ?? "";
+  }
   const { error: cityError } = await supabase
     .from("profiles")
     .update({
       city,
+      home_location_id: profile.role === "talent" ? homeLocationId : null,
     })
     .eq("id", user.id);
   if (cityError) return { error: "Unable to save your location. Please try again." };
@@ -69,6 +78,10 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
       documents_note: value(formData, "documents_note"),
     });
     if (error) return { error: "Unable to save your talent profile. Please try again." };
+    const { error: deleteError } = await supabase.from("talent_preferred_locations").delete().eq("talent_id", user.id);
+    if (deleteError) return { error: "Unable to save your work locations. Please try again." };
+    const { error: locationError } = await supabase.from("talent_preferred_locations").insert(preferredLocationIds.map(location_id=>({talent_id:user.id,location_id})));
+    if (locationError) return { error: "Unable to save your work locations. Please try again." };
   }
 
   if (profile.role === "agency") {

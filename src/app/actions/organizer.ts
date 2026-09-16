@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentAccount } from '@/lib/auth';
 import { requirementSections, validBookingSlot, validDate, validEventClassification, validRequirementSections, validSpaceAttachment, validSpaceOffer, validStaffingNeeds, type BookingSlot, type RequirementSection, type SpaceOffer, type StaffingNeed } from '@/lib/organizer';
+import { parseLockedLocation } from '@/lib/location';
+import { resolveActiveLocations } from '@/lib/locations';
 export type FormState = { error: string };
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
 async function session() {
@@ -41,6 +43,8 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  if (id && !/^[0-9a-f-]{36}$/i.test(id)) return {error:'Invalid event.'};
  const status = value(data,'status');
  if (!['draft','published','cancelled'].includes(status)) return {error:'Choose a valid event status.'};
+ const {data:existingEvent}=id?await db.from('organizer_events').select('status').eq('id',id).eq('company_id',company.id).maybeSingle():{data:null};
+ if(id&&!existingEvent) return {error:'Event unavailable.'};
  const eventType=value(data,'event_type'), venueSetting=value(data,'venue_setting');
  if(!validEventClassification(eventType,venueSetting)) return {error:'Choose a valid event type and venue setting.'};
  const sections=data.getAll('requirement_sections').map(String);
@@ -54,6 +58,13 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if(detail.trim()) requirementDetails[key as RequirementSection]=detail.trim();
  }
  const title=value(data,'title'), description=value(data,'description'), venue=value(data,'venue'), city=value(data,'city'), start=value(data,'starts_at'), end=value(data,'ends_at');
+ const locationId=value(data,'location_id');
+ const catalogLocations=locationId?await resolveActiveLocations([locationId]):[];
+ if(locationId&&!catalogLocations) return {error:'Choose an active location.'};
+ const location=parseLockedLocation(data);
+ const locationRequired=status==='published'||existingEvent?.status==='published';
+ if(locationRequired&&!location.valid) return {error:'Choose and lock an Indian venue location before publishing.'};
+ if(location.locked&&!location.valid) return {error:'The locked venue location is invalid. Unlock it and choose the location again.'};
  const bookingUrl=value(data,'booking_url');
  if (bookingUrl) { try { if (new URL(bookingUrl).protocol !== 'https:') return {error:'Booking link must use HTTPS.'}; } catch { return {error:'Enter a valid booking URL.'}; } }
  const slotIds=data.getAll('slot_id').map(String), slotDates=data.getAll('slot_date').map(String), slotStarts=data.getAll('slot_start').map(String), slotEnds=data.getAll('slot_end').map(String), slotCapacities=data.getAll('slot_capacity').map(String);
@@ -86,10 +97,12 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if (slots.some(slot=>slot.id && !existing?.some(old=>old.id===slot.id))) return {error:'Invalid slot.'};
    if (existing?.some(old=>old.booked_count>0 && (slots.some(slot=>slot.id===old.id && (slot.slot_date!==old.slot_date || slot.start_time!==old.start_time.slice(0,5) || slot.end_time!==old.end_time.slice(0,5) || slot.capacity<old.booked_count)) || (requestedIds.has(old.id) && (old.slot_date<start || old.slot_date>end))))) return {error:'Booked slots cannot be rescheduled or moved outside event dates, and capacity cannot fall below reservations.'};
  }
- const payload={title,description,venue,city,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails};
+ const payload={title,description,venue,city,location_id:locationId||null,latitude:location.valid?location.latitude:null,longitude:location.valid?location.longitude:null,location_label:location.valid?location.locationLabel:null,location_country_code:location.valid?location.countryCode:null,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails};
  const {data:savedId,error}=await db.rpc('save_organizer_event_with_spaces',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots,p_offers:offers.map((offer,position)=>({...offer,position}))});
  if (error || !savedId) return {error:error?.message?.includes('Published exhibitor spaces')?'Add at least one complete exhibitor offer or turn off the exhibitor / stall spaces section before publishing.':'Unable to save event, slots, and offers. Check for conflicting reservations and retry.'};
  eventId=savedId;
+ const {error:locationError}=await db.from('organizer_events').update({location_id:locationId||null}).eq('id',eventId).eq('company_id',company.id);
+ if(locationError) return {error:'Event saved, but its city could not be linked. Please retry.'};
  for (const {kind,file} of uploads) {
    const column=kind==='pricing_chart'?'pricing_chart_path':'floor_layout_path';
    if (!(file instanceof File && file.size>0) && data.get(`remove_${kind}`)!=='1') continue;

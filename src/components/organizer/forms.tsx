@@ -3,6 +3,8 @@ import { useActionState, useState } from 'react';
 import { saveCompany, saveEvent } from '@/app/actions/organizer';
 import { eventRequirementTemplates, eventTypeLabels, eventTypes, requirementSectionLabels, requirementSections, venueSettingLabels, venueSettings, type BookingSlot, type Company, type EventType, type OrganizerEvent, type RequirementSection, type SpaceOffer } from '@/lib/organizer';
 import { SubmitButton } from '@/components/submit-button';
+import { VenueLocationPicker } from '@/components/venue-location-picker';
+import type { LocationOption } from '@/lib/locations';
 export function CompanyForm({company}:{company?:Company}) {
  const [state,action]=useActionState(saveCompany,{error:''});
  return <form action={action} className="panel grid gap-4 p-6">
@@ -14,7 +16,7 @@ export function CompanyForm({company}:{company?:Company}) {
  {state.error && <p className="alert" role="alert">{state.error}</p>}<SubmitButton pendingText="Saving company…">Save company</SubmitButton>
  </form>;
 }
-export function EventForm({event,slots=[],offers=[]}:{event?:OrganizerEvent;slots?:BookingSlot[];offers?:SpaceOffer[]}) {
+export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:OrganizerEvent;slots?:BookingSlot[];offers?:SpaceOffer[];locations?:LocationOption[]}) {
  const [state,action]=useActionState(saveEvent,{error:''});
  const [eventType,setEventType]=useState<EventType>(event?.event_type??'other');
  const inferredSections:RequirementSection[]=[...(event?.requirement_sections??[])];
@@ -43,7 +45,7 @@ export function EventForm({event,slots=[],offers=[]}:{event?:OrganizerEvent;slot
  <div className="grid gap-4 sm:grid-cols-2"><label className="label">Event type<select className="input" name="event_type" required value={eventType} onChange={e=>chooseEventType(e.target.value as EventType)}>{eventTypes.map(type=><option value={type} key={type}>{eventTypeLabels[type]}</option>)}</select><span className="text-sm">Changing type adds its recommended sections without removing your work.</span></label><label className="label">Venue setting<select className="input" name="venue_setting" required defaultValue={event?.venue_setting??'other'}>{venueSettings.map(setting=><option value={setting} key={setting}>{venueSettingLabels[setting]}</option>)}</select></label></div>
  <fieldset className="grid gap-3 border-t border-[var(--line)] pt-5"><legend className="text-lg font-bold">Requirement sections</legend><p className="text-sm text-[var(--muted)]">The event type preselects recommendations. Adjust them for this event.</p><div className="grid gap-3 sm:grid-cols-2">{requirementSections.map(section=><label className="flex items-center gap-2" key={section}><input type="checkbox" name="requirement_sections" value={section} checked={enabledSections.includes(section)} onChange={e=>toggleSection(section,e.target.checked)}/>{requirementSectionLabels[section]}</label>)}</div>{enabledSections.map(section=><label className="label" key={section}>{requirementSectionLabels[section]} notes (optional)<textarea className="input textarea" maxLength={3000} value={requirementDetails[section]??''} onChange={e=>setRequirementDetails(current=>({...current,[section]:e.target.value}))} placeholder="Add instructions, facilities, timings, or other requirements"/></label>)}</fieldset>
  <label className="label">Description<textarea className="input textarea" name="description" maxLength={10000} defaultValue={event?.description}/></label>
- <div className="grid gap-4 sm:grid-cols-2"><label className="label">Venue<input className="input" name="venue" maxLength={200} defaultValue={event?.venue}/></label><label className="label">City<input className="input" name="city" maxLength={120} defaultValue={event?.city}/></label></div>
+ <VenueLocationPicker locations={locations} initialLocationId={event?.location_id} initial={event ? {venue:event.venue,city:event.city,label:event.location_label??undefined,latitude:event.latitude??undefined,longitude:event.longitude??undefined,countryCode:event.location_country_code==='IN'?'IN':undefined} : undefined}/>
  <div className="grid gap-4 sm:grid-cols-2"><label className="label">Start date<input className="input" name="starts_at" type="date" defaultValue={event?.starts_at??''}/></label><label className="label">End date<input className="input" name="ends_at" type="date" defaultValue={event?.ends_at??''}/></label></div>
  {enabledSections.includes('attendee_booking')&&<fieldset className="grid gap-3 border-t border-[var(--line)] pt-5"><legend className="text-lg font-bold">Attendee booking</legend><p className="text-sm text-[var(--muted)]">Add an external booking page, in-app time slots, or both. Times use India time.</p>
  <label className="label">External booking link (optional)<input className="input" name="booking_url" type="url" placeholder="https://example.com/book" defaultValue={event?.booking_url??''}/></label>

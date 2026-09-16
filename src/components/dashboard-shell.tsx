@@ -36,7 +36,7 @@ export function DashboardShell({
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)] bg-[var(--surface)] px-2 py-0.5 rounded-md border border-[var(--line)]">
             {active}
           </span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export function DashboardShell({
                 {active} portal
               </span>
               <span className="text-[10px] font-bold text-[var(--muted)] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Active
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" /> Active
               </span>
             </div>
 

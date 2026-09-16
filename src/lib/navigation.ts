@@ -11,6 +11,7 @@ import {
   Star,
   UserCheck,
   Users,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
@@ -55,7 +56,10 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star },
     { href: "/dashboard/exhibitor/agencies", label: "Agency access", icon: Users },
   ],
-  talent: [{ href: "/dashboard/talent", label: "Overview", icon: Sparkles }],
+  talent: [
+    { href: "/dashboard/talent", label: "Opportunities", icon: Sparkles },
+    { href: "/dashboard/talent/profile", label: "My profile", icon: UserRound },
+  ],
 };
 
 export const exploreNavigation: NavigationItem[] = [

@@ -21,8 +21,8 @@ export function AuthCard({
       <div className="w-full max-w-5xl grid gap-6 lg:grid-cols-[0.9fr_1.1fr] items-stretch my-auto">
         
         {/* Left Side: Brand & Social Proof Showcase */}
-        <div className="hidden lg:flex flex-col justify-between p-6 rounded-3xl bg-gradient-to-br from-[var(--ink)] via-[#15463b] to-[var(--accent)] text-white shadow-xl relative overflow-hidden">
-          <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
+        <div className="hidden lg:flex flex-col justify-between p-6 rounded-3xl bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[var(--accent)] text-white shadow-xl relative overflow-hidden">
+          <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-blue-400/10 blur-3xl pointer-events-none" />
           <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
 
           <div>
@@ -34,7 +34,7 @@ export function AuthCard({
             <h2 className="mt-4 text-2xl font-black tracking-tight leading-tight">
               Coordinate verified people for events & stores.
             </h2>
-            <p className="mt-2 text-xs text-emerald-100/80 leading-relaxed">
+            <p className="mt-2 text-xs text-blue-100/80 leading-relaxed">
               Find hosts, registration crews, promoters, lead capture, and retail teams across 10+ Indian markets.
             </p>
           </div>
@@ -53,14 +53,14 @@ export function AuthCard({
                   </div>
                   <div>
                     <strong className="text-xs font-bold text-white block">{item.title}</strong>
-                    <p className="text-[11px] text-emerald-100/75 mt-0.5">{item.desc}</p>
+                    <p className="text-[11px] text-blue-100/75 mt-0.5">{item.desc}</p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="pt-3 border-t border-white/15 flex items-center justify-between text-xs text-emerald-100/70">
+          <div className="pt-3 border-t border-white/15 flex items-center justify-between text-xs text-blue-100/70">
             <span className="flex items-center gap-1.5">
               <Users size={14} className="text-amber-300" aria-hidden />
               1,240+ Talent Members

@@ -8,10 +8,9 @@ test("booking conflicts include shared boundary days but not adjacent days",()=>
   assert.equal(workDaysOverlap(booked,{work_starts_on:"2026-10-04",work_ends_on:"2026-10-05"}),false);
 });
 
-test("alerts require verified online talent in the city with a matching skill",()=>{
-  const talent={city:" Delhi ",skills:["Hosting"],verified:true,online:true};
-  assert.equal(talentMatchesJob(talent,{city:"delhi",requiredSkills:["hosting"]}),true);
-  assert.equal(talentMatchesJob(talent,{city:"delhi",requiredSkills:[]}),true);
-  assert.equal(talentMatchesJob(talent,{city:"Mumbai",requiredSkills:[]}),false);
-  assert.equal(talentMatchesJob({...talent,online:false},{city:"Delhi",requiredSkills:[]}),false);
+test("alerts require verified online talent in a matching location", () => {
+  const talent = { preferredLocationIds: ["loc_delhi"], verified: true, online: true };
+  assert.equal(talentMatchesJob(talent, { locationId: "loc_delhi" }), true);
+  assert.equal(talentMatchesJob(talent, { locationId: "loc_mumbai" }), false);
+  assert.equal(talentMatchesJob({ ...talent, online: false }, { locationId: "loc_delhi" }), false);
 });

@@ -26,8 +26,11 @@ export async function nextAccountPath(accountId: string): Promise<string> {
   const { data: contact } = await db.from("contact_details").select("phone").eq("profile_id", accountId).maybeSingle();
   if (!profile.city?.trim() || !contact?.phone?.trim()) return onboardingPath(role);
   if (role === "talent") {
-    const { data } = await db.from("talent_profiles").select("headline,skills").eq("profile_id", accountId).maybeSingle();
-    return hasCoreProfile(role, profile.city, contact.phone, data) ? "/dashboard/talent" : "/onboarding";
+    const [{ data }, { count }] = await Promise.all([
+      db.from("talent_profiles").select("headline,skills").eq("profile_id", accountId).maybeSingle(),
+      db.from("talent_preferred_locations").select("location_id",{count:"exact",head:true}).eq("talent_id",accountId),
+    ]);
+    return hasCoreProfile(role, profile.city, contact.phone, data) && Boolean(count) ? "/dashboard/talent" : "/onboarding";
   }
   if (role === "agency") {
     const { data } = await db.from("agencies").select("name").eq("owner_id", accountId).maybeSingle();

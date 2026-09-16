@@ -12,6 +12,7 @@ import { isSelectableCatalogEvent, parseCatalogSelection } from "@/lib/event-sel
 import { sendRolePush } from "@/lib/talent-push";
 import { workDaysOverlap } from "@/lib/talent-jobs";
 import { canManageExhibitor } from "@/lib/agency-workspace";
+import { containsContactDetails } from "@/lib/contact-detector";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -28,16 +29,23 @@ const revieweeRoles: Array<Extract<UserRole, "talent" | "exhibitor">> = ["talent
 const reviewVisibilityStatuses = ["published", "hidden"];
 
 async function actor() {
+  const account = await getCurrentAccount();
+  if (!account) redirect("/login");
   const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/onboarding");
   return profile;
 }
 
-async function staffingOwner(db: NonNullable<Awaited<ReturnType<typeof createClient>>>, roleId: string, actorId: string) {
-  const { data: role } = await db.from("staffing_roles").select("event_id").eq("id", roleId).maybeSingle();
-  if (!role) return false;
-  const { data: event } = await db.from("events").select("created_by,exhibitor_id").eq("id", role.event_id).maybeSingle();
-  return ownsStaffingEvent(event?.created_by, actorId) || Boolean(event?.exhibitor_id && await canManageExhibitor(db, actorId, event.exhibitor_id));
+function staffingOwner(db: NonNullable<Awaited<ReturnType<typeof createClient>>>, roleId: string, actorId: string) {
+  return db
+    .from("staffing_roles")
+    .select("events(created_by,exhibitor_id)")
+    .eq("id", roleId)
+    .single()
+    .then(({ data }) => {
+      const event = Array.isArray(data?.events) ? data.events[0] : data?.events;
+      return ownsStaffingEvent(event?.created_by, actorId) || Boolean(event?.exhibitor_id && canManageExhibitor(db, actorId, event.exhibitor_id));
+    });
 }
 
 function ratingValue(formData: FormData, key: string) {
@@ -57,6 +65,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const eventTitle = String(formData.get("event_title") ?? "").trim();
   const selectedEvent = String(formData.get("selected_event") ?? "");
   const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const requiredSkillsRaw = String(formData.get("required_skills") ?? "").trim();
   const venue = String(formData.get("venue") ?? "").trim();
   const city = String(formData.get("city") ?? "").trim();
   const startsAt = String(formData.get("starts_at") ?? "");
@@ -67,6 +77,21 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const workEndsOn = String(formData.get("work_ends_on") ?? "");
   const headcount = Number(formData.get("headcount"));
   const hourlyRate = Number(formData.get("hourly_rate"));
+
+  // Contact detail auto-detector check
+  const descCheck = containsContactDetails(description);
+  if (descCheck.hasContact) {
+    return { error: descCheck.reason ?? "Phone numbers and email addresses are not allowed in description fields.", success: "" };
+  }
+  const skillsCheck = containsContactDetails(requiredSkillsRaw);
+  if (skillsCheck.hasContact) {
+    return { error: skillsCheck.reason ?? "Phone numbers and email addresses are not allowed in required skills.", success: "" };
+  }
+  const titleCheck = containsContactDetails(title);
+  if (titleCheck.hasContact) {
+    return { error: titleCheck.reason ?? "Phone numbers and email addresses are not allowed in role titles.", success: "" };
+  }
+
   if (!title || title.length > 160 || !validDate(workStartsOn) || !validDate(workEndsOn) || workEndsOn < workStartsOn ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftStart) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftEnd) ||
     !Number.isInteger(headcount) || headcount < 1 || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
@@ -103,17 +128,18 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     return { error: "Complete your business profile before posting a staffing request.", success: "" };
   }
 
-  let eventFields = { title: eventTitle, venue, city, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null };
+  let eventFields = { title: eventTitle, venue, city, location_id:null as string|null, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null };
   {
     const selection = parseCatalogSelection(selectedEvent);
     if (!selection) return { error: "Choose an approved event from the list.", success: "" };
     const { kind, id } = selection;
     const result = kind === "organizer"
-      ? await supabase.from("organizer_events").select("id,title,venue,city,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
-      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,starts_at,ends_at,status").eq("id", id).eq("status", "approved").maybeSingle();
+      ? await supabase.from("organizer_events").select("id,title,venue,city,location_id,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
+      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,starts_at,ends_at,status").eq("id", id).eq("status", "approved").maybeSingle();
     const selected = result.data;
     if (result.error || !selected || !isSelectableCatalogEvent(selected, kind, todayInIndia())) return { error: "This event is not available for requests. Choose another event.", success: "" };
-    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null };
+    if(!selected.location_id) return {error:"This event does not have a supported Kerala city. Choose another event.",success:""};
+    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, location_id:selected.location_id, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null };
   }
   if (workStartsOn < eventFields.starts_at || workEndsOn > eventFields.ends_at) return { error: "Work days must fall within the event dates.", success: "" };
 
@@ -193,10 +219,16 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
     if (booked?.some(item=>workDaysOverlap(item,openRole!))) return {error:"You are already booked on one or more of these days.",success:""};
   }
 
+  const coverNote = String(formData.get("cover_note") ?? "").trim();
+  const noteCheck = containsContactDetails(coverNote);
+  if (noteCheck.hasContact) {
+    return { error: noteCheck.reason ?? "Phone numbers and email addresses are not allowed in cover notes.", success: "" };
+  }
+
   const { error } = await supabase.from("applications").insert({
     staffing_role_id: roleId,
     talent_id: user.id,
-    cover_note: String(formData.get("cover_note") ?? ""),
+    cover_note: coverNote,
   });
 
   if (error) return { error: "Unable to apply for this role. Check whether you have already applied and try again.", success: "" };

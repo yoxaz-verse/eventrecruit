@@ -7,31 +7,43 @@ import { TalentBrowserAlerts } from "@/components/talent-browser-alerts";
 import { updateTalentPreferences, requestBookingCancellation } from "@/app/actions/talent-jobs";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { indiaToday } from "@/lib/organizer";
 import type { EventRole } from "@/lib/types";
 
-export default async function TalentDashboard() {
-  const talent = await requireRole(["talent"]);
-  const db = await createClient();
-  if (!db) throw new Error("Talent jobs are unavailable.");
-  const [preferences, rolesResult, applicationsResult, alertsResult] = await Promise.all([
-    db.from("talent_job_preferences").select("is_online,notify_push").eq("talent_id",talent.id).maybeSingle(),
-    db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city)").eq("status","open").order("created_at",{ascending:false}).limit(100),
-    db.from("applications").select("id,staffing_role_id,status,cancellation_requested_at").eq("talent_id",talent.id),
-    db.from("talent_job_alerts").select("id,staffing_role_id,created_at").eq("talent_id",talent.id).order("created_at",{ascending:false}).limit(20),
-  ]);
-  if (preferences.error || rolesResult.error || applicationsResult.error || alertsResult.error) throw new Error("Unable to load talent jobs. Apply the latest migration.");
-  const byRole = new Map((applicationsResult.data ?? []).map(item=>[item.staffing_role_id,item]));
-  const ownRoleIds=[...byRole.keys()].filter(id=>!(rolesResult.data??[]).some(record=>record.id===id));
-  const {data:ownRoles,error:ownRolesError}=ownRoleIds.length ? await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city)").in("id",ownRoleIds) : {data:[],error:null};
-  if (ownRolesError) throw new Error("Unable to load your bookings.");
-  const roles:EventRole[] = [...(rolesResult.data??[]),...(ownRoles??[])].flatMap(record=>{
-    const event = Array.isArray(record.events) ? record.events[0] : record.events;
-    if (!event) return [];
-    return [{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}];
-  });
-  return <DashboardShell active="talent"><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Live jobs</h1><p className="mt-2 text-[var(--muted)]">Browse event roles and manage your confirmed work days.</p></div><TalentBrowserAlerts enabled={Boolean(preferences.data?.notify_push)} alerts={alertsResult.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
-    <form action={updateTalentPreferences} className="panel mb-6 flex flex-wrap items-end gap-4 p-5"><label className="label">Availability<select className="input" name="is_online" defaultValue={String(preferences.data?.is_online??false)}><option value="true">Online for matching</option><option value="false">Offline</option></select></label><label className="label">Browser alerts<select className="input" name="notify_push" defaultValue={String(preferences.data?.notify_push??false)}><option value="true">On</option><option value="false">Off</option></select></label><SubmitButton pendingText="Saving…">Save preferences</SubmitButton></form>
-    <section className="mb-8"><h2 className="text-2xl font-bold">Recent job alerts</h2>{alertsResult.data?.length ? <div className="mt-3 grid gap-2">{alertsResult.data.map(alert=><p className="panel p-3 text-sm" key={alert.id}>New matching role · {new Date(alert.created_at).toLocaleString("en-IN")} · <Link className="underline" href="/browse">View jobs</Link></p>)}</div> : <p className="mt-2 text-sm text-[var(--muted)]">No matching alerts yet.</p>}</section>
-    <section><h2 className="mb-4 text-2xl font-bold">Jobs and bookings</h2><div className="grid gap-4 md:grid-cols-2">{roles.map(role=>{const application=byRole.get(role.id); return <div key={role.id}><RoleCard role={role} apply={!application && role.status==="open" && talent.verification_status==="verified"} showDate/><p className="mt-2 text-sm">{application ? `Your status: ${application.status}${application.cancellation_requested_at ? " · Cancellation requested" : ""}` : ""}</p>{application?.status==="accepted" && !application.cancellation_requested_at ? <form action={requestBookingCancellation}><input type="hidden" name="application_id" value={application.id}/><SubmitButton pendingText="Requesting…">Request cancellation</SubmitButton></form>:null}</div>})}</div>{!roles.length ? <p>No open roles right now.</p> : null}</section>
-  </DashboardShell>;
+type RoleRow={id:string;title:string;description:string|null;headcount:number;hourly_rate:number;shift_start:string;shift_end:string;work_starts_on:string;work_ends_on:string;required_skills:string[]|null;status:string;events:{title:string;venue:string;city:string;location_id:string|null}|{title:string;venue:string;city:string;location_id:string|null}[]|null};
+const roleView=(record:RoleRow):EventRole|null=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return event?{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}:null;};
+
+export default async function TalentDashboard({searchParams}:{searchParams:Promise<{view?:string}>}) {
+ const talent=await requireRole(["talent"]),db=await createClient();if(!db)throw new Error("Talent opportunities are unavailable.");
+ const view=(await searchParams).view==="other"?"other":"preferred",today=indiaToday();
+ const [prefs,preferred,profile,rolesResult,appsResult,alerts,organizerEvents,submittedEvents]=await Promise.all([
+  db.from("talent_job_preferences").select("is_online,notify_push").eq("talent_id",talent.id).maybeSingle(),
+  db.from("talent_preferred_locations").select("location_id,locations(name)").eq("talent_id",talent.id),
+  db.from("profiles").select("home_location_id").eq("id",talent.id).single(),
+  db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id)").eq("status","open").order("created_at",{ascending:false}).limit(100),
+  db.from("applications").select("id,staffing_role_id,status,cancellation_requested_at").eq("talent_id",talent.id),
+  db.from("talent_job_alerts").select("id,staffing_role_id,created_at").eq("talent_id",talent.id).order("created_at",{ascending:false}).limit(20),
+  db.from("organizer_events").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","published").gte("ends_at",today).order("starts_at"),
+  db.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","approved").gte("ends_at",today).order("starts_at"),
+ ]);
+ if([prefs,preferred,profile,rolesResult,appsResult,alerts,organizerEvents,submittedEvents].some(result=>result.error))throw new Error("Unable to load talent opportunities. Apply the latest migration.");
+ const preferredIds=new Set((preferred.data??[]).map(item=>item.location_id)),matches=(id:string|null)=>Boolean(id&&preferredIds.has(id)),include=(id:string|null)=>view==="preferred"?matches(id):!matches(id);
+ const names=(preferred.data??[]).flatMap(item=>{const row=Array.isArray(item.locations)?item.locations[0]:item.locations;return row?.name?[row.name]:[];});
+ const applications=new Map((appsResult.data??[]).map(item=>[item.staffing_role_id,item]));
+ const roles=(rolesResult.data??[]).filter(record=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return include(event?.location_id??null);}).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item));
+ const events=[...(organizerEvents.data??[]).map(event=>({...event,href:`/events/${event.id}`,source:"Organizer event"})),...(submittedEvents.data??[]).map(event=>({...event,href:`/events/exhibitor/${event.id}`,source:"Exhibitor-submitted"}))].filter(event=>include(event.location_id));
+ const bookingIds=[...applications.entries()].filter(([,app])=>["accepted","completed"].includes(app.status)).map(([id])=>id);
+ const booked=bookingIds.length?await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id)").in("id",bookingIds):{data:[],error:null};
+ if(booked.error)throw new Error("Unable to load bookings.");
+ const bookings=(booked.data??[]).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item)),profileComplete=Boolean(profile.data?.home_location_id&&preferredIds.size);
+ return <DashboardShell active="talent"><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Opportunities</h1><p className="mt-2 text-[var(--muted)]">Events and staffing requirements organized around the cities where you can work.</p></div><TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
+ {!profileComplete?<div className="callout-banner callout-banner-amber mb-6"><div><h2 className="font-black">Choose your work locations</h2><p className="text-sm">Complete your locations to receive relevant alerts.</p></div><Link className="button button-primary" href="/dashboard/talent/profile">Complete profile</Link></div>:null}
+ <form action={updateTalentPreferences} className="panel mb-6 flex flex-wrap items-end gap-4 p-5"><label className="label">Availability<select className="input" name="is_online" defaultValue={String(prefs.data?.is_online??false)}><option value="true">Online for matching</option><option value="false">Offline</option></select></label><label className="label">Browser alerts<select className="input" name="notify_push" defaultValue={String(prefs.data?.notify_push??false)}><option value="true">On</option><option value="false">Off</option></select></label><SubmitButton pendingText="Saving…">Save preferences</SubmitButton></form>
+ <nav className="mb-6 flex gap-2" aria-label="Opportunity locations"><Link className={`button ${view==="preferred"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=preferred">Preferred locations</Link><Link className={`button ${view==="other"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=other">Other locations</Link></nav>
+ <p className="mb-5 text-sm text-[var(--muted)]">{view==="preferred"?(names.length?`Showing ${names.join(", ")}. Alerts are limited to these cities.`:"Add preferred cities to personalize this tab."):"Explore other cities. These opportunities do not generate alerts."}</p>
+ <section className="mb-8"><h2 className="text-2xl font-bold">Upcoming events</h2><div className="mt-4 grid gap-4 md:grid-cols-2">{events.map(event=><article className="panel p-5" key={`${event.source}-${event.id}`}><span className="badge">{event.source}</span><h3 className="mt-3 text-xl font-black"><Link href={event.href}>{event.title}</Link></h3><p className="text-sm">{event.venue}, {event.city}</p><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p></article>)}</div>{!events.length?<p className="mt-3 text-[var(--muted)]">No upcoming events in this group.</p>:null}</section>
+ <section className="mb-8"><h2 className="text-2xl font-bold">Staffing requirements</h2><div className="mt-4 grid gap-4 md:grid-cols-2">{roles.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} apply={!app&&talent.verification_status==="verified"} showDate/><p className="mt-2 text-sm">{app?`Your status: ${app.status}`:""}</p></div>;})}</div>{!roles.length?<p className="mt-3 text-[var(--muted)]">No open staffing requirements in this group.</p>:null}</section>
+ <section className="mb-8"><h2 className="text-2xl font-bold">Recent preferred-location alerts</h2>{alerts.data?.length?<div className="mt-3 grid gap-2">{alerts.data.map(alert=><p className="panel p-3 text-sm" key={alert.id}>New matching role · {new Date(alert.created_at).toLocaleString("en-IN")}</p>)}</div>:<p className="mt-2 text-sm text-[var(--muted)]">No matching alerts yet.</p>}</section>
+ {bookings.length?<section><h2 className="mb-4 text-2xl font-bold">Your bookings</h2><div className="grid gap-4 md:grid-cols-2">{bookings.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} showDate/><p className="mt-2 text-sm">Your status: {app?.status}</p>{app?.status==="accepted"&&!app.cancellation_requested_at?<form action={requestBookingCancellation}><input type="hidden" name="application_id" value={app.id}/><SubmitButton pendingText="Requesting…">Request cancellation</SubmitButton></form>:null}</div>;})}</div></section>:null}
+ </DashboardShell>;
 }

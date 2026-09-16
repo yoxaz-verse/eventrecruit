@@ -8,6 +8,8 @@ import { validDate } from "@/lib/organizer";
 import { todayInIndia } from "@/lib/exhibitor-listings";
 import { isUpcomingDateRange } from "@/lib/event-selection";
 import { canManageExhibitor } from "@/lib/agency-workspace";
+import { parseLockedLocation } from "@/lib/location";
+import { resolveActiveLocations } from "@/lib/locations";
 
 export async function submitExhibitorEvent(formData: FormData) {
   const profile = await requireRole(["exhibitor","agency"]);
@@ -16,15 +18,20 @@ export async function submitExhibitorEvent(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const venue = String(formData.get("venue") ?? "").trim();
-  const city = String(formData.get("city") ?? "").trim();
+  const locationId = String(formData.get("location_id") ?? "").trim();
+  const catalogLocations=locationId?await resolveActiveLocations([locationId]):[];
+  if(locationId&&!catalogLocations) throw new Error("Choose an active location.");
+  const city=String(formData.get("city")??"").trim();
   const starts_at = String(formData.get("starts_at") ?? "");
   const ends_at = String(formData.get("ends_at") ?? "");
+  const location = parseLockedLocation(formData);
   if (!title || title.length > 160 || !venue || venue.length > 200 || !city || city.length > 120 || description.length > 10000 || !validDate(starts_at) || !validDate(ends_at) || !isUpcomingDateRange(starts_at, ends_at, todayInIndia())) throw new Error("Check the event details and use current or upcoming dates.");
+  if (!location.valid) throw new Error("Choose and lock an Indian venue location before submitting.");
   const { data: owned } = await db.from("exhibitors").select("id").eq("owner_id", profile.id).maybeSingle();
   const exhibitorId = profile.role === "agency" ? String(formData.get("exhibitor_id") ?? "") : owned?.id ?? "";
   const exhibitor = exhibitorId && await canManageExhibitor(db, profile.id, exhibitorId) ? {id:exhibitorId} : null;
   if (!exhibitor) throw new Error("Complete your exhibitor profile first.");
-  const { error } = await db.from("exhibitor_event_submissions").insert({ exhibitor_id: exhibitor.id, actor_id: profile.id, title, description, venue, city, starts_at, ends_at, status: "pending" });
+  const { error } = await db.from("exhibitor_event_submissions").insert({ exhibitor_id: exhibitor.id, actor_id: profile.id, title, description, venue, city, location_id:locationId||null, latitude:location.latitude, longitude:location.longitude, location_label:location.locationLabel, location_country_code:location.countryCode, starts_at, ends_at, status: "pending" });
   if (error) throw new Error("Unable to submit event.");
   revalidatePath("/dashboard/exhibitor/events");
   revalidatePath("/dashboard/admin/events");

@@ -10,3 +10,11 @@ test("exhibitor submissions remain server-only after initial and follow-up migra
     assert.doesNotMatch(sql, /grant\s+(?:all|select|insert|update).*exhibitor_event_submissions\s+to\s+(?:public|anon|authenticated)/i);
   }
 });
+
+test("event location migration stores validated Indian coordinates", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/017_event_locations.sql", import.meta.url), "utf8");
+  for (const table of ["organizer_events", "exhibitor_event_submissions"]) assert.match(sql, new RegExp(`alter table public\\.${table}`, "i"));
+  for (const column of ["latitude", "longitude", "location_label", "location_country_code"]) assert.match(sql, new RegExp(`add column ${column}`, "i"));
+  assert.match(sql, /location_country_code\s*=\s*'IN'/i);
+  assert.match(sql, /create or replace function public\.save_organizer_event_with_slots/i);
+});

@@ -6,6 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { TopNav } from "@/components/top-nav";
 import { getCurrentProfile } from "@/lib/auth";
 import { nextAccountPath } from "@/lib/onboarding";
+import { activeLocations } from "@/lib/locations";
 
 const roleContent = {
   talent: {
@@ -38,6 +39,7 @@ export default async function OnboardingPage() {
 
   const role = profile.role as keyof typeof roleContent;
   const content = roleContent[role];
+  const locations = role === "talent" ? await activeLocations() : [];
 
   return (
     <div className="shell">
@@ -69,7 +71,7 @@ export default async function OnboardingPage() {
               <fieldset className="grid gap-4 border-0 p-0">
                 <legend className="mb-3 text-lg font-black">Contact details</legend>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="label">City <span className="text-red-600">*</span><input autoComplete="address-level2" className="input" name="city" placeholder="Mumbai" required maxLength={120} /></label>
+                  {role === "talent" ? <label className="label">Home city <span className="text-red-600">*</span><select autoComplete="address-level2" className="input" name="home_location_id" required defaultValue=""><option value="" disabled>Select your home city</option>{locations.map(location=><option key={location.id} value={location.id}>{location.name}</option>)}</select></label> : <label className="label">City <span className="text-red-600">*</span><input autoComplete="address-level2" className="input" name="city" required maxLength={120} /></label>}
                   <label className="label">Phone <span className="text-red-600">*</span><input autoComplete="tel" className="input" name="phone" placeholder="+91 98765 43210" required maxLength={40} type="tel" /><span className="field-hint">Private—used only for account and work coordination.</span></label>
                 </div>
               </fieldset>
@@ -93,12 +95,14 @@ export default async function OnboardingPage() {
 
               {role === "talent" ? (
                 <fieldset className="grid gap-4 border-0 border-t border-[var(--line)] p-0 pt-5">
-                  <legend className="mb-3 text-lg font-black">Work profile</legend>
-                  <label className="label">Profile headline <span className="text-red-600">*</span><input className="input" name="headline" required placeholder="Event host and product demonstrator" /><span className="field-hint">One short line that tells employers what you do.</span></label>
-                  <label className="label">Skills <span className="text-red-600">*</span><input className="input" name="skills" required placeholder="Hosting, lead capture, sampling" /><span className="field-hint">Separate skills with commas.</span></label>
+                  <legend className="mb-3 text-lg font-black">Where you can work</legend>
+                  <p className="text-sm text-[var(--muted)]">Choose at least one city. These choices control your matching alerts.</p>
+                  <div className="grid gap-3 sm:grid-cols-2">{locations.map(location=><label className="flex items-center gap-2 rounded-xl border border-[var(--line)] p-3" key={location.id}><input type="checkbox" name="preferred_location_ids" value={location.id}/><span>{location.name}</span></label>)}</div>
                   <details className="optional-details">
-                    <summary>Add experience and availability <span>Optional</span></summary>
+                    <summary>Complete your work profile <span>Optional</span></summary>
                     <div className="mt-4 grid gap-4">
+                      <label className="label">Profile headline<input className="input" name="headline" placeholder="Event host and product demonstrator" /></label>
+                      <label className="label">Skills<input className="input" name="skills" placeholder="Hosting, lead capture, sampling" /><span className="field-hint">Separate skills with commas.</span></label>
                       <label className="label">Short bio<textarea className="input textarea" name="bio" placeholder="A few lines about your event experience" /></label>
                       <div className="grid gap-4 md:grid-cols-2">
                         <label className="label">Languages<input className="input" name="languages" placeholder="English, Hindi" /></label>

@@ -34,10 +34,10 @@ export function SidebarLiveWidget() {
             <Clock size={14} className="animate-spin-slow" aria-hidden />
             <span>Live IST Time</span>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+          <div className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500" />
             </span>
             <span>10 Cities</span>
           </div>
@@ -53,7 +53,7 @@ export function SidebarLiveWidget() {
             <span>Bookings Active</span>
           </span>
           <span className="flex items-center gap-0.5 font-extrabold text-[var(--accent)]">
-            <Radio size={12} className="animate-pulse text-emerald-600" aria-hidden />
+            <Radio size={12} className="animate-pulse text-blue-600" aria-hidden />
             <span>Live Ops</span>
           </span>
         </div>

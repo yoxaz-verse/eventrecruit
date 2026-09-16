@@ -1,9 +1,11 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { requireRole } from "@/lib/auth";
 import { ExhibitorEventForm } from "@/components/exhibitor-event-form";
+import { activeLocations } from "@/lib/locations";
 
 export default async function NewExhibitorEvent() {
   await requireRole(["exhibitor"]);
+  const locations=await activeLocations();
   return (
     <DashboardShell active="exhibitor" current="/dashboard/exhibitor/events">
       <div className="max-w-2xl">
@@ -11,7 +13,7 @@ export default async function NewExhibitorEvent() {
         <h1 className="mt-3 mb-2 text-4xl font-black tracking-tight">Submit an event</h1>
         <p className="mb-6 text-[var(--muted)]">Propose an upcoming event for admin review and approval.</p>
 
-        <ExhibitorEventForm />
+        <ExhibitorEventForm locations={locations} />
       </div>
     </DashboardShell>
   );

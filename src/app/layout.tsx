@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 
 const geist = localFont({
   src: "./fonts/geist-latin.woff2",
