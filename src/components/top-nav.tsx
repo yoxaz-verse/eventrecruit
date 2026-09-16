@@ -3,6 +3,7 @@ import { LayoutDashboard, LogIn, UserPlus, Calendar, Search, LogOut } from "luci
 import { getCurrentAccount } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 import { PublicMobileNavigation } from "@/components/public-mobile-navigation";
+import { SubmitButton } from "@/components/submit-button";
 
 export async function TopNav({ signedIn: signedInOverride }: { signedIn?: boolean } = {}) {
   const signedIn = signedInOverride ?? Boolean(await getCurrentAccount());
@@ -41,10 +42,10 @@ export async function TopNav({ signedIn: signedInOverride }: { signedIn?: boolea
                 <span>Dashboard</span>
               </Link>
               <form action={signOut}>
-                <button className="button button-secondary text-sm font-semibold gap-1.5" type="submit">
-                  <LogOut size={16} aria-hidden />
+                <SubmitButton className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-200 cursor-pointer" pendingText="Signing out…">
+                  <LogOut size={14} aria-hidden />
                   <span>Sign out</span>
-                </button>
+                </SubmitButton>
               </form>
             </>
           ) : (
