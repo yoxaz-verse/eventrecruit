@@ -121,7 +121,7 @@ export default async function BrowsePage({
         ) : user ? (
           <p role="alert" className="panel mt-6 p-6">Roles are temporarily unavailable. Please try again.</p>
         ) : (
-          <div className="callout-banner callout-banner-emerald my-8">
+          <div className="callout-banner callout-banner-blue my-8">
             <div className="flex items-start gap-3">
               <div className="callout-icon">
                 <Lock size={22} aria-hidden />

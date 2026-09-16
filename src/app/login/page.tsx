@@ -38,9 +38,9 @@ export default async function LoginPage({
         description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >
-        <div className="callout-banner callout-banner-emerald mb-4 p-3 rounded-xl">
+        <div className="callout-banner callout-banner-blue mb-4 p-3 rounded-xl">
           <div className="flex items-center gap-2.5 text-xs font-medium">
-            <Building2 size={16} className="text-emerald-700 shrink-0" aria-hidden />
+            <Building2 size={16} className="text-blue-700 shrink-0" aria-hidden />
             <span>Event organizer? Use your company email below or <Link href="/signup?role=organizer" className="font-bold underline">register your company</Link>.</span>
           </div>
         </div>

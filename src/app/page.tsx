@@ -143,17 +143,17 @@ export default async function Home() {
           </div>
           <div className="page hero-layout grid items-center gap-12 py-16 lg:grid-cols-[.95fr_1.05fr] lg:py-24">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50/80 px-3.5 py-1.5 text-xs font-extrabold text-[var(--accent)] shadow-xs">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-50/80 px-3.5 py-1.5 text-xs font-extrabold text-[var(--accent)] shadow-xs">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
                 </span>
                 <span>India-Wide Event & Retail Talent Ops</span>
               </div>
 
               <h1 className="hero-title mt-6 tracking-tight font-black">
                 The right people make{" "}
-                <em className="bg-gradient-to-r from-[var(--accent)] via-emerald-600 to-[var(--accent-2)] bg-clip-text text-transparent not-italic">
+                <em className="bg-gradient-to-r from-[var(--accent)] via-blue-600 to-[var(--accent-2)] bg-clip-text text-transparent not-italic">
                   every moment
                 </em>{" "}
                 matter.
@@ -184,7 +184,7 @@ export default async function Home() {
                   "India-wide coordination from single portal",
                 ].map((signal) => (
                   <div className="trust-line text-sm font-semibold flex items-center gap-2.5" key={signal}>
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 shrink-0">
                       <ShieldCheck size={15} aria-hidden />
                     </div>
                     <span>{signal}</span>
@@ -209,8 +209,8 @@ export default async function Home() {
                 <div className="flex items-center justify-between border-b border-[var(--line)] pb-2 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
                     </span>
                     <p className="text-xs font-black uppercase tracking-wider text-[var(--accent)]">Live India demand</p>
                   </div>
@@ -224,7 +224,7 @@ export default async function Home() {
                         <strong className="text-sm font-bold block">{role.role}</strong>
                         <p className="text-xs text-[var(--muted)]">{role.eventTitle}</p>
                       </div>
-                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">{role.headcount} needed</span>
+                      <span className="text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-1 rounded-full">{role.headcount} needed</span>
                     </div>
                   ))}
                 </div>

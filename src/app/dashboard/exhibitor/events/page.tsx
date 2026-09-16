@@ -32,7 +32,7 @@ export default async function ExhibitorEvents({ searchParams }: { searchParams: 
       </div>
 
       {isSubmitted && (
-        <div className="callout-banner callout-banner-emerald mb-6" role="status">
+        <div className="callout-banner callout-banner-blue mb-6" role="status">
           <div className="flex items-start gap-3">
             <div className="callout-icon">
               <CheckCircle2 size={22} aria-hidden />

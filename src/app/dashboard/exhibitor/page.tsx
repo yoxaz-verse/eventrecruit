@@ -27,7 +27,7 @@ export default async function ExhibitorDashboard() {
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--muted)]">Submitted events</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[var(--accent)] group-hover:scale-110 transition-transform">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[var(--accent)] group-hover:scale-110 transition-transform">
                 <CalendarDays size={20} aria-hidden />
               </div>
             </div>
