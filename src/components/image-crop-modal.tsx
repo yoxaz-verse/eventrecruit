@@ -26,6 +26,38 @@ export function ImageCropModal({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
 
+  // Compute screen bounds & maximum allowed offsets to prevent empty background exposure
+  const getScreenBounds = useCallback(
+    (img: HTMLImageElement, currentZoom: number, currentRotation: number) => {
+      const size = 320;
+      const isRotated = currentRotation === 90 || currentRotation === 270;
+      const scale = Math.max(size / img.width, size / img.height) * currentZoom;
+      const screenW = (isRotated ? img.height : img.width) * scale;
+      const screenH = (isRotated ? img.width : img.height) * scale;
+      const maxOffsetX = Math.max(0, (screenW - size) / 2);
+      const maxOffsetY = Math.max(0, (screenH - size) / 2);
+      return { scale, screenW, screenH, maxOffsetX, maxOffsetY, size };
+    },
+    []
+  );
+
+  const clampOffset = useCallback(
+    (
+      rawOffset: { x: number; y: number },
+      img: HTMLImageElement | null,
+      currentZoom: number,
+      currentRotation: number
+    ) => {
+      if (!img) return { x: 0, y: 0 };
+      const { maxOffsetX, maxOffsetY } = getScreenBounds(img, currentZoom, currentRotation);
+      return {
+        x: Math.min(maxOffsetX, Math.max(-maxOffsetX, rawOffset.x)),
+        y: Math.min(maxOffsetY, Math.max(-maxOffsetY, rawOffset.y)),
+      };
+    },
+    [getScreenBounds]
+  );
+
   // Load Image Object
   useEffect(() => {
     if (!imageSrc) return;
@@ -48,37 +80,30 @@ export function ImageCropModal({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const size = 320; // Preview viewport size
+    const size = 320;
     canvas.width = size;
     canvas.height = size;
 
     ctx.clearRect(0, 0, size, size);
 
-    // Save state
-    ctx.save();
+    // Get strictly clamped offset in screen space
+    const clamped = clampOffset(offset, imageObj, zoom, rotation);
 
-    // Center origin
-    ctx.translate(size / 2, size / 2);
+    ctx.save();
+    // Translate image center to viewport center + clamped screen offset
+    ctx.translate(size / 2 + clamped.x, size / 2 + clamped.y);
     ctx.rotate((rotation * Math.PI) / 180);
 
-    // Calculate aspect ratio scale to fit image into viewport
     const scale = Math.max(size / imageObj.width, size / imageObj.height) * zoom;
     const drawW = imageObj.width * scale;
     const drawH = imageObj.height * scale;
 
-    ctx.drawImage(
-      imageObj,
-      -drawW / 2 + offset.x,
-      -drawH / 2 + offset.y,
-      drawW,
-      drawH
-    );
-
+    ctx.drawImage(imageObj, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
 
-    // Overlay Circular Mask
+    // Overlay Circular Mask & Dimmed Backdrop
     ctx.save();
-    ctx.fillStyle = "rgba(15, 23, 42, 0.5)"; // Backdrop dim
+    ctx.fillStyle = "rgba(15, 23, 42, 0.65)";
     ctx.beginPath();
     ctx.rect(0, 0, size, size);
     ctx.arc(size / 2, size / 2, size / 2 - 10, 0, Math.PI * 2, true);
@@ -86,12 +111,12 @@ export function ImageCropModal({
 
     // Circle border ring
     ctx.lineWidth = 3;
-    ctx.strokeStyle = "#2563eb"; // Accent blue
+    ctx.strokeStyle = "#2563eb";
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size / 2 - 10, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-  }, [imageObj, zoom, rotation, offset]);
+  }, [imageObj, zoom, rotation, offset, clampOffset]);
 
   useEffect(() => {
     if (isOpen && imageObj) {
@@ -106,11 +131,12 @@ export function ImageCropModal({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging) return;
-    setOffset({
+    if (!isDragging || !imageObj) return;
+    const raw = {
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y,
-    });
+    };
+    setOffset(clampOffset(raw, imageObj, zoom, rotation));
   };
 
   const handleMouseUp = () => {
@@ -129,11 +155,38 @@ export function ImageCropModal({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDragging || e.touches.length !== 1) return;
-    setOffset({
+    if (!isDragging || e.touches.length !== 1 || !imageObj) return;
+    const raw = {
       x: e.touches[0].clientX - dragStart.x,
       y: e.touches[0].clientY - dragStart.y,
-    });
+    };
+    setOffset(clampOffset(raw, imageObj, zoom, rotation));
+  };
+
+  // Wheel Zoom support
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.05 : 0.05;
+    const newZoom = Math.min(3, Math.max(1, zoom + delta));
+    setZoom(newZoom);
+    if (imageObj) {
+      setOffset((prev) => clampOffset(prev, imageObj, newZoom, rotation));
+    }
+  };
+
+  const handleZoomChange = (newZoom: number) => {
+    setZoom(newZoom);
+    if (imageObj) {
+      setOffset((prev) => clampOffset(prev, imageObj, newZoom, rotation));
+    }
+  };
+
+  const handleRotate = () => {
+    const newRotation = (rotation + 90) % 360;
+    setRotation(newRotation);
+    if (imageObj) {
+      setOffset((prev) => clampOffset(prev, imageObj, zoom, newRotation));
+    }
   };
 
   // Generate Cropped Image Blob
@@ -151,22 +204,18 @@ export function ImageCropModal({
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    ctx.save();
-    ctx.translate(exportSize / 2, exportSize / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
-
-    const scale = (Math.max(320 / imageObj.width, 320 / imageObj.height) * zoom) * (exportSize / 320);
-    const drawW = imageObj.width * scale;
-    const drawH = imageObj.height * scale;
+    const clamped = clampOffset(offset, imageObj, zoom, rotation);
     const scaleFactor = exportSize / 320;
 
-    ctx.drawImage(
-      imageObj,
-      -drawW / 2 + offset.x * scaleFactor,
-      -drawH / 2 + offset.y * scaleFactor,
-      drawW,
-      drawH
-    );
+    ctx.save();
+    ctx.translate(exportSize / 2 + clamped.x * scaleFactor, exportSize / 2 + clamped.y * scaleFactor);
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    const scale = Math.max(320 / imageObj.width, 320 / imageObj.height) * zoom * scaleFactor;
+    const drawW = imageObj.width * scale;
+    const drawH = imageObj.height * scale;
+
+    ctx.drawImage(imageObj, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
 
     exportCanvas.toBlob((blob) => {
@@ -213,6 +262,7 @@ export function ImageCropModal({
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleMouseUp}
+              onWheel={handleWheel}
               className="touch-none block"
             />
             <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-bold pointer-events-none">
@@ -232,7 +282,7 @@ export function ImageCropModal({
                 max="3"
                 step="0.05"
                 value={zoom}
-                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
                 className="w-full h-2 bg-[var(--surface-2)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
               />
               <ZoomIn size={16} className="text-[var(--muted)] shrink-0" />
@@ -245,7 +295,7 @@ export function ImageCropModal({
             <div className="flex items-center justify-between pt-1">
               <button
                 type="button"
-                onClick={() => setRotation((prev) => (prev + 90) % 360)}
+                onClick={handleRotate}
                 className="button button-secondary text-xs gap-1.5 px-3 py-1.5"
               >
                 <RotateCw size={14} />
@@ -290,3 +340,4 @@ export function ImageCropModal({
     </div>
   );
 }
+

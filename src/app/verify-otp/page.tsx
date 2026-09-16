@@ -56,6 +56,7 @@ export default async function VerifyOtpPage({
         title={labels[type] ?? "Verify OTP"}
         description="Enter your 6 digit email code. Only the latest code will work."
         footer={{ text: "Already verified?", href: "/login", label: "Return to login" }}
+        showTabs={false}
       >
         <AuthMessage message={message} />
         <AuthActionForm action={verifyEmailOtp} className="grid gap-4 mt-3">

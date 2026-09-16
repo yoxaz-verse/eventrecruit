@@ -34,6 +34,7 @@ export default async function ResetPasswordPage({
         title="Create a new password"
         description="Verify the recovery code first, then set a new password for your exporb account."
         footer={profile ? undefined : { text: "Need a new recovery code?", href: "/forgot-password", label: "Send again" }}
+        showTabs={false}
       >
         <AuthMessage message={message ?? (profile ? undefined : "Verify the recovery code from your email before updating your password.")} />
         <AuthActionForm action={updatePassword} className="grid gap-4 mt-3">

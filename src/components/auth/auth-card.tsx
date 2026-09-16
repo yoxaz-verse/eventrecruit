@@ -8,12 +8,14 @@ export function AuthCard({
   description,
   children,
   footer,
+  showTabs = true,
 }: {
   badge: string;
   title: string;
   description: string;
   children: React.ReactNode;
   footer?: { text: string; href: string; label: string };
+  showTabs?: boolean;
 }) {
   const isSignup = footer?.href === "/login";
 
@@ -74,7 +76,7 @@ export function AuthCard({
         <section className="panel auth-card p-5 sm:p-7 rounded-3xl bg-white shadow-xl border border-[var(--line)] flex flex-col justify-between">
           <div>
             {/* Top Tab Switcher with Instant Optimistic State */}
-            <AuthTopTabs currentHref={isSignup ? "/signup" : "/login"} />
+            {showTabs ? <AuthTopTabs currentHref={isSignup ? "/signup" : "/login"} /> : null}
 
             <div className="mb-4">
               <span className="badge badge-accent inline-flex items-center gap-1 text-[10px] py-0.5 px-2.5">

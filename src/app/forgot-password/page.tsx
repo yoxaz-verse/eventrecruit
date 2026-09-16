@@ -30,6 +30,7 @@ export default async function ForgotPasswordPage({
         badge="Account recovery"
         title="Reset your password"
         description="Enter your account email. We will send a 6 digit recovery code to confirm ownership."
+        showTabs={false}
       >
         <AuthMessage message={message} />
         <AuthActionForm action={requestPasswordReset} className="grid gap-4 mt-3">

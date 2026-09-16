@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Upload, Crop, Sparkles, CheckCircle2, Image as ImageIcon } from "lucide-react";
+import { Upload, Crop, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import { ImageCropModal } from "@/components/image-crop-modal";
-
 import { ProgressiveImage } from "@/components/progressive-image";
 
 export const MAX_SOURCE_IMAGE_BYTES = 7 * 1024 * 1024;
@@ -12,11 +11,6 @@ export const MAX_STORED_IMAGE_BYTES = 500 * 1024;
 type CompressionStatus = "idle" | "compressing" | "ready" | "error";
 
 const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-
-function formatBytes(bytes: number) {
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${Math.ceil(bytes / 1024)} KB`;
-}
 
 export function CompressedImageInput({
   name,
@@ -32,7 +26,6 @@ export function CompressedImageInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<CompressionStatus>("idle");
   const [error, setError] = useState("");
-  const [sizes, setSizes] = useState<{ original: number; compressed: number } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Modal crop state
@@ -95,11 +88,6 @@ export function CompressedImageInput({
         inputRef.current.files = transfer.files;
       }
 
-      setSizes({
-        original: croppedFile.size,
-        compressed: croppedFile.size,
-      });
-
       const newPreview = URL.createObjectURL(croppedFile);
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -155,12 +143,9 @@ export function CompressedImageInput({
 
         {/* Info & Action Controls */}
         <div className="flex-1 space-y-2 text-center sm:text-left min-w-0">
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <h4 className="text-sm font-black text-[var(--foreground)] tracking-tight">
-              {label}
-            </h4>
-            <span className="badge badge-accent text-[10px] py-0.5 px-2">WebP Auto-optimized</span>
-          </div>
+          <h4 className="text-sm font-black text-[var(--foreground)] tracking-tight">
+            {label}
+          </h4>
 
           <p className="text-xs text-[var(--muted)] leading-relaxed">
             Upload a PNG, JPEG, or WebP photo up to 7 MB. You can crop, zoom, and frame your picture after selecting.
@@ -191,21 +176,6 @@ export function CompressedImageInput({
         </div>
       </div>
 
-      {/* Compression & Status Feedback */}
-      {status === "compressing" && (
-        <p className="text-xs font-bold text-[var(--accent)] flex items-center gap-1.5 px-1 animate-pulse" role="status">
-          <Sparkles size={14} />
-          <span>Compressing WebP avatar for fast loading…</span>
-        </p>
-      )}
-
-      {sizes && status === "ready" && (
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-xs font-semibold text-blue-900">
-          <CheckCircle2 size={15} className="text-blue-600 shrink-0" />
-          <span>Cropped & ready to save: {formatBytes(sizes.compressed)} WebP avatar</span>
-        </div>
-      )}
-
       {error && (
         <p className="alert text-xs py-2 px-3" role="alert">
           {error}
@@ -225,3 +195,4 @@ export function CompressedImageInput({
     </div>
   );
 }
+
