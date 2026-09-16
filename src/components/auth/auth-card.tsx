@@ -1,3 +1,4 @@
+import { AuthTopTabs } from "@/components/auth/auth-top-tabs";
 import Link from "next/link";
 import { ShieldCheck, Users, Building2, MapPin, Sparkles } from "lucide-react";
 
@@ -72,29 +73,8 @@ export function AuthCard({
         {/* Right Side: Auth Form Container */}
         <section className="panel auth-card p-5 sm:p-7 rounded-3xl bg-white shadow-xl border border-[var(--line)] flex flex-col justify-between">
           <div>
-            {/* Top Tab Switcher */}
-            <div className="auth-tabs grid grid-cols-2 p-1 bg-[var(--surface)] rounded-xl mb-4">
-              <Link
-                href="/login"
-                className={`flex items-center justify-center min-h-[38px] text-xs font-bold rounded-lg transition-all ${
-                  !isSignup
-                    ? "bg-white text-[var(--foreground)] shadow-sm"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                className={`flex items-center justify-center min-h-[38px] text-xs font-bold rounded-lg transition-all ${
-                  isSignup
-                    ? "bg-white text-[var(--foreground)] shadow-sm"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                Create account
-              </Link>
-            </div>
+            {/* Top Tab Switcher with Instant Optimistic State */}
+            <AuthTopTabs currentHref={isSignup ? "/signup" : "/login"} />
 
             <div className="mb-4">
               <span className="badge badge-accent inline-flex items-center gap-1 text-[10px] py-0.5 px-2.5">

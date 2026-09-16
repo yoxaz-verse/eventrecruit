@@ -4,6 +4,8 @@ import { RoleCard } from "@/components/role-card";
 import { SubmitButton } from "@/components/submit-button";
 import { TalentLiveRefresh } from "@/components/talent-live-refresh";
 import { TalentBrowserAlerts } from "@/components/talent-browser-alerts";
+import { EmptyState } from "@/components/empty-state";
+import { CalendarX, Briefcase, BellOff } from "lucide-react";
 import { updateTalentPreferences, requestBookingCancellation } from "@/app/actions/talent-jobs";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -41,9 +43,50 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  <form action={updateTalentPreferences} className="panel mb-6 flex flex-wrap items-end gap-4 p-5"><label className="label">Availability<select className="input" name="is_online" defaultValue={String(prefs.data?.is_online??false)}><option value="true">Online for matching</option><option value="false">Offline</option></select></label><label className="label">Browser alerts<select className="input" name="notify_push" defaultValue={String(prefs.data?.notify_push??false)}><option value="true">On</option><option value="false">Off</option></select></label><SubmitButton pendingText="Saving…">Save preferences</SubmitButton></form>
  <nav className="mb-6 flex gap-2" aria-label="Opportunity locations"><Link className={`button ${view==="preferred"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=preferred">Preferred locations</Link><Link className={`button ${view==="other"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=other">Other locations</Link></nav>
  <p className="mb-5 text-sm text-[var(--muted)]">{view==="preferred"?(names.length?`Showing ${names.join(", ")}. Alerts are limited to these cities.`:"Add preferred cities to personalize this tab."):"Explore other cities. These opportunities do not generate alerts."}</p>
- <section className="mb-8"><h2 className="text-2xl font-bold">Upcoming events</h2><div className="mt-4 grid gap-4 md:grid-cols-2">{events.map(event=><article className="panel p-5" key={`${event.source}-${event.id}`}><span className="badge">{event.source}</span><h3 className="mt-3 text-xl font-black"><Link href={event.href}>{event.title}</Link></h3><p className="text-sm">{event.venue}, {event.city}</p><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p></article>)}</div>{!events.length?<p className="mt-3 text-[var(--muted)]">No upcoming events in this group.</p>:null}</section>
- <section className="mb-8"><h2 className="text-2xl font-bold">Staffing requirements</h2><div className="mt-4 grid gap-4 md:grid-cols-2">{roles.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} apply={!app&&talent.verification_status==="verified"} showDate/><p className="mt-2 text-sm">{app?`Your status: ${app.status}`:""}</p></div>;})}</div>{!roles.length?<p className="mt-3 text-[var(--muted)]">No open staffing requirements in this group.</p>:null}</section>
- <section className="mb-8"><h2 className="text-2xl font-bold">Recent preferred-location alerts</h2>{alerts.data?.length?<div className="mt-3 grid gap-2">{alerts.data.map(alert=><p className="panel p-3 text-sm" key={alert.id}>New matching role · {new Date(alert.created_at).toLocaleString("en-IN")}</p>)}</div>:<p className="mt-2 text-sm text-[var(--muted)]">No matching alerts yet.</p>}</section>
+
+ <section className="mb-8">
+   <h2 className="text-2xl font-bold">Upcoming events</h2>
+   {events.length ? (
+     <div className="mt-4 grid gap-4 md:grid-cols-2">{events.map(event=><article className="panel p-5" key={`${event.source}-${event.id}`}><span className="badge">{event.source}</span><h3 className="mt-3 text-xl font-black"><Link href={event.href}>{event.title}</Link></h3><p className="text-sm">{event.venue}, {event.city}</p><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p></article>)}</div>
+   ) : (
+     <EmptyState
+       icon={CalendarX}
+       title="No upcoming events in this group"
+       description="There are currently no active exhibitions or store events scheduled for the selected location filter."
+       className="mt-4"
+     />
+   )}
+ </section>
+
+ <section className="mb-8">
+   <h2 className="text-2xl font-bold">Staffing requirements</h2>
+   {roles.length ? (
+     <div className="mt-4 grid gap-4 md:grid-cols-2">{roles.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} apply={!app&&talent.verification_status==="verified"} showDate/><p className="mt-2 text-sm">{app?`Your status: ${app.status}`:""}</p></div>;})}</div>
+   ) : (
+     <EmptyState
+       icon={Briefcase}
+       title="No open staffing requirements"
+       description="No open roles available right now for this group. Switch tabs or update your preferred work cities in your profile."
+       action={<Link className="button button-secondary text-xs" href="/dashboard/talent/profile">Manage locations</Link>}
+       className="mt-4"
+     />
+   )}
+ </section>
+
+ <section className="mb-8">
+   <h2 className="text-2xl font-bold mb-4">Recent preferred-location alerts</h2>
+   {alerts.data?.length ? (
+     <div className="grid gap-2">{alerts.data.map(alert=><p className="panel p-3 text-sm" key={alert.id}>New matching role · {new Date(alert.created_at).toLocaleString("en-IN")}</p>)}</div>
+   ) : (
+     <EmptyState
+       icon={BellOff}
+       title="No matching alerts yet"
+       description="When new staffing requests match your preferred cities, instant real-time alerts will appear right here."
+       className="mt-2"
+     />
+   )}
+ </section>
+
  {bookings.length?<section><h2 className="mb-4 text-2xl font-bold">Your bookings</h2><div className="grid gap-4 md:grid-cols-2">{bookings.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} showDate/><p className="mt-2 text-sm">Your status: {app?.status}</p>{app?.status==="accepted"&&!app.cancellation_requested_at?<form action={requestBookingCancellation}><input type="hidden" name="application_id" value={app.id}/><SubmitButton pendingText="Requesting…">Request cancellation</SubmitButton></form>:null}</div>;})}</div></section>:null}
  </DashboardShell>;
 }

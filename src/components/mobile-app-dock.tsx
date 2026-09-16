@@ -16,7 +16,6 @@ interface MobileAppDockProps {
 
 export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppDockProps) {
   const pathname = usePathname();
-  const active = currentPath ?? pathname;
   
   // Modal state management for smooth enter & exit transitions
   const [mounted, setMounted] = useState(false);
@@ -81,6 +80,14 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
     return () => cancelAnimationFrame(frame);
   }, [pathname, closeDrawer]);
 
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOptimisticPath(null);
+  }, [pathname]);
+
+  const active = optimisticPath ?? currentPath ?? pathname;
+
   const mainTabs = [
     { href: "/", label: "Home", icon: Home },
     { href: "/browse", label: "Roles", icon: Briefcase },
@@ -100,6 +107,7 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
             <Link
               key={tab.href}
               href={tab.href}
+              onClick={() => setOptimisticPath(tab.href)}
               className={`mobile-tab ${isActive ? "mobile-tab-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
             >

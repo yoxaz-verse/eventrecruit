@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Briefcase, CalendarDays, Home, LayoutDashboard, LogIn } from "lucide-react";
@@ -18,9 +19,17 @@ const pageLabels: Array<[string, string]> = [
 
 export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOptimisticPath(null);
+  }, [pathname]);
+
+  const activePath = optimisticPath ?? pathname;
   const accountHref = signedIn ? "/dashboard" : "/login";
   const accountLabel = signedIn ? "Portal" : "Account";
-  const pageLabel = pageLabels.find(([path]) => isNavigationItemActive(pathname, path))?.[1] ?? "exporb";
+  const pageLabel = pageLabels.find(([path]) => isNavigationItemActive(activePath, path))?.[1] ?? "exporb";
+
   const tabs = [
     { href: "/", label: "Home", icon: Home },
     { href: "/events", label: "Events", icon: CalendarDays },
@@ -32,7 +41,7 @@ export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
     <>
       <div className="mobile-top-bar md:hidden">
         <div className="page mobile-top-bar-inner">
-          <Link aria-label="exporb home" className="brand-link" href="/">
+          <Link aria-label="exporb home" className="brand-link" href="/" onClick={() => setOptimisticPath("/")}>
             <span className="brand-mark mobile-brand-mark" aria-hidden="true">
               <span className="brand-orbit brand-orbit-one" />
               <span className="brand-orbit brand-orbit-two" />
@@ -41,7 +50,12 @@ export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
             <span className="brand-wordmark mobile-wordmark">expo<span>rb</span></span>
           </Link>
           <span className="mobile-page-context" aria-current="page">{pageLabel}</span>
-          <Link className="mobile-account-shortcut" href={accountHref} aria-label={signedIn ? "Open your portal" : "Log in to your account"}>
+          <Link
+            className="mobile-account-shortcut"
+            href={accountHref}
+            onClick={() => setOptimisticPath(accountHref)}
+            aria-label={signedIn ? "Open your portal" : "Log in to your account"}
+          >
             {signedIn ? <LayoutDashboard size={19} aria-hidden /> : <LogIn size={19} aria-hidden />}
           </Link>
         </div>
@@ -51,10 +65,17 @@ export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
         <div className="mobile-tab-list">
           {tabs.map(({ href, label, icon: Icon }) => {
             const active = href === "/"
-              ? pathname === "/"
-              : isNavigationItemActive(pathname, href) || (href === "/login" && ["/signup", "/forgot-password", "/reset-password", "/verify-otp"].some((path) => isNavigationItemActive(pathname, path)));
+              ? activePath === "/"
+              : isNavigationItemActive(activePath, href) || (href === "/login" && ["/signup", "/forgot-password", "/reset-password", "/verify-otp"].some((path) => isNavigationItemActive(activePath, path)));
+
             return (
-              <Link className={`mobile-tab ${active ? "mobile-tab-active" : ""}`} href={href} key={label} aria-current={active ? "page" : undefined}>
+              <Link
+                key={label}
+                href={href}
+                onClick={() => setOptimisticPath(href)}
+                className={`mobile-tab ${active ? "mobile-tab-active" : ""}`}
+                aria-current={active ? "page" : undefined}
+              >
                 <Icon size={21} aria-hidden />
                 <span>{label}</span>
               </Link>

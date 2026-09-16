@@ -1,3 +1,4 @@
+import { ProgressiveImage } from "@/components/progressive-image";
 import { updateApplicationStatus } from "@/app/actions/workflow";
 import { AgencyClientSelector } from "@/components/agency-client-selector";
 import { DashboardShell } from "@/components/dashboard-shell";
@@ -26,7 +27,7 @@ export default async function AgencyApplicants({ searchParams }: { searchParams:
     <div className="grid gap-4">{apps.map(application => {
       const person = names.get(application.talent_id);
       return <article className="panel p-5" key={application.id}>
-        <div className="flex items-start gap-4">{person?.avatar_url ? <img className="h-16 w-16 rounded-full border border-[var(--line)] object-cover" src={`/api/media/talent/${application.talent_id}`} alt={`${person.full_name} profile picture`}/> : null}<div><span className="badge capitalize">{application.status}</span><h2 className="mt-3 text-xl font-black">{person?.full_name ?? "Applicant"}</h2><p>{application.role} · {application.event}</p><p className="text-sm text-[var(--muted)]">{person?.city ?? "City unavailable"}</p></div></div>
+        <div className="flex items-start gap-4">{person?.avatar_url ? <ProgressiveImage src={`/api/media/talent/${application.talent_id}`} alt={`${person.full_name} profile picture`} className="h-16 w-16 rounded-full border border-[var(--line)] object-cover" containerClassName="h-16 w-16 shrink-0"/> : null}<div><span className="badge capitalize">{application.status}</span><h2 className="mt-3 text-xl font-black">{person?.full_name ?? "Applicant"}</h2><p>{application.role} · {application.event}</p><p className="text-sm text-[var(--muted)]">{person?.city ?? "City unavailable"}</p></div></div>
         <WorkflowActionForm action={updateApplicationStatus} className="mt-4 flex flex-wrap items-end gap-3"><input type="hidden" name="application_id" value={application.id}/><label className="label">Status<select className="input" name="status" defaultValue={application.status}>{["applied", "shortlisted", "accepted", "rejected", "completed", "cancelled"].map(status => <option key={status}>{status}</option>)}</select></label><SubmitButton pendingText="Saving…">Save</SubmitButton></WorkflowActionForm>
       </article>;
     })}{selected && !apps.length ? <p className="panel p-5">No applications for this client.</p> : null}</div>

@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Suspense } from "react";
+import { NavigationProgressBar } from "@/components/navigation-progress-bar";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
@@ -46,7 +48,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={geist.variable}>
-      <body>{children}</body>
+      <body>
+        <Suspense fallback={null}>
+          <NavigationProgressBar />
+        </Suspense>
+        {children}
+      </body>
     </html>
   );
 }
