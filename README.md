@@ -8,6 +8,7 @@ exporb is a Next.js app backed by Supabase Postgres for event services and expo 
 - App-owned accounts and HttpOnly sessions
 - Role-based dashboards
 - Organizer event booking: HTTPS booking links and India-time capacity-limited guest slots. Apply `supabase/migrations/010_event_booking.sql` before deploying the booking UI; it adds reservation tables and makes talent positions optional for published events.
+- Event amenities: apply `supabase/migrations/019_event_amenities.sql` before deploying amenity selectors or public amenity labels.
 - Exhibitor workspace: apply `supabase/migrations/009_exhibitor_event_submissions.sql` before deploying event submissions, admin reviews, or event-linked staffing requests. For databases that already applied an earlier 009, also apply `supabase/migrations/011_lock_down_exhibitor_submissions.sql` to remove direct client access under app-owned session authorization.
 - Public role browsing
 - Exhibitor staffing request form
@@ -47,6 +48,18 @@ SMTP_AUTH_USER=
 SMTP_AUTH_PASS=
 SMTP_FROM=
 ```
+
+For talent photos and event, agency, and exhibitor logos, apply `supabase/migrations/018_profile_and_brand_images.sql` and configure the private Cloudflare R2 bucket:
+
+```bash
+CLOUDFLARE_R2_ENDPOINT=https://e21922ea64456ac50886f8510d26dfea.r2.cloudflarestorage.com/exporb
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+```
+
+Use an R2 API token with Object Read & Write access limited to the `exporb` bucket. Keep the bucket private; the app serves files through authorization-aware routes so exhibitor logos are limited to their owner, administrators, and actively assigned agencies.
+
+Image sources may be up to 7 MB (the UI recommends staying under 5 MB). The browser resizes them within 1200×1200 and converts them to WebP at no more than 500 KB before submission; the server rejects any uncompressed or oversized bypass attempt before R2 storage.
 
 4. Generate a random `APP_AUTH_SECRET` of at least 32 characters and configure MXroute. Next.js generates six-digit OTPs that expire in 10 minutes and submits messages through MXroute's HTTPS API. `SMTP_HOST` names your MXroute server; `SMTP_PORT` and `SMTP_SECURE` from older configurations are ignored. Supabase Auth email settings are not used.
 

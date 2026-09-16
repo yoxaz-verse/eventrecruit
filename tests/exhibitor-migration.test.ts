@@ -18,3 +18,10 @@ test("event location migration stores validated Indian coordinates", () => {
   assert.match(sql, /location_country_code\s*=\s*'IN'/i);
   assert.match(sql, /create or replace function public\.save_organizer_event_with_slots/i);
 });
+
+test("amenities migration covers both event catalogs and organizer persistence", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/019_event_amenities.sql", import.meta.url), "utf8");
+  for (const table of ["organizer_events", "exhibitor_event_submissions"]) assert.match(sql, new RegExp(`alter table public\\.${table}`, "i"));
+  assert.match(sql, /create or replace function public\.save_organizer_event_with_slots/i);
+  assert.match(sql, /custom_amenities=custom/i);
+});

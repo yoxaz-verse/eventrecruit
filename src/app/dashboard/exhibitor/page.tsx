@@ -3,12 +3,13 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarDays, ClipboardList, Users, PlusCircle, ArrowRight } from "lucide-react";
+import { ProfileImageForm } from "@/components/profile-image-form";
 
 export default async function ExhibitorDashboard() {
   const profile = await requireRole(["exhibitor"]);
   const db = await createClient();
   if (!db) throw new Error("Workspace is temporarily unavailable.");
-  const { data: exhibitor } = await db.from("exhibitors").select("id,company_name").eq("owner_id", profile.id).maybeSingle();
+  const { data: exhibitor } = await db.from("exhibitors").select("id,company_name,logo_path").eq("owner_id", profile.id).maybeSingle();
   const [submissions, requests] = await Promise.all([
     exhibitor ? db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id) : Promise.resolve({ data: [], error: null }),
     db.from("events").select("id,staffing_roles(id)").eq("created_by", profile.id),
@@ -21,6 +22,7 @@ export default async function ExhibitorDashboard() {
       <span className="badge badge-accent">Exhibitor panel</span>
       <h1 className="mt-3 text-4xl font-black tracking-tight">{exhibitor?.company_name ?? "Exhibitor overview"}</h1>
       <p className="mt-2 text-[var(--muted)]">Manage your event presence, staffing requests, and applicant reviews.</p>
+      {exhibitor ? <div className="panel mt-6 max-w-2xl p-6"><p className="mb-3 text-sm text-[var(--muted)]">Your logo is private. Only you, administrators, and actively assigned agencies can view it.</p><ProfileImageForm kind="Exhibitor logo" imageUrl={exhibitor.logo_path ? `/api/media/exhibitor/${exhibitor.id}` : null}/></div> : null}
 
       <div className="mt-8 grid gap-6 md:grid-cols-3">
         <Link className="panel p-6 transition-all hover:shadow-lg group flex flex-col justify-between min-h-[160px]" href="/dashboard/exhibitor/events">

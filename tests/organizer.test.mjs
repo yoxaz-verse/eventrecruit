@@ -4,7 +4,17 @@ import ts from 'typescript';
 import fs from 'node:fs';
 const moduleOutput = { exports: {} };
 new Function('exports', ts.transpileModule(fs.readFileSync('src/lib/organizer.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(moduleOutput.exports);
-const { eventPhase, eventRequirementTemplates, validDate, indiaToday, validEventClassification, validRequirementSections, validStaffingNeeds, validBookingSlot, validSpaceOffer, validSpaceAttachment } = moduleOutput.exports;
+const { eventPhase, eventRequirementTemplates, normalizeCustomAmenities, validDate, indiaToday, validEventAmenities, validEventClassification, validRequirementSections, validStaffingNeeds, validBookingSlot, validSpaceOffer, validSpaceAttachment } = moduleOutput.exports;
+test('event amenities accept controlled keys and unique bounded custom labels', () => {
+ assert.equal(validEventAmenities(['food','wifi'],['Cloakroom']),true);
+ assert.equal(validEventAmenities([],[]),true);
+ assert.deepEqual(normalizeCustomAmenities([' Cloakroom ','cloakroom','Prayer room']),['Cloakroom','Prayer room']);
+ assert.equal(validEventAmenities(['unknown'],[]),false);
+ assert.equal(validEventAmenities(['food','food'],[]),false);
+ assert.equal(validEventAmenities([],['Cloakroom','cloakroom']),false);
+ assert.equal(validEventAmenities([],['x'.repeat(81)]),false);
+ assert.equal(validEventAmenities([],Array.from({length:11},(_,index)=>`Amenity ${index}`)),false);
+});
 test('event classifications and editable requirement templates use controlled values', () => {
  assert.equal(validEventClassification('expo','convention_centre'),true);
  assert.equal(validEventClassification('activation','mall_retail'),true);

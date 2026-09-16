@@ -3,9 +3,11 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentAccount } from '@/lib/auth';
-import { requirementSections, validBookingSlot, validDate, validEventClassification, validRequirementSections, validSpaceAttachment, validSpaceOffer, validStaffingNeeds, type BookingSlot, type RequirementSection, type SpaceOffer, type StaffingNeed } from '@/lib/organizer';
+import { normalizeCustomAmenities, requirementSections, validBookingSlot, validDate, validEventAmenities, validEventClassification, validRequirementSections, validSpaceAttachment, validSpaceOffer, validStaffingNeeds, type BookingSlot, type RequirementSection, type SpaceOffer, type StaffingNeed } from '@/lib/organizer';
 import { parseLockedLocation } from '@/lib/location';
 import { resolveActiveLocations } from '@/lib/locations';
+import { validBrandImageSignature } from '@/lib/image-upload';
+import { deleteR2Object, putR2Object } from '@/lib/r2';
 export type FormState = { error: string };
 const value = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
 async function session() {
@@ -66,6 +68,8 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  if(locationRequired&&!location.valid) return {error:'Choose and lock an Indian venue location before publishing.'};
  if(location.locked&&!location.valid) return {error:'The locked venue location is invalid. Unlock it and choose the location again.'};
  const bookingUrl=value(data,'booking_url');
+ const amenities=data.getAll('amenities').map(String), rawCustomAmenities=data.getAll('custom_amenities').map(String), customAmenities=normalizeCustomAmenities(rawCustomAmenities);
+ if(!validEventAmenities(amenities,rawCustomAmenities)) return {error:'Choose valid amenities and add no more than 10 unique custom amenities.'};
  if (bookingUrl) { try { if (new URL(bookingUrl).protocol !== 'https:') return {error:'Booking link must use HTTPS.'}; } catch { return {error:'Enter a valid booking URL.'}; } }
  const slotIds=data.getAll('slot_id').map(String), slotDates=data.getAll('slot_date').map(String), slotStarts=data.getAll('slot_start').map(String), slotEnds=data.getAll('slot_end').map(String), slotCapacities=data.getAll('slot_capacity').map(String);
  if ([slotDates,slotStarts,slotEnds,slotCapacities].some(items=>items.length!==slotIds.length) || slotIds.length>100) return {error:'Add no more than 100 complete slots.'};
@@ -80,6 +84,9 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  const uploads=(['pricing_chart','floor_layout'] as const).map(kind=>({kind,file:data.get(kind)}));
  for (const upload of uploads) if (upload.file instanceof File && upload.file.size>0 && (!validSpaceAttachment(upload.file) || !await hasValidSignature(upload.file))) return {error:'Upload PDF, PNG, JPEG, or WebP files up to 5 MB.'};
  if (uploads.some(upload=>data.get(`remove_${upload.kind}`)==='1' && upload.file instanceof File && upload.file.size>0)) return {error:'Choose either a replacement file or remove the current file.'};
+ const logo=data.get('logo');
+ if (logo instanceof File && logo.size>0 && !await validBrandImageSignature(logo)) return {error:'Upload a browser-compressed WebP event logo no larger than 500 KB.'};
+ if (data.get('remove_logo')==='1' && logo instanceof File && logo.size>0) return {error:'Choose either a replacement logo or remove the current logo.'};
  const titles=data.getAll('position_title').map(item=>String(item).trim());
  const counts=data.getAll('people_needed').map(item=>String(item).trim());
  if (titles.length!==counts.length || titles.length>30) return {error:'Add no more than 30 talent positions.'};
@@ -97,12 +104,24 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if (slots.some(slot=>slot.id && !existing?.some(old=>old.id===slot.id))) return {error:'Invalid slot.'};
    if (existing?.some(old=>old.booked_count>0 && (slots.some(slot=>slot.id===old.id && (slot.slot_date!==old.slot_date || slot.start_time!==old.start_time.slice(0,5) || slot.end_time!==old.end_time.slice(0,5) || slot.capacity<old.booked_count)) || (requestedIds.has(old.id) && (old.slot_date<start || old.slot_date>end))))) return {error:'Booked slots cannot be rescheduled or moved outside event dates, and capacity cannot fall below reservations.'};
  }
- const payload={title,description,venue,city,location_id:locationId||null,latitude:location.valid?location.latitude:null,longitude:location.valid?location.longitude:null,location_label:location.valid?location.locationLabel:null,location_country_code:location.valid?location.countryCode:null,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails};
+ const payload={title,description,venue,city,location_id:locationId||null,latitude:location.valid?location.latitude:null,longitude:location.valid?location.longitude:null,location_label:location.valid?location.locationLabel:null,location_country_code:location.valid?location.countryCode:null,starts_at:start||null,ends_at:end||null,status,staffing_needs:completeNeeds,booking_url:bookingUrl,event_type:eventType,venue_setting:venueSetting,requirement_sections:sections,requirement_details:requirementDetails,amenities,custom_amenities:customAmenities};
  const {data:savedId,error}=await db.rpc('save_organizer_event_with_spaces',{p_event_id:id||null,p_company_id:company.id,p_event:payload,p_slots:slots,p_offers:offers.map((offer,position)=>({...offer,position}))});
  if (error || !savedId) return {error:error?.message?.includes('Published exhibitor spaces')?'Add at least one complete exhibitor offer or turn off the exhibitor / stall spaces section before publishing.':'Unable to save event, slots, and offers. Check for conflicting reservations and retry.'};
  eventId=savedId;
  const {error:locationError}=await db.from('organizer_events').update({location_id:locationId||null}).eq('id',eventId).eq('company_id',company.id);
  if(locationError) return {error:'Event saved, but its city could not be linked. Please retry.'};
+ if ((logo instanceof File && logo.size>0) || data.get('remove_logo')==='1') {
+   const {data:current}=await db.from('organizer_events').select('logo_path').eq('id',eventId).eq('company_id',company.id).single();
+   if (!current) return {error:'Event saved, but logo ownership could not be verified.'};
+   let logoPath:string|null=null;
+   if (logo instanceof File && logo.size>0) {
+     logoPath=`events/${eventId}/${crypto.randomUUID()}.webp`;
+     await putR2Object(logoPath,logo);
+   }
+   const {error:logoError}=await db.from('organizer_events').update({logo_path:logoPath}).eq('id',eventId).eq('company_id',company.id);
+   if (logoError) { await deleteR2Object(logoPath); return {error:'Event saved, but its logo could not be linked. Reopen the event and retry.'}; }
+   await deleteR2Object(current.logo_path);
+ }
  for (const {kind,file} of uploads) {
    const column=kind==='pricing_chart'?'pricing_chart_path':'floor_layout_path';
    if (!(file instanceof File && file.size>0) && data.get(`remove_${kind}`)!=='1') continue;

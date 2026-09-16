@@ -5,6 +5,8 @@ import { eventRequirementTemplates, eventTypeLabels, eventTypes, requirementSect
 import { SubmitButton } from '@/components/submit-button';
 import { VenueLocationPicker } from '@/components/venue-location-picker';
 import type { LocationOption } from '@/lib/locations';
+import { EventAmenitiesField } from '@/components/event-amenities-field';
+import { CompressedImageInput } from '@/components/compressed-image-input';
 export function CompanyForm({company}:{company?:Company}) {
  const [state,action]=useActionState(saveCompany,{error:''});
  return <form action={action} className="panel grid gap-4 p-6">
@@ -19,6 +21,7 @@ export function CompanyForm({company}:{company?:Company}) {
 export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:OrganizerEvent;slots?:BookingSlot[];offers?:SpaceOffer[];locations?:LocationOption[]}) {
  const [state,action]=useActionState(saveEvent,{error:''});
  const [eventType,setEventType]=useState<EventType>(event?.event_type??'other');
+ const [logoStatus,setLogoStatus]=useState<'idle'|'compressing'|'ready'|'error'>('idle');
  const inferredSections:RequirementSection[]=[...(event?.requirement_sections??[])];
  if(offers.length&&!inferredSections.includes('exhibitor_spaces')) inferredSections.push('exhibitor_spaces');
  if((slots.length||event?.booking_url)&&!inferredSections.includes('attendee_booking')) inferredSections.push('attendee_booking');
@@ -42,11 +45,13 @@ export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:Organi
  <input type="hidden" name="id" value={event?.id ?? ''}/>
  <input type="hidden" name="requirement_details" value={JSON.stringify(requirementDetails)}/>
  <label className="label">Event title<input className="input" name="title" required maxLength={160} defaultValue={event?.title}/></label>
+ <div className="grid gap-3 rounded-xl border border-[var(--line)] p-4"><CompressedImageInput name="logo" label="Event logo (optional)" currentImageUrl={event?.logo_path?`/api/media/event/${event.id}`:null} onStatusChange={setLogoStatus}/>{event?.logo_path?<label className="text-sm"><input type="checkbox" name="remove_logo" value="1"/> Remove current logo</label>:null}</div>
  <div className="grid gap-4 sm:grid-cols-2"><label className="label">Event type<select className="input" name="event_type" required value={eventType} onChange={e=>chooseEventType(e.target.value as EventType)}>{eventTypes.map(type=><option value={type} key={type}>{eventTypeLabels[type]}</option>)}</select><span className="text-sm">Changing type adds its recommended sections without removing your work.</span></label><label className="label">Venue setting<select className="input" name="venue_setting" required defaultValue={event?.venue_setting??'other'}>{venueSettings.map(setting=><option value={setting} key={setting}>{venueSettingLabels[setting]}</option>)}</select></label></div>
  <fieldset className="grid gap-3 border-t border-[var(--line)] pt-5"><legend className="text-lg font-bold">Requirement sections</legend><p className="text-sm text-[var(--muted)]">The event type preselects recommendations. Adjust them for this event.</p><div className="grid gap-3 sm:grid-cols-2">{requirementSections.map(section=><label className="flex items-center gap-2" key={section}><input type="checkbox" name="requirement_sections" value={section} checked={enabledSections.includes(section)} onChange={e=>toggleSection(section,e.target.checked)}/>{requirementSectionLabels[section]}</label>)}</div>{enabledSections.map(section=><label className="label" key={section}>{requirementSectionLabels[section]} notes (optional)<textarea className="input textarea" maxLength={3000} value={requirementDetails[section]??''} onChange={e=>setRequirementDetails(current=>({...current,[section]:e.target.value}))} placeholder="Add instructions, facilities, timings, or other requirements"/></label>)}</fieldset>
  <label className="label">Description<textarea className="input textarea" name="description" maxLength={10000} defaultValue={event?.description}/></label>
  <VenueLocationPicker locations={locations} initialLocationId={event?.location_id} initial={event ? {venue:event.venue,city:event.city,label:event.location_label??undefined,latitude:event.latitude??undefined,longitude:event.longitude??undefined,countryCode:event.location_country_code==='IN'?'IN':undefined} : undefined}/>
  <div className="grid gap-4 sm:grid-cols-2"><label className="label">Start date<input className="input" name="starts_at" type="date" defaultValue={event?.starts_at??''}/></label><label className="label">End date<input className="input" name="ends_at" type="date" defaultValue={event?.ends_at??''}/></label></div>
+ <EventAmenitiesField initialAmenities={event?.amenities} initialCustomAmenities={event?.custom_amenities}/>
  {enabledSections.includes('attendee_booking')&&<fieldset className="grid gap-3 border-t border-[var(--line)] pt-5"><legend className="text-lg font-bold">Attendee booking</legend><p className="text-sm text-[var(--muted)]">Add an external booking page, in-app time slots, or both. Times use India time.</p>
  <label className="label">External booking link (optional)<input className="input" name="booking_url" type="url" placeholder="https://example.com/book" defaultValue={event?.booking_url??''}/></label>
  {bookingSlots.map((slot,index)=><div className="grid gap-3 rounded-xl border border-[var(--line)] p-4 sm:grid-cols-2" key={slot.key}>
@@ -83,6 +88,6 @@ export function EventForm({event,slots=[],offers=[],locations=[]}:{event?:Organi
  <button className="button button-secondary justify-self-start" type="button" onClick={()=>{setNeeds(rows=>[...rows,{key:nextKey,title:'',people_needed:''}]);setNextKey(key=>key+1);}}>Add position</button></fieldset>}
  <p className="text-sm text-[var(--muted)]">Description, venue, city, and dates are required to publish. Dates use India time. Save as draft to remove an event from public view.</p>
  <label className="label">Status<select className="input" name="status" defaultValue={event?.status??'draft'}><option value="draft">Draft — private</option><option value="published">Published — public</option><option value="cancelled">Cancelled</option></select></label>
- {state.error && <p className="alert" role="alert">{state.error}</p>}<SubmitButton pendingText="Saving event…">Save event</SubmitButton>
+ {state.error && <p className="alert" role="alert">{state.error}</p>}<SubmitButton pendingText="Saving event…" disabled={logoStatus==='compressing'||logoStatus==='error'}>Save event</SubmitButton>
  </form>;
 }

@@ -1,14 +1,16 @@
+import { PageLoadingScreen } from "@/components/page-loading-screen";
+
 export default function BrowseLoading() {
   return (
-    <main className="page py-10" aria-busy="true" aria-label="Loading open roles">
-      <div className="h-8 w-40 animate-pulse rounded-full bg-[var(--line)]" />
-      <div className="mt-4 h-12 max-w-xl animate-pulse rounded-xl bg-[var(--line)]" />
-      <div className="mt-8 h-32 animate-pulse rounded-2xl bg-[var(--line)]" />
-      <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((item) => (
-          <div className="panel h-80 animate-pulse" key={item} />
-        ))}
-      </div>
-    </main>
+    <PageLoadingScreen
+      title="Filtering open staffing roles"
+      subtitle="Searching verified role opportunities for event hosts, promoters, lead capture & store teams..."
+      quotes={[
+        "Browse verified shifts with transparent daily rates in Rupees.",
+        "Apply directly with your exporb talent profile.",
+        "Find opportunities across Delhi NCR, Mumbai, Bengaluru, Hyderabad & more.",
+      ]}
+      showTopNav={true}
+    />
   );
 }

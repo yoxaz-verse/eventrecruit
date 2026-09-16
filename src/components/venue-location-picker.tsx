@@ -3,8 +3,16 @@
 import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
 import type { LocationResult } from "@/lib/location";
+import { DualTextSpinner } from "@/components/dual-text-spinner";
 
-const VenueLocationMap = dynamic(() => import("@/components/venue-location-map"), { ssr: false, loading: () => <div className="venue-map grid place-items-center text-sm text-[var(--muted)]">Loading map…</div> });
+const VenueLocationMap = dynamic(() => import("@/components/venue-location-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="venue-map flex flex-col items-center justify-center p-4 text-xs font-semibold text-[var(--muted)] bg-[var(--surface)]">
+      <DualTextSpinner size="sm" showQuotes={false} label="Loading India venue map…" />
+    </div>
+  ),
+});
 
 export type InitialVenueLocation = Partial<Pick<LocationResult, "venue" | "city" | "label" | "latitude" | "longitude" | "countryCode">>;
 type LocationOption = { id: string; name: string; state_name: string; country_name: string };

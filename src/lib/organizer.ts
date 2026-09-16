@@ -2,6 +2,20 @@ export type Company = { id: string; name: string; city: string; description: str
 export type StaffingNeed = { title: string; people_needed: number | null };
 export type BookingSlot = { id?: string; slot_date: string; start_time: string; end_time: string; capacity: number; booked_count?: number };
 export type SpaceOffer = { id?: string; name: string; description: string; inclusions: string; area_sqft: number | null; unit_count: number | null; price_type: 'fixed' | 'per_sqft' | 'quote'; price_inr: number | null; is_active?: boolean };
+export const amenities = ['food','stay','transport','parking','wifi','restrooms','drinking_water','first_aid','wheelchair_accessible','security','charging_points'] as const;
+export type Amenity = typeof amenities[number];
+export const amenityLabels: Record<Amenity,string> = { food:'Food / meals', stay:'Accommodation / stay', transport:'Local transport', parking:'Parking', wifi:'Wi-Fi', restrooms:'Restrooms', drinking_water:'Drinking water', first_aid:'First aid / medical support', wheelchair_accessible:'Wheelchair accessibility', security:'Security', charging_points:'Charging points' };
+export function normalizeCustomAmenities(values:string[]) {
+ const seen=new Set<string>();
+ return values.map(value=>value.trim()).filter(value=>{const key=value.toLocaleLowerCase('en');if(!value||seen.has(key))return false;seen.add(key);return true;});
+}
+export function validEventAmenities(selected:string[],custom:string[]) {
+ const normalized=normalizeCustomAmenities(custom);
+ return selected.length<=amenities.length && new Set(selected).size===selected.length && selected.every(item=>amenities.includes(item as Amenity)) && custom.length===normalized.length && normalized.length<=10 && normalized.every(item=>item.length<=80);
+}
+export function eventAmenityLabels(selected:readonly string[]=[],custom:readonly string[]=[]) {
+ return [...selected.filter(item=>amenities.includes(item as Amenity)).map(item=>amenityLabels[item as Amenity]),...custom];
+}
 export const eventTypes = ['expo','exhibition','activation','fair_festival','conference','other'] as const;
 export type EventType = typeof eventTypes[number];
 export const eventTypeLabels: Record<EventType,string> = { expo:'Expo / Trade Show', exhibition:'Exhibition / Showcase', activation:'Pop-up / Brand Activation', fair_festival:'Fair / Mela / Festival', conference:'Conference / Corporate Event', other:'Other' };
@@ -21,7 +35,7 @@ export const eventRequirementTemplates: Record<EventType,RequirementSection[]> =
  conference:['attendee_booking','staffing','venue_infrastructure','logistics'],
  other:[],
 };
-export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; location_id?: string | null; latitude?: number | null; longitude?: number | null; location_label?: string | null; location_country_code?: string | null; starts_at: string | null; ends_at: string | null; event_type: EventType; venue_setting: VenueSetting; requirement_sections: RequirementSection[]; requirement_details: Partial<Record<RequirementSection,string>>; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; pricing_chart_path?: string | null; floor_layout_path?: string | null };
+export type OrganizerEvent = { id: string; company_id: string; title: string; description: string; venue: string; city: string; location_id?: string | null; latitude?: number | null; longitude?: number | null; location_label?: string | null; location_country_code?: string | null; starts_at: string | null; ends_at: string | null; event_type: EventType; venue_setting: VenueSetting; requirement_sections: RequirementSection[]; requirement_details: Partial<Record<RequirementSection,string>>; amenities: Amenity[]; custom_amenities: string[]; status: 'draft' | 'published' | 'cancelled'; published_at: string | null; staffing_needs: StaffingNeed[]; booking_url: string; logo_path?: string | null; pricing_chart_path?: string | null; floor_layout_path?: string | null };
 export function validEventClassification(eventType:string,venueSetting:string) { return eventTypes.includes(eventType as EventType) && venueSettings.includes(venueSetting as VenueSetting); }
 export function validRequirementSections(sections:string[]) { return sections.length<=requirementSections.length && new Set(sections).size===sections.length && sections.every(section=>requirementSections.includes(section as RequirementSection)); }
 export function validSpaceOffer(offer: SpaceOffer) {

@@ -1,1 +1,21 @@
-export default function AdminLoading(){return <div className="min-h-screen bg-[var(--background)] p-4 md:p-8" aria-busy="true" aria-label="Loading admin data"><div className="mx-auto max-w-7xl animate-pulse"><div className="h-5 w-32 rounded bg-slate-200"/><div className="mt-4 h-10 w-80 max-w-full rounded bg-slate-200"/><div className="mt-3 h-5 w-[32rem] max-w-full rounded bg-slate-100"/><div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({length:8},(_,index)=><div className="h-28 rounded-2xl bg-white shadow-sm" key={index}/>)}</div><div className="mt-8 h-80 rounded-2xl bg-white shadow-sm"/></div></div>;}
+import { DualTextSpinner } from "@/components/dual-text-spinner";
+import { DashboardShell } from "@/components/dashboard-shell";
+
+export default function AdminLoading() {
+  return (
+    <DashboardShell active="admin">
+      <div className="py-12 flex flex-col items-center justify-center min-h-[60vh]">
+        <DualTextSpinner
+          size="md"
+          label="Loading admin portal & records"
+          sublabel="Fetching platform accounts, verified talent, event submissions, and system audit logs..."
+          quotes={[
+            "Platform governance, identity verification & compliance oversight.",
+            "Coordinating nationwide event staffing operations.",
+            "Auditing placement records and user account verification.",
+          ]}
+        />
+      </div>
+    </DashboardShell>
+  );
+}
