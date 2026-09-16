@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Image as ImageIcon, Loader2 } from "lucide-react";
 
 export interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -17,16 +17,77 @@ export function ProgressiveImage({
   className = "",
   containerClassName = "",
   fallbackIcon,
+  onLoad,
+  onError,
   ...props
 }: ProgressiveImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Reset states when src changes
+  const handleLoadSuccess = useCallback(
+    (e?: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      setLoaded(true);
+      setError(false);
+      if (e && onLoad) onLoad(e);
+    },
+    [onLoad]
+  );
+
+  const handleLoadError = useCallback(
+    (e?: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      setError(true);
+      setLoaded(false);
+      if (e && onError) onError(e);
+    },
+    [onError]
+  );
+
+  const checkComplete = useCallback((img: HTMLImageElement | null) => {
+    if (!img) return;
+    if (img.complete) {
+      if (img.naturalWidth > 0) {
+        setLoaded(true);
+        setError(false);
+      } else {
+        setError(true);
+        setLoaded(false);
+      }
+    }
+  }, []);
+
+  const setRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      imgRef.current = node;
+      if (node) {
+        checkComplete(node);
+      }
+    },
+    [checkComplete]
+  );
+
   useEffect(() => {
     setLoaded(false);
     setError(false);
-  }, [src]);
+
+    if (!src) {
+      setError(true);
+      return;
+    }
+
+    if (imgRef.current) {
+      checkComplete(imgRef.current);
+    }
+
+    // Fallback safety check if network event does not fire within 5s
+    const timer = setTimeout(() => {
+      if (imgRef.current) {
+        checkComplete(imgRef.current);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [src, checkComplete]);
 
   return (
     <div className={`relative overflow-hidden ${containerClassName}`}>
@@ -45,10 +106,11 @@ export function ProgressiveImage({
       ) : (
         /* Actual Image with Fade-in Animation */
         <img
+          ref={setRef}
           src={src}
           alt={alt}
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
+          onLoad={handleLoadSuccess}
+          onError={handleLoadError}
           className={`transition-opacity duration-300 ease-out ${
             loaded ? "opacity-100" : "opacity-0"
           } ${className}`}
@@ -58,3 +120,4 @@ export function ProgressiveImage({
     </div>
   );
 }
+
