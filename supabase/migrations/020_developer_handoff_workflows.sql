@@ -1,6 +1,13 @@
 -- EXPORB developer handoff: connected workflows, multi-company organizers,
 -- application preflight data, and an admin-verified manual settlement ledger.
 
+-- PostgreSQL will not alter a column type while triggers depend on that column.
+-- Remove the three application-status triggers first and recreate them below
+-- after their functions have been updated for the new workflow values.
+drop trigger if exists guard_application_confirmation on public.applications;
+drop trigger if exists on_application_accepted on public.applications;
+drop trigger if exists sync_placement_on_application_change on public.applications;
+
 create type public.application_workflow_status as enum ('applied','under_review','shortlisted','confirmed','rejected','completed','closed');
 alter table public.applications alter column status drop default;
 alter table public.applications alter column status type public.application_workflow_status using
@@ -237,6 +244,13 @@ begin
   end if;
   return new;
 end $$;
+
+create trigger guard_application_confirmation before update of status on public.applications
+  for each row execute function public.guard_application_confirmation();
+create trigger on_application_accepted after update of status on public.applications
+  for each row execute function public.create_placement_from_acceptance();
+create trigger sync_placement_on_application_change after update of status on public.applications
+  for each row execute function public.sync_placement_on_application_change();
 
 create or replace function public.create_worker_payout_from_placement() returns trigger
 language plpgsql security definer set search_path=public as $$
