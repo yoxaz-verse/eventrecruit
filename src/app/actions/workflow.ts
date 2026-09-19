@@ -17,10 +17,15 @@ import { applicationProfileCheck } from "@/lib/application-profile";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
-  "under_review",
   "shortlisted",
-  "confirmed",
+  "documents_requested",
+  "under_review",
+  "approved",
+  "assigned",
   "rejected",
+  "withdrawn",
+  "no_response",
+  "cancelled",
   "completed",
   "closed",
 ];
@@ -199,6 +204,16 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     preferred_skills:String(formData.get("preferred_skills")??"").split(",").map(x=>x.trim()).filter(Boolean),
     required_languages:String(formData.get("required_languages")??"").split(",").map(x=>x.trim()).filter(Boolean),
     worker_standard:String(formData.get("worker_standard")??"").trim()||null,
+    reporting_time:String(formData.get("reporting_time")??"")||null,
+    working_hours:String(formData.get("working_hours")??"").trim()||null,
+    gender_requirement:String(formData.get("gender_requirement")??"").trim()||null,
+    age_requirement:String(formData.get("age_requirement")??"").trim()||null,
+    dress_code:String(formData.get("dress_code")??"").trim()||null,
+    benefits:String(formData.get("benefits")??"").trim()||null,
+    special_instructions:String(formData.get("special_instructions")??"").trim()||null,
+    application_deadline:String(formData.get("application_deadline")??"")||null,
+    publication_status:"draft",
+    operation_status:"requirement_received",
   }).select("id").single();
 
   if (error) {
@@ -238,7 +253,7 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
   const check=applicationProfileCheck({avatarUrl:profileData.data.avatar_url,homeLocationId:profileData.data.home_location_id,profileUpdatedAt:profileData.data.profile_updated_at,phone:contactData.data?.phone,skills:talentData.data?.skills,languages:talentData.data?.languages,availability:talentData.data?.availability,documentsNote:talentData.data?.documents_note},{requiredSkills:openRole!.required_skills,preferredSkills:openRole!.preferred_skills,requiredLanguages:openRole!.required_languages});
   if(!check.canApply)return {error:`Complete these required profile items first: ${check.required.join(", ")}.`,success:""};
   if(check.stale&&formData.get("profile_current")!=="1")return {error:"Review your profile or confirm that the current information is still accurate.",success:""};
-  const {data:existing}=await supabase.from("applications").select("id,staffing_role_id,status").eq("talent_id",user.id).eq("status","confirmed");
+  const {data:existing}=await supabase.from("applications").select("id,staffing_role_id,status").eq("talent_id",user.id).eq("status","assigned");
   if (existing?.length) {
     const {data:booked}=await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on").in("id",existing.map(item=>item.staffing_role_id));
     if (booked?.some(item=>workDaysOverlap(item,openRole!))) return {error:"You are already booked on one or more of these days.",success:""};
@@ -275,10 +290,10 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
     return { error: "Choose a valid application status.", success: "" };
   }
   if (!["exhibitor", "agency"].includes(profile.role)) return { error: "You cannot update this application.", success: "" };
-  if(profile.role==="agency"&&status==="confirmed"&&(agreedRate===null||!Number.isFinite(agreedRate)||agreedRate<0))return {error:"Enter the agreed worker payout before confirming.",success:""};
+  if(profile.role==="agency"&&status==="assigned"&&(agreedRate===null||!Number.isFinite(agreedRate)||agreedRate<0))return {error:"Enter the agreed worker payout before assigning.",success:""};
   const { data: application } = await supabase.from("applications").select("staffing_role_id,status,cancellation_requested_at").eq("id", applicationId).maybeSingle();
   if (!application || !await staffingOwner(supabase, application.staffing_role_id, profile.id)) return { error: "You cannot update this application.", success: "" };
-  if (application.status === "confirmed" && !["confirmed","closed","completed"].includes(status)) return {error:"Confirmed bookings may only be completed or closed.",success:""};
+  if (application.status === "assigned" && !["assigned","closed","completed","cancelled"].includes(status)) return {error:"Assigned bookings may only be completed, cancelled, or closed.",success:""};
 
   const { data: updated, error } = await supabase
     .from("applications")
@@ -288,7 +303,7 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
   if (error?.message.includes("Role is full")) return {error:"This role has no remaining openings.",success:""};
   if (error?.message.includes("Talent is already booked")) return {error:"This talent is already booked on those days.",success:""};
   if (error || !updated) return { error: "Unable to update this application. Please retry.", success: "" };
-  if(profile.role==="agency"&&status==="confirmed"&&agreedRate!==null){const {data:placement}=await supabase.from("placements").update({agreed_rate:agreedRate}).eq("application_id",applicationId).select("id").maybeSingle();if(placement)await supabase.from("settlement_payouts").update({amount:agreedRate}).eq("placement_id",placement.id);}
+  if(profile.role==="agency"&&status==="assigned"&&agreedRate!==null){const {data:placement}=await supabase.from("placements").update({agreed_rate:agreedRate}).eq("application_id",applicationId).select("id").maybeSingle();if(placement)await supabase.from("settlement_payouts").update({amount:agreedRate}).eq("placement_id",placement.id);}
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/applicants");
   revalidatePath("/dashboard/agency");

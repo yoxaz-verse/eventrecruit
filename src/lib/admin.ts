@@ -34,7 +34,7 @@ export const adminStatusOptions:Record<string,string[]>={
   profile:["pending_verification","verified","rejected"], agency:["pending_verification","verified","rejected"], exhibitor:["pending_verification","verified","rejected"],
   event_submission:["approved","rejected"],
   organizer_event:["draft","submitted","published","cancelled"], staffing_role:["open","closed"],
-  application:["applied","under_review","shortlisted","confirmed","rejected","completed","closed"], placement:["accepted","completed","cancelled"],
+  application:["applied","shortlisted","documents_requested","under_review","approved","assigned","completed","rejected","withdrawn","no_response","cancelled","closed"], placement:["accepted","completed","cancelled"],
   inquiry:["new","contacted","accepted","declined"], relationship:["pending","active","declined","revoked"],
   recommendation:["recommended","accepted","rejected","withdrawn"], commission:["tracked","approved","disputed","paid_offline"], review:["published","hidden"],
 };
@@ -43,7 +43,7 @@ export function allowedAdminTransition(entity:string,current:string,next:string)
   if(current===next)return false;
   if(!adminStatusOptions[entity]?.includes(next))return false;
   if(entity==="application"&&["completed","closed"].includes(current))return false;
-  if(entity==="application"&&current==="confirmed"&&!['completed','closed'].includes(next))return false;
+  if(entity==="application"&&current==="assigned"&&!['completed','cancelled','closed'].includes(next))return false;
   if(entity==="placement"&&["completed","cancelled"].includes(current))return false;
   if(entity==="organizer_event"&&current==="cancelled")return false;
   if(entity==="staffing_role"&&current==="filled")return next==="closed";

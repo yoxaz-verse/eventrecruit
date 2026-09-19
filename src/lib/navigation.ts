@@ -12,6 +12,11 @@ import {
   UserCheck,
   Users,
   UserRound,
+  Search,
+  Bell,
+  Settings,
+  FileText,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
@@ -20,6 +25,7 @@ export type NavigationItem = {
   href: string;
   label: string;
   icon: LucideIcon;
+  group?: string;
 };
 
 export const roleNavigation: Record<UserRole, NavigationItem[]> = {
@@ -41,15 +47,19 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/admin/reputation", label: "Reputation", icon: Star },
   ],
   agency: [
-    { href: "/dashboard/agency", label: "Overview", icon: Users },
-    { href: "/dashboard/agency/clients", label: "Clients", icon: Building2 },
-    { href: "/dashboard/agency/events", label: "Events", icon: CalendarDays },
-    { href: "/dashboard/agency/requests", label: "Staff requests", icon: ClipboardList },
-    { href: "/dashboard/agency/applicants", label: "Applicants", icon: UserCheck },
-    { href: "/dashboard/agency/client-contacts", label: "Client contacts", icon: UserRound },
-    { href: "/dashboard/agency/staff", label: "Staff contacts", icon: Users },
-    { href: "/dashboard/agency/history", label: "Previous work", icon: BookOpenCheck },
-    { href: "/dashboard/agency/reputation", label: "Reputation", icon: Star },
+    { href: "/dashboard/agency", label: "Dashboard", icon: Users, group:"Workspace" },
+    { href: "/dashboard/agency/search", label: "Global search", icon: Search, group:"Workspace" },
+    { href: "/dashboard/agency/staff", label: "Staff", icon: Users, group:"People" },
+    { href: "/dashboard/agency/clients", label: "Clients", icon: Building2, group:"People" },
+    { href: "/dashboard/agency/partners", label: "Recruitment partners", icon: Handshake, group:"People" },
+    { href: "/dashboard/agency/events", label: "Events", icon: CalendarDays, group:"Delivery" },
+    { href: "/dashboard/agency/requests", label: "Staff calls", icon: ClipboardList, group:"Delivery" },
+    { href: "/dashboard/agency/applicants", label: "Applications", icon: UserCheck, group:"Delivery" },
+    { href: "/dashboard/agency/operations", label: "Current operations", icon: Briefcase, group:"Operations" },
+    { href: "/dashboard/agency/payments", label: "Payments", icon: BadgeIndianRupee, group:"Operations" },
+    { href: "/dashboard/agency/documents", label: "Documents", icon: FileText, group:"Operations" },
+    { href: "/dashboard/agency/notifications", label: "Notifications", icon: Bell, group:"Account" },
+    { href: "/dashboard/agency/settings", label: "Settings", icon: Settings, group:"Account" },
   ],
   exhibitor: [
     { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },

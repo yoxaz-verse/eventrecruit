@@ -137,6 +137,12 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
       </label>
       <label className="label">Preferred skills<input className="input" name="preferred_skills" placeholder="Hospitality, POS experience"/></label>
       <div className="grid gap-3 sm:grid-cols-2"><label className="label">Required languages<input className="input" name="required_languages" placeholder="English, Hindi"/></label><label className="label">Worker standard<input className="input" name="worker_standard" placeholder="Experienced promoter"/></label></div>
+      <div className="grid gap-3 sm:grid-cols-2"><label className="label">Reporting time<input className="input" name="reporting_time" type="time"/></label><label className="label">Working hours<input className="input" name="working_hours" placeholder="8 hours plus breaks"/></label></div>
+      <div className="grid gap-3 sm:grid-cols-2"><label className="label">Gender requirement <span className="field-optional">Optional</span><input className="input" name="gender_requirement"/></label><label className="label">Age requirement <span className="field-optional">Optional</span><input className="input" name="age_requirement" placeholder="18–30"/></label></div>
+      <label className="label">Dress code<input className="input" name="dress_code"/></label>
+      <label className="label">Food, travel, and accommodation<textarea className="input textarea" name="benefits"/></label>
+      <label className="label">Special instructions<textarea className="input textarea" name="special_instructions"/></label>
+      <label className="label">Application deadline<input className="input" name="application_deadline" type="datetime-local"/></label>
 
       {contactDetected && (
         <div className="callout-banner callout-banner-amber my-1">

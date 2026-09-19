@@ -85,7 +85,7 @@ export const applicants: Applicant[] = [
     reliability: 96,
     completed: 31,
     languages: ["English", "Tamil"],
-    status: "confirmed",
+    status: "assigned",
   },
 ];
 

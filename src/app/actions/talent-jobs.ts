@@ -17,7 +17,7 @@ export async function requestBookingCancellation(form:FormData) {
   const id = String(form.get("application_id") ?? "");
   const db = await createClient();
   if (!db) throw new Error("Booking unavailable.");
-  const {data,error} = await db.from("applications").update({cancellation_requested_at:new Date().toISOString()}).eq("id",id).eq("talent_id",talent.id).eq("status","confirmed").select("id").maybeSingle();
+  const {data,error} = await db.from("applications").update({cancellation_requested_at:new Date().toISOString()}).eq("id",id).eq("talent_id",talent.id).eq("status","assigned").select("id").maybeSingle();
   if (error || !data) throw new Error("Unable to request cancellation.");
   revalidatePath("/dashboard/talent");
 }

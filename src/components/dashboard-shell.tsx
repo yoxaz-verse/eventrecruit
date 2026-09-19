@@ -3,6 +3,7 @@ import type { UserRole } from "@/lib/types";
 import { SidebarSignOut } from "@/components/sidebar-sign-out";
 import { MobileAppDock } from "@/components/mobile-app-dock";
 import { activeNavigationHref, roleNavigation } from "@/lib/navigation";
+import { AgencyGlobalSearch } from "@/components/agency-global-search";
 
 export function DashboardShell({
   active,
@@ -44,7 +45,7 @@ export function DashboardShell({
       <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col gap-3 overflow-hidden p-4 md:flex">
         
         {/* Top Section Box: Brand Header & Navigation */}
-        <div className="panel min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm">
+        <div className="panel min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm">
           <div>
             <Link className="brand-link mb-4 inline-flex items-center gap-3" href="/">
               <span className="brand-mark shadow-xs" aria-hidden="true">
@@ -70,12 +71,11 @@ export function DashboardShell({
               Management
             </p>
             <nav className="grid gap-0.5">
-              {roleNavigation[active].map((item) => {
+              {roleNavigation[active].map((item,index,items) => {
                 const Icon = item.icon;
                 const isActive = item.href === activeManagementHref;
-                return (
+                return (<div key={item.href}>{item.group && item.group!==items[index-1]?.group?<p className="mb-1 mt-3 px-1 text-[9px] font-black uppercase tracking-wider text-[var(--muted)]">{item.group}</p>:null}
                   <Link
-                    key={item.href}
                     className={`dashboard-nav-link flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
                       isActive
                         ? "dashboard-nav-active shadow-sm text-white"
@@ -86,7 +86,7 @@ export function DashboardShell({
                     <Icon size={17} aria-hidden />
                     <span>{item.label}</span>
                   </Link>
-                );
+                </div>);
               })}
             </nav>
           </div>
@@ -99,7 +99,7 @@ export function DashboardShell({
       </aside>
 
       {/* Main Content Viewport (Mobile Safe Padding) */}
-      <main className="p-4 pb-24 md:ml-[260px] md:p-8">{children}</main>
+      <main className="p-4 pb-24 md:ml-[260px] md:p-8">{active==="agency"?<AgencyGlobalSearch/>:null}{children}</main>
 
       {/* Mobile Bottom App Navigation Dock */}
       <MobileAppDock activeRole={active} currentPath={currentPath} />
