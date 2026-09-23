@@ -19,7 +19,7 @@ insert into public.locations (id,name,state_name,state_code,country_name,country
  ('10000000-0000-4000-8000-000000000004','Alappuzha','Kerala','KL','India','IN','in-kl-alappuzha',4),
  ('10000000-0000-4000-8000-000000000005','Kottayam','Kerala','KL','India','IN','in-kl-kottayam',5),
  ('10000000-0000-4000-8000-000000000006','Thodupuzha','Kerala','KL','India','IN','in-kl-thodupuzha',6),
- ('10000000-0000-4000-8000-000000000007','Kochi','Kerala','KL','India','IN','in-kl-kochi',7),
+ ('10000000-0000-4000-8000-000000000007','Ernakulam','Kerala','KL','India','IN','in-kl-ernakulam',7),
  ('10000000-0000-4000-8000-000000000008','Thrissur','Kerala','KL','India','IN','in-kl-thrissur',8),
  ('10000000-0000-4000-8000-000000000009','Palakkad','Kerala','KL','India','IN','in-kl-palakkad',9),
  ('10000000-0000-4000-8000-000000000010','Malappuram','Kerala','KL','India','IN','in-kl-malappuram',10),

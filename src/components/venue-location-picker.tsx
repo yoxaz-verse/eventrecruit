@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
 import type { LocationResult } from "@/lib/location";
 import { DualTextSpinner } from "@/components/dual-text-spinner";
+import { matchingLocationId } from "@/lib/location-options";
 
 const VenueLocationMap = dynamic(() => import("@/components/venue-location-map"), {
   ssr: false,
@@ -53,7 +54,7 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
   }, [query, locked, searchEnabled]);
 
   const choose = (result: LocationResult) => {
-    setLocation(result); setQuery(result.label); setResults([]); setStatus("Pin selected. Drag it or click the map to fine-tune, then lock it."); setLocked(false); setSearchEnabled(false);
+    setLocation(result); setLocationId(matchingLocationId(result.city,locations)); setQuery(result.label); setResults([]); setStatus("Pin selected. Drag it or click the map to fine-tune, then lock it."); setLocked(false); setSearchEnabled(false);
   };
   const reverse = async (latitude: number, longitude: number) => {
     setLocked(false); setStatus("Identifying location…");

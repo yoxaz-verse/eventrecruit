@@ -21,6 +21,7 @@ import { getCurrentAccount } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { indiaToday, type OrganizerEvent } from "@/lib/organizer";
 import { EventStaffingNeeds } from "@/components/event-staffing-needs";
+import { rankDiscoveryEvents } from "@/lib/discovery-events";
 
 const services = [
   {
@@ -83,7 +84,7 @@ const cityCoverage = [
   { city: "Hyderabad", x: 37, y: 69, labelX: 10, labelY: -2, events: 34, people: 150 },
   { city: "Bengaluru", x: 34, y: 82, labelX: 10, labelY: -6, events: 39, people: 172 },
   { city: "Chennai", x: 44, y: 83, labelX: 10, labelY: -2, events: 31, people: 138 },
-  { city: "Kochi", x: 30, y: 92, labelX: 10, labelY: -2, events: 16, people: 68 },
+  { city: "Ernakulam", x: 30, y: 92, labelX: 10, labelY: -2, events: 16, people: 68 },
   { city: "Kolkata", x: 71, y: 51, labelX: 10, labelY: -8, events: 24, people: 96 },
 ];
 
@@ -113,23 +114,32 @@ const landingMetrics = [
 ];
 
 export default async function Home() {
-  const upcomingResultPromise = createClient().then((db) =>
+  const upcomingResultsPromise = createClient().then(async (db) =>
     db
-      ? db
+      ? Promise.all([db
           .from("organizer_events")
           .select("id,title,city,starts_at,ends_at,staffing_needs")
           .eq("status", "published")
           .gte("ends_at", indiaToday())
-          .order("starts_at")
-          .limit(3)
+          .order("starts_at"),
+        db.from("exhibitor_event_submissions")
+          .select("id,title,city,starts_at,ends_at")
+          .eq("status", "approved")
+          .gte("ends_at", indiaToday())
+          .order("starts_at")])
       : null,
   );
-  const [account, upcomingResult] = await Promise.all([
+  const [account, upcomingResults] = await Promise.all([
     getCurrentAccount(),
-    upcomingResultPromise,
+    upcomingResultsPromise,
   ]);
   const signedIn = Boolean(account);
-  const upcomingEvents = (upcomingResult?.data ?? []) as Pick<OrganizerEvent,'id'|'title'|'city'|'starts_at'|'ends_at'|'staffing_needs'>[];
+  const organizerResult=upcomingResults?.[0]??null;
+  const exhibitorResult=upcomingResults?.[1]??null;
+  const organizerEvents = (organizerResult?.data ?? []) as Pick<OrganizerEvent,'id'|'title'|'city'|'starts_at'|'ends_at'|'staffing_needs'>[];
+  const exhibitorEvents = exhibitorResult?.data ?? [];
+  const upcomingEvents=rankDiscoveryEvents(exhibitorEvents,organizerEvents).slice(0,3);
+  const upcomingUnavailable=!upcomingResults||organizerResult?.error||exhibitorResult?.error;
   return (
     <div className="shell">
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -248,7 +258,7 @@ export default async function Home() {
             <div className="section-heading"><span className="badge">Find your next opportunity</span><h2 id="upcoming-events-heading">Upcoming events</h2><p className="mt-4 text-[var(--muted)]">See who is hiring and how many people each position needs.</p></div>
             <Link className="button button-secondary" href="/events">View all events <ArrowRight size={18} aria-hidden /></Link>
           </div>
-          {!upcomingResult || upcomingResult.error ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(event=><article className="panel event-card gap-4 p-6" key={event.id}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>)}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
+          {upcomingUnavailable ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(item=>{if(item.source==='exhibitor'){const event=item.event;return <article className="panel event-card gap-4 p-6" key={`exhibitor-${event.id}`}><div className="flex flex-wrap gap-2"><span className="badge">Exporb Approved</span><span className="badge">{event.city}</span></div><h3 className="text-2xl font-bold"><Link href={`/events/exhibitor/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><Link className="button button-secondary" href={`/events/exhibitor/${event.id}`}>View event</Link></article>}const event=item.event;return <article className="panel event-card gap-4 p-6" key={`organizer-${event.id}`}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>})}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
         </section>
 
         <section className="home-section page py-14 section-numbered">

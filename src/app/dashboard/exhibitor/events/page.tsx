@@ -51,7 +51,7 @@ export default async function ExhibitorEvents({ searchParams }: { searchParams: 
         {data?.map(event => (
           <article className="panel p-6 transition-all hover:shadow-lg" key={event.id}>
             <div className="flex items-center justify-between gap-4">
-              <StatusBadge status={event.status} />
+              <StatusBadge status={event.status} label={event.status === "approved" ? "Exporb Approved" : undefined} />
               <span className="text-xs text-[var(--muted)] flex items-center gap-1">
                 <CalendarDays size={14} aria-hidden />
                 {event.starts_at} – {event.ends_at}
@@ -86,4 +86,3 @@ export default async function ExhibitorEvents({ searchParams }: { searchParams: 
     </DashboardShell>
   );
 }
-

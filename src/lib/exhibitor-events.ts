@@ -16,6 +16,6 @@ export async function selectableEvents(exhibitorId?: string): Promise<Selectable
   if (organizers.error || submissions.error) throw new Error("Unable to load event listings.");
   return [
     ...(organizers.data ?? []).map((event) => ({ value: `organizer:${event.id}`, title: event.title, city: event.city, venue: event.venue, starts_at: event.starts_at, ends_at: event.ends_at, attribution: Array.isArray(event.organizer_companies) ? event.organizer_companies[0]?.name ?? "Event organizer" : (event.organizer_companies as {name:string}|null)?.name ?? "Event organizer" })),
-    ...(submissions.data ?? []).map((event) => ({ value: `exhibitor:${event.id}`, title: event.title, city: event.city, venue: event.venue, starts_at: event.starts_at, ends_at: event.ends_at, attribution: event.status === "approved" ? "Exhibitor-submitted · verified" : "Exhibitor-submitted · verification required" })),
+    ...(submissions.data ?? []).map((event) => ({ value: `exhibitor:${event.id}`, title: event.title, city: event.city, venue: event.venue, starts_at: event.starts_at, ends_at: event.ends_at, attribution: event.status === "approved" ? "Exporb Approved" : "Exhibitor-submitted · verification required" })),
   ].sort((a,b) => a.starts_at.localeCompare(b.starts_at) || a.title.localeCompare(b.title));
 }
