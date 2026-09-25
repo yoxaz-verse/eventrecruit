@@ -25,3 +25,12 @@ test("account settings migration retains records during reviewed deactivation", 
   assert.match(migration, /where status='pending'/);
 });
 
+test("exhibitors use company branding instead of a personal photo", () => {
+  const profilePage = readFileSync(new URL("../src/app/dashboard/exhibitor/profile/page.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../src/components/dashboard-shell.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(profilePage, /kind="Profile picture"/);
+  assert.match(profilePage, /kind="Exhibitor logo"/);
+  assert.match(shell, /active === "exhibitor"/);
+  assert.match(shell, /api\/media\/exhibitor/);
+  assert.match(shell, /exhibitor\?\.company_name/);
+});

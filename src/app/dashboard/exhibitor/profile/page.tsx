@@ -85,7 +85,6 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
         </AuthActionForm>
 
         <aside className="grid gap-5 lg:sticky lg:top-20">
-          <ProfileImageForm kind="Profile picture" imageUrl={profile.avatar_url ? `/api/media/profile/${profile.id}` : null} target="avatar" />
           <section className="panel p-5">
             <div className="mb-4 flex items-center gap-2"><ShieldCheck className="text-[var(--accent)]" size={20} /><h2 className="font-black">Verification</h2></div>
             <p className="text-sm leading-6 text-[var(--muted)]">{verified ? "Your company identity is verified. Profile edits do not change this status." : "Your company is awaiting verification. Administrators control verification status."}</p>
