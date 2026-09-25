@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Briefcase, CalendarDays, Home, LayoutDashboard, LogIn } from "lucide-react";
 import { isNavigationItemActive } from "@/lib/navigation";
+import { BrandMark } from "@/components/brand-mark";
 
 const pageLabels: Array<[string, string]> = [
   ["/forgot-password", "Recover account"],
@@ -38,11 +39,7 @@ export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
       <div className="mobile-top-bar md:hidden">
         <div className="page mobile-top-bar-inner">
           <Link aria-label="exporb home" className="brand-link" href="/" onClick={() => setOptimisticPath("/")}>
-            <span className="brand-mark mobile-brand-mark" aria-hidden="true">
-              <span className="brand-orbit brand-orbit-one" />
-              <span className="brand-orbit brand-orbit-two" />
-              <span className="brand-core" />
-            </span>
+            <BrandMark size={36} className="mobile-brand-mark" />
             <span className="brand-wordmark mobile-wordmark">expo<span>rb</span></span>
           </Link>
           <span className="mobile-page-context" aria-current="page">{pageLabel}</span>

@@ -80,9 +80,11 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
     return () => cancelAnimationFrame(frame);
   }, [pathname, closeDrawer]);
 
-  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<{ from: string; to: string } | null>(null);
 
-  const active = optimisticPath&&optimisticPath!==pathname ? optimisticPath : currentPath ?? pathname;
+  const active = pendingNavigation?.from === pathname
+    ? pendingNavigation.to
+    : currentPath ?? pathname;
 
   const mainTabs = [
     { href: "/", label: "Home", icon: Home },
@@ -103,7 +105,7 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
             <Link
               key={tab.href}
               href={tab.href}
-              onClick={() => setOptimisticPath(tab.href)}
+              onClick={() => setPendingNavigation({ from: pathname, to: tab.href })}
               className={`mobile-tab ${isActive ? "mobile-tab-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
             >
@@ -181,7 +183,10 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={closeDrawer}
+                    onClick={() => {
+                      setPendingNavigation({ from: pathname, to: item.href });
+                      closeDrawer();
+                    }}
                     className={`flex items-center gap-3 p-3 rounded-xl text-xs font-extrabold transition-all active:scale-[0.98] ${
                       isActive
                         ? "bg-[var(--ink)] text-white shadow-sm"

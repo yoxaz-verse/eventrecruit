@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 const DEFAULT_QUOTES = [
   "The right people make every moment matter.",
@@ -137,13 +137,7 @@ export function DualTextSpinner({
 
         {/* Center Logo Core */}
         <div className="absolute z-20 flex flex-col items-center justify-center">
-          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--ink)] text-white shadow-xl border border-white/20 spin-slow-pulse">
-            <Sparkles size={dim.iconSize} className="text-amber-300 animate-pulse" />
-            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-blue-500 border border-white" />
-            </span>
-          </div>
+          <BrandMark size={56} className="shadow-xl border border-white/20" animated showStatusDot />
         </div>
       </div>
 

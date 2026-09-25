@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { invalidatePublicData, PUBLIC_CACHE_TAGS } from "@/lib/public-data";
 
 export async function requestParticipation(form: FormData) {
   const profile = await requireRole(["exhibitor"]);
@@ -33,4 +34,5 @@ export async function reviewParticipation(form: FormData) {
   if (error) throw new Error("Unable to review participation.");
   revalidatePath(`/events/${event.id}`);
   revalidatePath("/events");
+  invalidatePublicData(PUBLIC_CACHE_TAGS.participation);
 }

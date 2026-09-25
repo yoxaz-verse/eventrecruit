@@ -99,6 +99,8 @@ export function ProgressiveImage({
           ref={setRef}
           src={src}
           alt={alt}
+          loading="lazy"
+          decoding="async"
           onLoad={handleLoadSuccess}
           onError={handleLoadError}
           className={`transition-opacity duration-300 ease-out ${

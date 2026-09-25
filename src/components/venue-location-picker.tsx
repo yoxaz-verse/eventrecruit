@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { LocationResult } from "@/lib/location";
 import { DualTextSpinner } from "@/components/dual-text-spinner";
 import { matchingLocationId } from "@/lib/location-options";
+import "leaflet/dist/leaflet.css";
 
 const VenueLocationMap = dynamic(() => import("@/components/venue-location-map"), {
   ssr: false,
@@ -20,7 +21,9 @@ type LocationOption = { id: string; name: string; state_name: string; country_na
 
 export function VenueLocationPicker({ initial, locations = [], initialLocationId }: { initial?: InitialVenueLocation; locations?: LocationOption[]; initialLocationId?: string | null }) {
   const listId = useId();
-  const requestRef = useRef<AbortController | null>(null);
+  const searchRequestRef = useRef<AbortController | null>(null);
+  const reverseRequestRef = useRef<AbortController | null>(null);
+  const reverseSequenceRef = useRef(0);
   const hasInitialPin = Number.isFinite(initial?.latitude) && Number.isFinite(initial?.longitude) && initial?.countryCode === "IN";
   const [query, setQuery] = useState(initial?.label || initial?.venue || "");
   const [location, setLocation] = useState<LocationResult | null>(hasInitialPin ? {
@@ -33,12 +36,26 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
   const [activeIndex, setActiveIndex] = useState(-1);
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [locationId, setLocationId] = useState(initialLocationId ?? "");
+  const [locationResolved, setLocationResolved] = useState(Boolean(hasInitialPin));
+  const [reversePending, setReversePending] = useState(false);
+
+  const cancelReverse = () => {
+    reverseSequenceRef.current += 1;
+    reverseRequestRef.current?.abort();
+    reverseRequestRef.current = null;
+    setReversePending(false);
+  };
+
+  useEffect(() => () => {
+    searchRequestRef.current?.abort();
+    reverseRequestRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (!searchEnabled || query.trim().length < 3 || locked) return;
     const timer = window.setTimeout(async () => {
-      requestRef.current?.abort();
-      const controller = new AbortController(); requestRef.current = controller;
+      searchRequestRef.current?.abort();
+      const controller = new AbortController(); searchRequestRef.current = controller;
       setStatus("Searching…");
       try {
         const response = await fetch(`/api/locations/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal });
@@ -54,23 +71,47 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
   }, [query, locked, searchEnabled]);
 
   const choose = (result: LocationResult) => {
+    cancelReverse();
     setLocation(result); setLocationId(matchingLocationId(result.city,locations)); setQuery(result.label); setResults([]); setStatus("Pin selected. Drag it or click the map to fine-tune, then lock it."); setLocked(false); setSearchEnabled(false);
+    setLocationResolved(true);
   };
   const reverse = async (latitude: number, longitude: number) => {
-    setLocked(false); setStatus("Identifying location…");
+    reverseRequestRef.current?.abort();
+    const controller = new AbortController();
+    const sequence = reverseSequenceRef.current + 1;
+    reverseSequenceRef.current = sequence;
+    reverseRequestRef.current = controller;
+    setLocked(false); setResults([]); setSearchEnabled(false); setReversePending(true); setLocationResolved(false); setStatus("Identifying location…");
+    setQuery(""); setLocationId("");
+    setLocation({ id: `selected:${latitude}:${longitude}`, venue: "", city: "", label: "", latitude, longitude, countryCode: "IN" });
     try {
-      const response = await fetch(`/api/locations/reverse?lat=${latitude}&lon=${longitude}`);
+      const response = await fetch(`/api/locations/reverse?lat=${latitude}&lon=${longitude}`, { signal: controller.signal });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error);
-      choose(payload.result);
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Unable to identify that location."); }
+      if (sequence !== reverseSequenceRef.current) return;
+      const result = { ...payload.result, latitude, longitude } as LocationResult;
+      setLocation(result); setLocationId(matchingLocationId(result.city, locations)); setQuery(result.label); setResults([]); setStatus("Pin selected. Drag it or click the map to fine-tune, then lock it."); setSearchEnabled(false); setLocationResolved(true);
+    } catch (error) {
+      if ((error as Error).name !== "AbortError" && sequence === reverseSequenceRef.current) setStatus(error instanceof Error ? error.message : "Unable to identify that location.");
+    } finally {
+      if (sequence === reverseSequenceRef.current) {
+        reverseRequestRef.current = null;
+        setReversePending(false);
+      }
+    }
   };
-  const reset = () => { requestRef.current?.abort(); setQuery(""); setLocation(null); setLocationId(""); setLocked(false); setResults([]); setStatus(""); setSearchEnabled(false); };
+  const reset = () => { searchRequestRef.current?.abort(); cancelReverse(); setQuery(""); setLocation(null); setLocationId(""); setLocked(false); setLocationResolved(false); setResults([]); setStatus(""); setSearchEnabled(false); };
   const useCurrentLocation = () => {
-    setLocked(false); setResults([]);
-    if (!navigator.geolocation) { setStatus("Your browser does not support location access."); return; }
+    cancelReverse();
+    const sequence = reverseSequenceRef.current;
+    setLocked(false); setResults([]); setLocationResolved(false); setReversePending(true);
+    if (!navigator.geolocation) { setReversePending(false); setStatus("Your browser does not support location access."); return; }
     setStatus("Finding your location…");
-    navigator.geolocation.getCurrentPosition(({ coords }) => reverse(coords.latitude, coords.longitude), () => setStatus("Location access was denied or unavailable."), { enableHighAccuracy: true, timeout: 10000 });
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => { if (sequence === reverseSequenceRef.current) void reverse(coords.latitude, coords.longitude); },
+      () => { if (sequence === reverseSequenceRef.current) { setReversePending(false); setStatus("Location access was denied or unavailable."); } },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (!results.length) return;
@@ -83,10 +124,10 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
   return <fieldset className="grid gap-3 border-t border-[var(--line)] pt-5">
     <legend className="text-lg font-bold">Venue location</legend>
     <p className="text-sm text-[var(--muted)]">Choose a Kerala city, search for the exact venue, adjust the pin if needed, then lock it.</p>
-    <label className="label">City <span className="text-red-600">*</span><select className="input" required value={locationId} onChange={event=>setLocationId(event.target.value)}><option value="" disabled>Select a Kerala city</option>{initialLocationId&&!locations.some(option=>option.id===initialLocationId)?<option value={initialLocationId}>{initial?.city??"Current city"}</option>:null}{locations.map(option=><option key={option.id} value={option.id}>{option.name}</option>)}</select></label>
+    <label className="label"><span>City <span aria-hidden="true" className="text-red-600">*</span></span><select className="input" required value={locationId} onChange={event=>setLocationId(event.target.value)}><option value="" disabled>Select a Kerala city</option>{initialLocationId&&!locations.some(option=>option.id===initialLocationId)?<option value={initialLocationId}>{initial?.city??"Current city"}</option>:null}{locations.map(option=><option key={option.id} value={option.id}>{option.name}</option>)}</select></label>
     <div className="relative">
       <label className="label" htmlFor={`${listId}-input`}>Venue or address
-        <input id={`${listId}-input`} className="input" value={query} autoComplete="off" role="combobox" aria-autocomplete="list" aria-controls={listId} aria-expanded={results.length > 0} aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined} disabled={locked} maxLength={200} placeholder="Start typing a venue, landmark, or address" onKeyDown={onKeyDown} onChange={event => { setQuery(event.target.value); setSearchEnabled(true); setLocked(false); setLocation(null); setResults([]); setStatus(""); }}/>
+        <input id={`${listId}-input`} className="input" value={query} autoComplete="off" role="combobox" aria-autocomplete="list" aria-controls={listId} aria-expanded={results.length > 0} aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined} disabled={locked} maxLength={200} placeholder={reversePending ? "Identifying location…" : "Start typing a venue, landmark, or address"} onKeyDown={onKeyDown} onChange={event => { cancelReverse(); setQuery(event.target.value); setSearchEnabled(true); setLocked(false); setLocationResolved(false); setLocation(null); setResults([]); setStatus(""); }}/>
       </label>
       {results.length > 0 && <ul id={listId} role="listbox" className="absolute z-[1001] mt-1 max-h-64 w-full overflow-auto rounded-xl border border-[var(--line)] bg-white p-1 shadow-xl">
         {results.map((result, index) => <li id={`${listId}-${index}`} role="option" aria-selected={activeIndex === index} key={result.id}><button className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--soft)] ${activeIndex === index ? "bg-[var(--soft)]" : ""}`} type="button" onMouseDown={event => event.preventDefault()} onClick={() => choose(result)}><span className="block font-bold">{result.venue}</span><span className="block text-[var(--muted)]">{result.label}</span></button></li>)}
@@ -94,11 +135,11 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
     </div>
     {location && <>
       <VenueLocationMap latitude={location.latitude} longitude={location.longitude} onMove={reverse}/>
-      <div className="grid gap-3 rounded-xl bg-[var(--soft)] p-4 sm:grid-cols-2"><div><span className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Venue</span><p className="font-bold">{location.venue}</p></div><div><span className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">City</span><p className="font-bold">{location.city}</p></div></div>
+      {locationResolved && <div className="grid gap-3 rounded-xl bg-[var(--soft)] p-4 sm:grid-cols-2"><div><span className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Venue</span><p className="font-bold">{location.venue}</p></div><div><span className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">City</span><p className="font-bold">{location.city}</p></div></div>}
     </>}
     <div className="flex flex-wrap gap-2">
       {!locked && <button className="button button-secondary" type="button" onClick={useCurrentLocation}>Use my location</button>}
-      {location && !locked && <button className="button button-primary" type="button" onClick={() => { setLocked(true); setResults([]); setStatus("Location locked."); }}>Lock location</button>}
+      {location && !locked && <button className="button button-primary" type="button" disabled={!locationResolved || reversePending} onClick={() => { setLocked(true); setResults([]); setStatus("Location locked."); }}>Lock location</button>}
       {(query || location) && !locked && <button className="button button-secondary" type="button" onClick={reset}>Reset</button>}
       {locked && <button className="button button-secondary" type="button" onClick={() => { setLocked(false); setStatus("Location unlocked. Search or move the pin, then lock it again."); }}>Unlock to edit</button>}
     </div>

@@ -3,6 +3,14 @@ import { notFound } from "next/navigation";
 import { TopNav } from "@/components/top-nav";
 import { createClient } from "@/lib/supabase/server";
 import { EventAmenities } from "@/components/event-amenities";
+import type { Metadata } from "next";
+import { getPublicEventMetadata } from "@/lib/public-data";
+
+export async function generateMetadata({params}:{params:Promise<{id:string}>}):Promise<Metadata> {
+  const {id}=await params; const event=await getPublicEventMetadata("exhibitor",id);
+  if(!event)return {title:"Event not found",robots:{index:false,follow:false}};
+  return {title:event.title,description:(event.description||`${event.title} in ${event.city}`).slice(0,160),alternates:{canonical:`/events/exhibitor/${id}`}};
+}
 
 export default async function ExhibitorEventDetail({ params }: { params: Promise<{id:string}> }) {
   const { id } = await params;

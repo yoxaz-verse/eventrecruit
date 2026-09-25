@@ -125,6 +125,15 @@ textarea {
 @keyframes button-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .button-spinner { animation: none; border-right-color: currentColor; } .button { transition: none; } }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .button:focus-visible,
 .input:focus-visible,
 .auth-tab:focus-visible,
@@ -333,15 +342,40 @@ a:focus-visible {
 }
 
 .brand-mark {
+  position: relative;
   display: inline-flex;
-  width: 34px;
-  height: 34px;
+  flex: none;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
   background: var(--ink);
-  color: white;
+  color: #fcd978;
   box-shadow: var(--shadow-sm);
+  overflow: visible;
+}
+
+.brand-status-dot {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  display: flex;
+}
+
+.brand-status-ping,
+.brand-status-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.brand-status-ping {
+  background: #60a5fa;
+  opacity: .75;
+  animation: ping 1s cubic-bezier(0, 0, .2, 1) infinite;
+}
+
+.brand-status-core {
+  background: #3b82f6;
+  border: 1px solid white;
 }
 
 .site-header {
@@ -1136,11 +1170,7 @@ a:focus-visible {
 
 /* Public brand system */
 .brand-link { gap: 11px; letter-spacing: -.045em; }
-.brand-mark { position: relative; width: 42px; height: 42px; overflow: hidden; border-radius: 14px; background: var(--ink); box-shadow: none; }
-.brand-orbit { position: absolute; width: 26px; height: 26px; border: 2px solid #f8f2dc; border-radius: 50%; transform: rotate(-32deg) scaleX(.56); }
-.brand-orbit-one { left: 4px; top: 7px; }
-.brand-orbit-two { right: 4px; bottom: 7px; transform: rotate(32deg) scaleX(.56); }
-.brand-core { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #e4a866; }
+.brand-mark { box-shadow: none; }
 .brand-wordmark { font-size: 1.36rem; line-height: 1; font-weight: 800; }
 .brand-wordmark span { color: var(--accent); }
 .site-header { background: rgba(248, 250, 252, .94); }
@@ -1322,17 +1352,6 @@ main { counter-reset: home-section; }
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 10px;
-}
-
-.mobile-brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-}
-
-.mobile-brand-mark .brand-orbit {
-  width: 22px;
-  height: 22px;
 }
 
 .mobile-wordmark {
@@ -1780,4 +1799,21 @@ main { counter-reset: home-section; }
 @keyframes core-pulse {
   0% { transform: scale(0.94); opacity: 0.85; }
   100% { transform: scale(1.06); opacity: 1; }
+}
+
+/* Dashboard surfaces use borders and backgrounds instead of decorative shadows. */
+.dashboard-shell *,
+.dashboard-shell *::before,
+.dashboard-shell *::after {
+  box-shadow: none !important;
+}
+
+.dashboard-shell .india-map,
+.dashboard-shell [class*="drop-shadow"] {
+  filter: none !important;
+}
+
+.dashboard-shell :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
 }

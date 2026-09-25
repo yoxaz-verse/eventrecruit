@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { invalidatePublicData, PUBLIC_CACHE_TAGS } from "@/lib/public-data";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,6 +11,7 @@ export async function updateTalentPreferences(form:FormData) {
   const {error} = await db.from("talent_job_preferences").upsert({talent_id:talent.id,is_online:form.get("is_online")==="true",notify_push:form.get("notify_push")==="true",updated_at:new Date().toISOString()});
   if (error) throw new Error("Unable to save preferences.");
   revalidatePath("/dashboard/talent");
+  invalidatePublicData(PUBLIC_CACHE_TAGS.roles);
 }
 
 export async function requestBookingCancellation(form:FormData) {
@@ -20,6 +22,7 @@ export async function requestBookingCancellation(form:FormData) {
   const {data,error} = await db.from("applications").update({cancellation_requested_at:new Date().toISOString()}).eq("id",id).eq("talent_id",talent.id).eq("status","assigned").select("id").maybeSingle();
   if (error || !data) throw new Error("Unable to request cancellation.");
   revalidatePath("/dashboard/talent");
+  invalidatePublicData(PUBLIC_CACHE_TAGS.roles);
 }
 
 export async function savePushSubscription(subscription:{endpoint:string;keys:{p256dh:string;auth:string}}) {

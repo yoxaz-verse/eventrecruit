@@ -2,10 +2,12 @@ import Link from "next/link";
 import { TopNav } from "@/components/top-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { RoleCard } from "@/components/role-card";
-import { createClient } from "@/lib/supabase/server";
 import { getCurrentAccount } from "@/lib/auth";
-import type { EventRole } from "@/lib/types";
+import { getPublicOpenRoles } from "@/lib/public-data";
 import { Search, MapPin, Sparkles, Filter, Lock } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata:Metadata={title:"Open event and retail roles",description:"Browse current verified event and retail staffing opportunities across India.",robots:{index:false,follow:false}};
 
 export default async function BrowsePage({
   searchParams,
@@ -13,37 +15,13 @@ export default async function BrowsePage({
   searchParams?: Promise<{ city?: string; q?: string }>;
 }) {
   const { city = "", q = "" } = (await searchParams) ?? {};
-  const [db, user] = await Promise.all([createClient(), getCurrentAccount()]);
-  const [result, profileResult] = user && db
-    ? await Promise.all([db.from("staffing_roles")
-        .select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,map_url,starts_at,exhibitors(company_name),agencies(name))")
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(100), db.from("profiles").select("role,verification_status").eq("id", user.id).maybeSingle()])
-    : [null, null];
+  const user = await getCurrentAccount();
+  const [rolesResult, profileResult] = user ? await Promise.all([
+    getPublicOpenRoles(),
+    (await import("@/lib/supabase/server")).createClient().then((db) => db?.from("profiles").select("role,verification_status").eq("id", user.id).maybeSingle()),
+  ]) : [{ data: [], available: true }, null];
   const mayApply = profileResult?.data?.role === "talent" && profileResult.data.verification_status === "verified";
-  const roles: EventRole[] = (result?.data ?? []).flatMap((record) => {
-    const event = Array.isArray(record.events) ? record.events[0] : record.events;
-    if (!event) return [];
-    const exhibitor = Array.isArray(event.exhibitors) ? event.exhibitors[0] : event.exhibitors;
-    const agency = Array.isArray(event.agencies) ? event.agencies[0] : event.agencies;
-    return [{
-      id: record.id,
-      eventTitle: event.title,
-      company: exhibitor?.company_name,
-      agency: agency?.name,
-      location: `${event.venue}, ${event.city}`,
-      mapUrl:event.map_url??undefined,
-      date: `${record.work_starts_on} – ${record.work_ends_on}`,
-      shift: `${record.shift_start} – ${record.shift_end}`,
-      role: record.title,
-      description: record.description ?? undefined,
-      headcount: record.headcount,
-      rate: Number(record.hourly_rate),
-      skills: record.required_skills ?? [],
-      status: "open" as const,
-    }];
-  });
+  const roles = rolesResult.data;
   const cities = [...new Set(roles.map((role) => role.location.split(", ").at(-1) ?? ""))].filter(Boolean).sort();
   const filtered = roles.filter((role) =>
     (!city || role.location.endsWith(`, ${city}`)) &&
@@ -63,7 +41,7 @@ export default async function BrowsePage({
           <p className="mt-2 text-lg text-[var(--muted)]">Browse current staffing needs across exhibitions, launches, and activations.</p>
         </div>
 
-        {user && !result?.error && !profileResult?.error ? (
+        {user && rolesResult.available && !profileResult?.error ? (
           <>
             <form className="panel filter-panel my-8 grid gap-4 p-6 shadow-md md:grid-cols-[1fr_220px_auto]" action="/browse">
               <label className="label">

@@ -1,5 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
+import { invalidatePublicData, PUBLIC_CACHE_TAGS } from '@/lib/public-data';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentAccount } from '@/lib/auth';
@@ -35,7 +36,7 @@ export async function saveCompany(_state: FormState, data: FormData): Promise<Fo
  const {error:completionError}=await db.from('profiles').update({onboarding_completed_at:new Date().toISOString()}).eq('id',user.id);
  if (completionError) return {error:'Company saved, but setup could not be completed. Please retry.'};
  } catch (error) { return {error: error instanceof Error ? error.message : 'Unable to save. Please retry.'}; }
- revalidatePath('/dashboard/organizer'); revalidatePath('/events','layout');
+ revalidatePath('/dashboard/organizer'); revalidatePath('/events','layout'); invalidatePublicData(PUBLIC_CACHE_TAGS.events);
  redirect('/dashboard/organizer?message=Company+saved');
 }
 export async function saveEvent(_state: FormState, data: FormData): Promise<FormState> {
@@ -146,7 +147,7 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
    if (oldPath) await db.storage.from('event-space-assets').remove([oldPath]);
  }
  } catch (error) { return {error:error instanceof Error ? error.message : 'Unable to save. Please retry.'}; }
- revalidatePath('/dashboard/organizer'); revalidatePath(`/dashboard/organizer/events/${eventId}`); revalidatePath('/events','layout'); revalidatePath('/');
+ invalidatePublicData(PUBLIC_CACHE_TAGS.events); revalidatePath('/dashboard/organizer'); revalidatePath(`/dashboard/organizer/events/${eventId}`); revalidatePath('/events','layout'); revalidatePath('/');
  redirect('/dashboard/organizer?message=Event+saved');
 }
 async function hasValidSignature(file:File) {

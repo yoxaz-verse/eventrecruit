@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import { NavigationProgressBar } from "@/components/navigation-progress-bar";
+import { WebVitalsReporter } from "@/components/web-vitals-reporter";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
 
 const geist = localFont({
   src: "./fonts/geist-latin.woff2",
@@ -13,6 +13,7 @@ const geist = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
     default: "exporb | Verified event and retail talent across India",
     template: "%s | exporb",
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
     title: "exporb | Verified event and retail talent across India",
     description: "Find and coordinate verified people for events, stores, launches, and activations across India.",
   },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -52,6 +54,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <NavigationProgressBar />
         </Suspense>
+        <WebVitalsReporter />
         {children}
       </body>
     </html>

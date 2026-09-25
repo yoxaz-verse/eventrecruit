@@ -4,6 +4,7 @@ import { getCurrentAccount } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 import { PublicMobileNavigation } from "@/components/public-mobile-navigation";
 import { SubmitButton } from "@/components/submit-button";
+import { BrandMark } from "@/components/brand-mark";
 
 export async function TopNav({ signedIn: signedInOverride }: { signedIn?: boolean } = {}) {
   const signedIn = signedInOverride ?? Boolean(await getCurrentAccount());
@@ -13,11 +14,7 @@ export async function TopNav({ signedIn: signedInOverride }: { signedIn?: boolea
       <header className="site-header sticky top-0 z-50 hidden border-b border-[var(--line)]/70 bg-white/85 backdrop-blur-md transition-all md:block">
       <div className="page flex min-h-20 flex-nowrap items-center justify-between gap-4 py-0">
         <Link aria-label="exporb home" className="brand-link group" href="/">
-          <span className="brand-mark shadow-sm transition-transform group-hover:scale-105" aria-hidden="true">
-            <span className="brand-orbit brand-orbit-one" />
-            <span className="brand-orbit brand-orbit-two" />
-            <span className="brand-core" />
-          </span>
+          <BrandMark className="shadow-sm transition-transform group-hover:scale-105" />
           <span className="brand-wordmark font-black tracking-tight">
             expo<span className="text-[var(--accent)]">rb</span>
           </span>

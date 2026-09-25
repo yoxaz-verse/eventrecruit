@@ -306,6 +306,7 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
   if(profile.role==="agency"&&status==="assigned"&&agreedRate!==null){const {data:placement}=await supabase.from("placements").update({agreed_rate:agreedRate}).eq("application_id",applicationId).select("id").maybeSingle();if(placement)await supabase.from("settlement_payouts").update({amount:agreedRate}).eq("placement_id",placement.id);}
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/applicants");
+  revalidatePath(`/dashboard/exhibitor/requests/${application.staffing_role_id}`);
   revalidatePath("/dashboard/agency");
   return { error: "", success: "Application updated." };
 }

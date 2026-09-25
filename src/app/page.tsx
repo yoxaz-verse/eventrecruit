@@ -18,10 +18,8 @@ import { TopNav } from "@/components/top-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { openRoles } from "@/lib/mock-data";
 import { getCurrentAccount } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
-import { indiaToday, type OrganizerEvent } from "@/lib/organizer";
 import { EventStaffingNeeds } from "@/components/event-staffing-needs";
-import { rankDiscoveryEvents } from "@/lib/discovery-events";
+import { getPublicEventDirectory } from "@/lib/public-data";
 
 const services = [
   {
@@ -114,32 +112,13 @@ const landingMetrics = [
 ];
 
 export default async function Home() {
-  const upcomingResultsPromise = createClient().then(async (db) =>
-    db
-      ? Promise.all([db
-          .from("organizer_events")
-          .select("id,title,city,starts_at,ends_at,staffing_needs")
-          .eq("status", "published")
-          .gte("ends_at", indiaToday())
-          .order("starts_at"),
-        db.from("exhibitor_event_submissions")
-          .select("id,title,city,starts_at,ends_at")
-          .eq("status", "approved")
-          .gte("ends_at", indiaToday())
-          .order("starts_at")])
-      : null,
-  );
-  const [account, upcomingResults] = await Promise.all([
+  const [account, directory] = await Promise.all([
     getCurrentAccount(),
-    upcomingResultsPromise,
+    getPublicEventDirectory(),
   ]);
   const signedIn = Boolean(account);
-  const organizerResult=upcomingResults?.[0]??null;
-  const exhibitorResult=upcomingResults?.[1]??null;
-  const organizerEvents = (organizerResult?.data ?? []) as Pick<OrganizerEvent,'id'|'title'|'city'|'starts_at'|'ends_at'|'staffing_needs'>[];
-  const exhibitorEvents = exhibitorResult?.data ?? [];
-  const upcomingEvents=rankDiscoveryEvents(exhibitorEvents,organizerEvents).slice(0,3);
-  const upcomingUnavailable=!upcomingResults||organizerResult?.error||exhibitorResult?.error;
+  const upcomingEvents=directory.data.slice(0,3);
+  const upcomingUnavailable=!directory.available;
   return (
     <div className="shell">
       <a className="skip-link" href="#main-content">Skip to main content</a>

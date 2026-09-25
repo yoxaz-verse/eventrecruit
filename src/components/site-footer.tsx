@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 export function SiteFooter() {
   const currentYear = new Date().getFullYear();
@@ -10,11 +11,7 @@ export function SiteFooter() {
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link aria-label="exporb home" className="brand-link inline-flex items-center gap-3" href="/">
-              <span className="brand-mark shadow-sm" aria-hidden="true">
-                <span className="brand-orbit brand-orbit-one" />
-                <span className="brand-orbit brand-orbit-two" />
-                <span className="brand-core" />
-              </span>
+              <BrandMark className="shadow-sm border border-white/15" />
               <span className="brand-wordmark font-black tracking-tight text-white">
                 expo<span className="text-[var(--accent-2)]">rb</span>
               </span>

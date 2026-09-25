@@ -10,6 +10,7 @@ import { isUpcomingDateRange } from "@/lib/event-selection";
 import { canManageExhibitor } from "@/lib/agency-workspace";
 import { parseLockedLocation } from "@/lib/location";
 import { resolveActiveLocations } from "@/lib/locations";
+import { invalidatePublicData, PUBLIC_CACHE_TAGS } from "@/lib/public-data";
 
 export type ExhibitorEventFormState = { error: string };
 
@@ -77,5 +78,6 @@ export async function reviewExhibitorEvent(formData: FormData) {
   if (status === "approved") update = update.gte("ends_at", todayInIndia());
   const { data, error } = await update.select("id").maybeSingle();
   if (error || !data) throw new Error("Event is no longer pending or could not be reviewed.");
+  invalidatePublicData(PUBLIC_CACHE_TAGS.submissions);
   for (const path of ["/dashboard/admin/events", "/dashboard/exhibitor/events", "/dashboard/exhibitor/requests/new", "/events", "/"]) revalidatePath(path, "page");
 }
