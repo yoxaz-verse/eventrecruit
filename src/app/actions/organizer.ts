@@ -99,7 +99,8 @@ export async function saveEvent(_state: FormState, data: FormData): Promise<Form
  if (titles.length!==counts.length || titles.length>30) return {error:'Add no more than 30 talent positions.'};
  const staffingNeeds:StaffingNeed[]=titles.map((position,index)=>({title:position,people_needed:counts[index] && /^[1-9][0-9]*$/.test(counts[index]) && Number(counts[index])<=100000 ? Number(counts[index]) : null}));
  if (titles.some((position,index)=>position.length>160 || (counts[index]!=='' && staffingNeeds[index].people_needed===null))) return {error:'Enter a valid position and a whole number of people from 1 to 100,000.'};
- if (!title || title.length>160 || description.length>10000 || venue.length>200 || city.length>120) return {error:'Enter a title and keep details within the displayed limits.'};
+ if (!title || title.length>160 || description.length>10000 || city.length>120) return {error:'Enter a title and keep details within the displayed limits.'};
+ if (!venue || venue.length>200) return {error:'Enter a venue name within 200 characters.'};
  if ((start && !validDate(start)) || (end && !validDate(end)) || (start && end && end<start)) return {error:'Enter valid dates with the end on or after the start.'};
  if (status==='published' && (!description || !venue || !city || !start || !end)) return {error:'Complete description, venue, city, and both dates before publishing.'};
  const completeNeeds=staffingNeeds.filter(need=>need.title || need.people_needed);
