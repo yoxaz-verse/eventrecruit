@@ -1,11 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {adminUserDeleteFailure,allowedAdminTransition,maskEmail,maskPhone,parseAdminListParams,validateAdminUserDeletion} from "../src/lib/admin";
+import {adminUserDeleteFailure,allowedAdminTransition,isAdminOrganizationType,isAdminUuid,maskEmail,maskPhone,parseAdminListParams,validateAdminUserDeletion} from "../src/lib/admin";
 
 test("admin list parameters are bounded and normalized",()=>{
  assert.deepEqual(parseAdminListParams({q:"  expo  ",status:"pending_verification",sort:"oldest",page:"3",view:"applications"}),{q:"expo",status:"pending_verification",sort:"oldest",page:3,view:"applications"});
  assert.deepEqual(parseAdminListParams({status:"not valid!",sort:"sideways",page:"-4",view:"not valid!"}),{q:"",status:"",sort:"newest",page:1,view:""});
  assert.equal(parseAdminListParams({page:"999999"}).page,10000);
+});
+
+test("organization detail routes accept only supported types and UUIDs",()=>{
+ assert.equal(isAdminOrganizationType("companies"),true);
+ assert.equal(isAdminOrganizationType("agencies"),true);
+ assert.equal(isAdminOrganizationType("exhibitors"),true);
+ assert.equal(isAdminOrganizationType("users"),false);
+ assert.equal(isAdminUuid("11111111-1111-4111-8111-111111111111"),true);
+ assert.equal(isAdminUuid("11111111-1111-0111-8111-111111111111"),false);
+ assert.equal(isAdminUuid("not-a-uuid"),false);
 });
 
 test("private contact previews do not expose full values",()=>{

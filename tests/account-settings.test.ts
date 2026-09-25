@@ -2,11 +2,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { existingEmailError } from "../src/lib/app-auth/email-eligibility";
+import { accountSettingsAvailability } from "../src/lib/account-settings-state";
 
 test("disabled accounts are rejected for login and recovery eligibility", () => {
   const disabled = { email_verified_at: new Date().toISOString(), disabled_at: new Date().toISOString() };
   assert.match(existingEmailError("login", disabled) ?? "", /disabled/i);
   assert.match(existingEmailError("recovery", disabled) ?? "", /disabled/i);
+});
+
+test("settings failures distinguish missing migrations from temporary outages", () => {
+  assert.equal(accountSettingsAvailability([]), "ready");
+  assert.equal(accountSettingsAvailability([{ code: "PGRST205" }]), "migration_required");
+  assert.equal(accountSettingsAvailability([{ code: "42P01" }]), "migration_required");
+  assert.equal(accountSettingsAvailability([{ code: "08006" }]), "temporarily_unavailable");
 });
 
 test("every dashboard role exposes profile and settings navigation", () => {

@@ -1,6 +1,16 @@
 export const ADMIN_PAGE_SIZE = 20;
 export const adminSections = ["users","organizations","events","workforce","bookings","network","reputation"] as const;
 export type AdminSection = typeof adminSections[number];
+export const adminOrganizationTypes = ["companies","agencies","exhibitors"] as const;
+export type AdminOrganizationType = typeof adminOrganizationTypes[number];
+
+export function isAdminOrganizationType(value:string):value is AdminOrganizationType{
+  return adminOrganizationTypes.includes(value as AdminOrganizationType);
+}
+
+export function isAdminUuid(value:string){
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
 export function parseAdminListParams(input: Record<string,string|string[]|undefined>) {
   const rawQuery=Array.isArray(input.q)?input.q[0]:input.q;
