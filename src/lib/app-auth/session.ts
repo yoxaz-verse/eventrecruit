@@ -21,6 +21,8 @@ async function setTokenCookie(name: string, token: string, age: number) {
 }
 
 export async function issueToken(accountId: string, purpose: "session" | "reset") {
+  const { data: account } = await db().from("app_accounts").select("id").eq("id", accountId).is("disabled_at", null).maybeSingle();
+  if (!account) throw new Error("This account is disabled.");
   const token = generateToken();
   const age = purpose === "session" ? sessionAge : 600;
   const { error } = await db().from("app_sessions").insert({
@@ -35,12 +37,12 @@ export async function tokenAccount(purpose: "session" | "reset") {
   const token = (await cookies()).get(purpose === "session" ? sessionCookie : resetCookie)?.value;
   if (!token) return null;
   const { data, error } = await db().from("app_sessions")
-    .select("account_id,app_accounts(id,email,email_verified_at)")
+    .select("account_id,app_accounts(id,email,email_verified_at,disabled_at)")
     .eq("token_hash", tokenHash(token)).eq("purpose", purpose)
     .gt("expires_at", new Date().toISOString()).maybeSingle();
   if (error || !data) return null;
   const account = Array.isArray(data.app_accounts) ? data.app_accounts[0] : data.app_accounts;
-  return account ?? null;
+  return account && !account.disabled_at ? account : null;
 }
 
 export async function revokeToken(purpose: "session" | "reset") {

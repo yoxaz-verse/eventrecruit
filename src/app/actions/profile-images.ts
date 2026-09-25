@@ -22,10 +22,11 @@ export async function saveProfileImage(_state: ImageState, data: FormData): Prom
   let idColumn: "id" | "owner_id";
   let id = profile.id;
   let column: "avatar_url" | "logo_path";
-  let prefix: "talents" | "agencies" | "exhibitors";
+  let prefix: "talents" | "profiles" | "agencies" | "exhibitors";
 
-  if (profile.role === "talent") {
-    table = "profiles"; idColumn = "id"; column = "avatar_url"; prefix = "talents";
+  const avatarTarget = data.get("target") === "avatar";
+  if (profile.role === "talent" || avatarTarget) {
+    table = "profiles"; idColumn = "id"; column = "avatar_url"; prefix = profile.role === "talent" ? "talents" : "profiles";
   } else if (profile.role === "agency") {
     table = "agencies"; idColumn = "owner_id"; column = "logo_path"; prefix = "agencies";
   } else {
@@ -65,6 +66,7 @@ export async function saveProfileImage(_state: ImageState, data: FormData): Prom
   }
 
   revalidatePath("/dashboard", "layout");
+  revalidatePath(`/dashboard/${profile.role}/profile`);
   revalidatePath("/events", "layout");
   return { error: "", success: remove ? "Image removed." : "Image saved." };
 }

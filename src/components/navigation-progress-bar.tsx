@@ -9,17 +9,14 @@ export function NavigationProgressBar() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Clear loading state on route/search changes
+  // Clear loading attributes on route/search changes
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setLoading(false);
       setProgress(100);
 
-      // Clean up data-loading and injected spinners
       document.querySelectorAll('[data-loading="true"]').forEach((el) => {
         el.removeAttribute("data-loading");
-        const spinner = el.querySelector(".btn-injected-spinner");
-        if (spinner) spinner.remove();
       });
     });
 
@@ -33,29 +30,16 @@ export function NavigationProgressBar() {
     };
   }, [pathname, searchParams]);
 
-  // Global click & submit interceptors for instant visual feedback on buttons
   useEffect(() => {
     const clearElementLoading = (el: HTMLElement) => {
       el.removeAttribute("data-loading");
-      const spinner = el.querySelector(".btn-injected-spinner");
-      if (spinner) spinner.remove();
     };
 
     const applyElementLoading = (el: HTMLElement) => {
       el.setAttribute("data-loading", "true");
-      if (
-        !el.querySelector(".button-spinner") &&
-        !el.querySelector(".btn-injected-spinner")
-      ) {
-        const spinner = document.createElement("span");
-        spinner.className = "btn-injected-spinner";
-        spinner.setAttribute("aria-hidden", "true");
-        el.prepend(spinner);
-      }
     };
 
     const handleGlobalClick = (event: MouseEvent) => {
-      // Ignore right clicks or modifier key clicks (new tab opens)
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
         return;
       }
@@ -64,12 +48,11 @@ export function NavigationProgressBar() {
       if (!target) return;
 
       const clickable = target.closest<HTMLElement>(
-        "button, a, .button, [role='button'], input[type='submit'], input[type='button'], .dashboard-nav-link"
+        "button, a.button, .button, [role='button'], input[type='submit'], input[type='button'], .dashboard-nav-link"
       );
 
       if (!clickable) return;
 
-      // Skip disabled or already loading elements
       if (
         clickable.hasAttribute("disabled") ||
         clickable.getAttribute("aria-disabled") === "true" ||
@@ -94,7 +77,6 @@ export function NavigationProgressBar() {
         }
       }
 
-      // Apply button loading state visually
       applyElementLoading(clickable);
 
       setLoading(true);
@@ -103,7 +85,6 @@ export function NavigationProgressBar() {
       const p1 = setTimeout(() => setProgress(65), 150);
       const p2 = setTimeout(() => setProgress(88), 450);
 
-      // Auto safety cleanup if no route change occurs within 1.8 seconds
       const safetyTimeout = setTimeout(() => {
         clearElementLoading(clickable);
       }, 1800);
@@ -172,4 +153,5 @@ export function NavigationProgressBar() {
     </div>
   );
 }
+
 

@@ -34,6 +34,8 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/organizer", label: "Overview", icon: Building2 },
     { href: "/dashboard/organizer/events/new", label: "Create event", icon: CalendarDays },
     { href: "/dashboard/organizer/company", label: "Company profile", icon: Building2 },
+    { href: "/dashboard/organizer/profile", label: "Profile", icon: UserRound },
+    { href: "/dashboard/organizer/settings", label: "Settings", icon: Settings },
   ],
   admin: [
     { href: "/dashboard/admin", label: "Overview", icon: ShieldCheck },
@@ -46,6 +48,8 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/admin/settlements", label: "Settlements", icon: BadgeIndianRupee },
     { href: "/dashboard/admin/verifications", label: "Verifications", icon: ShieldCheck },
     { href: "/dashboard/admin/reputation", label: "Reputation", icon: Star },
+    { href: "/dashboard/admin/profile", label: "Profile", icon: UserRound },
+    { href: "/dashboard/admin/settings", label: "Settings", icon: Settings },
   ],
   agency: [
     { href: "/dashboard/agency", label: "Dashboard", icon: Users, group:"Workspace" },
@@ -60,21 +64,24 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/agency/payments", label: "Payments", icon: BadgeIndianRupee, group:"Operations" },
     { href: "/dashboard/agency/documents", label: "Documents", icon: FileText, group:"Operations" },
     { href: "/dashboard/agency/notifications", label: "Notifications", icon: Bell, group:"Account" },
+    { href: "/dashboard/agency/profile", label: "Profile", icon: UserRound, group:"Account" },
     { href: "/dashboard/agency/settings", label: "Settings", icon: Settings, group:"Account" },
   ],
   exhibitor: [
     { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
-    { href: "/dashboard/exhibitor/profile", label: "Company profile", icon: ContactRound },
+    { href: "/dashboard/exhibitor/profile", label: "Profile", icon: ContactRound },
     { href: "/dashboard/exhibitor/events", label: "My events", icon: CalendarDays },
     { href: "/dashboard/exhibitor/space-inquiries", label: "Space inquiries", icon: ClipboardList },
     { href: "/dashboard/exhibitor/requests", label: "Staff requests", icon: ClipboardList },
     { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck },
     { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star },
     { href: "/dashboard/exhibitor/agencies", label: "Agency access", icon: Users },
+    { href: "/dashboard/exhibitor/settings", label: "Settings", icon: Settings },
   ],
   talent: [
     { href: "/dashboard/talent", label: "Opportunities", icon: Sparkles },
     { href: "/dashboard/talent/profile", label: "My profile", icon: UserRound },
+    { href: "/dashboard/talent/settings", label: "Settings", icon: Settings },
   ],
 };
 

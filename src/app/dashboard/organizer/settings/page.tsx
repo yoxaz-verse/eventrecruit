@@ -1,0 +1,3 @@
+import { AccountSettingsPanel } from "@/components/account-settings-panel";import { DashboardShell } from "@/components/dashboard-shell";import { accountSettingsData } from "@/lib/account-settings";
+export default async function OrganizerSettings(){const data=await accountSettingsData();return <DashboardShell active="organizer" current="/dashboard/organizer/settings"><div className="mx-auto max-w-3xl"><h1 className="text-4xl font-black">Settings</h1><p className="mt-2 mb-6 text-[var(--muted)]">Manage organizer notifications, security, and account controls.</p><AccountSettingsPanel emailNotifications={data.emailNotifications} inAppNotifications={data.inAppNotifications} deletionPending={data.deletionPending}/></div></DashboardShell>}
+

@@ -36,21 +36,22 @@ async function rateLimit(email: string) {
   catch (error) { log("auth_rate_limit_failed", error); return authUnavailable; }
 }
 async function account(email: string) {
-  const { data, error } = await db().from("app_accounts").select("id,email,password_hash,email_verified_at").eq("email",email).maybeSingle();
+  const { data, error } = await db().from("app_accounts").select("id,email,password_hash,email_verified_at,disabled_at").eq("email",email).maybeSingle();
   if (error) throw new AuthEmailStageError("account_lookup", ["PGRST205","42P01"].includes(error.code) ? "migration_missing" : "database_error");
   return data;
 }
 async function sendExisting(data: FormData, purpose: ExistingEmailPurpose): Promise<AuthFormState> {
   const email = emailOf(data);
   if (!isEmail(email)) return {error:"Enter a valid email address."};
-  let found: Awaited<ReturnType<typeof account>>;
+  let found: NonNullable<Awaited<ReturnType<typeof account>>> | null = null;
   try { found = await account(email); }
   catch (error) { log("auth_email_account_lookup_failed", error); return {error:authUnavailable}; }
   const eligibilityError = existingEmailError(purpose, found);
   if (eligibilityError) return {error:eligibilityError};
+  if (!found) return {error:authUnavailable};
   const limited = await rateLimit(email); if (limited) return {error:limited};
   try {
-    await createAndSendOtp(found!.id,email,purpose);
+    await createAndSendOtp(found.id,email,purpose);
   } catch (error) { log("auth_email_send_failed",error); return {error:sendFailed}; }
   redirect(url("/verify-otp",codeSentMessage,{email,type:purpose === "login" ? "magiclink" : purpose}));
 }
@@ -62,7 +63,7 @@ export async function signUpWithEmailVerification(_state:AuthFormState,data:Form
   if(!isEmail(email))return {error:"Enter a valid email address."};
   const strength=checkNewPassword(password); if(!strength.strong)return {error:strength.reason};
   if(!roles.includes(role))return {error:"Choose a valid account type."};
-  let found: Awaited<ReturnType<typeof account>>;
+  let found: NonNullable<Awaited<ReturnType<typeof account>>> | null = null;
   try { found=await account(email); }
   catch(error){log("signup_account_lookup_failed",error);return {error:authUnavailable};}
   if(found?.email_verified_at)redirect("/login?message=account-exists");
@@ -73,14 +74,15 @@ export async function signUpWithEmailVerification(_state:AuthFormState,data:Form
       const hashed=await hashPassword(password);
       const {data:created,error}=await db().from("app_accounts").insert({email,password_hash:hashed}).select("id").single();
       if(error||!created)throw new AuthEmailStageError("otp_store","database_error");
-      found={id:created.id,email,password_hash:hashed,email_verified_at:null};
-      const {error:profileError}=await db().from("profiles").insert({id:found.id,full_name:fullName,role});
-      if(profileError){await db().from("app_accounts").delete().eq("id",found.id);throw new AuthEmailStageError("otp_store","database_error");}
-      if(role!=="talent")await db().from("verification_requests").insert({entity_type:"account",entity_id:found.id,requester_id:found.id,status:"pending",notes:`New ${role} account verification`});
+      const targetAccount: NonNullable<Awaited<ReturnType<typeof account>>> = {id:created.id,email,password_hash:hashed,email_verified_at:null,disabled_at:null};
+      found=targetAccount;
+      const {error:profileError}=await db().from("profiles").insert({id:targetAccount.id,full_name:fullName,role});
+      if(profileError){await db().from("app_accounts").delete().eq("id",targetAccount.id);throw new AuthEmailStageError("otp_store","database_error");}
+      if(role!=="talent")await db().from("verification_requests").insert({entity_type:"account",entity_id:targetAccount.id,requester_id:targetAccount.id,status:"pending",notes:`New ${role} account verification`});
       if(role==="talent"){
-        const {error:talentError}=await db().from("talent_profiles").insert({profile_id:found.id});
-        const {error:reputationError}=await db().from("profile_reputation").upsert({profile_id:found.id,role:"talent"});
-        if(talentError||reputationError){await db().from("app_accounts").delete().eq("id",found.id);throw new AuthEmailStageError("otp_store","database_error");}
+        const {error:talentError}=await db().from("talent_profiles").insert({profile_id:targetAccount.id});
+        const {error:reputationError}=await db().from("profile_reputation").upsert({profile_id:targetAccount.id,role:"talent"});
+        if(talentError||reputationError){await db().from("app_accounts").delete().eq("id",targetAccount.id);throw new AuthEmailStageError("otp_store","database_error");}
       }
     } else {
       purpose="activation";
@@ -105,6 +107,7 @@ export async function signInWithPassword(_state:AuthFormState,data:FormData):Pro
     const limit=await consumePasswordLoginLimit(email);
     if(!limit.allowed)return {error:`Too many password login attempts. Try again in ${limit.retry_after_seconds} seconds.`};
     const found=await account(email);
+    if(found?.disabled_at)return {error:"This account is disabled. Contact support for help."};
     if(!found||!found.email_verified_at||!await verifyPassword(password,found.password_hash))return {error:"Invalid email or password."};
     await issueToken(found.id,"session");
     accountId = found.id;

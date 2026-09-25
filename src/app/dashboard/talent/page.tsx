@@ -6,7 +6,7 @@ import { TalentLiveRefresh } from "@/components/talent-live-refresh";
 import { TalentBrowserAlerts } from "@/components/talent-browser-alerts";
 import { EmptyState } from "@/components/empty-state";
 import { CalendarX, Briefcase, BellOff } from "lucide-react";
-import { updateTalentPreferences, requestBookingCancellation } from "@/app/actions/talent-jobs";
+import { requestBookingCancellation } from "@/app/actions/talent-jobs";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { indiaToday } from "@/lib/organizer";
@@ -40,7 +40,6 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  const bookings=(booked.data??[]).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item)),profileComplete=Boolean(profile.data?.home_location_id&&preferredIds.size);
  return <DashboardShell active="talent"><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Opportunities</h1><p className="mt-2 text-[var(--muted)]">Events and staffing requirements organized around the cities where you can work.</p></div><TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
  {!profileComplete?<div className="callout-banner callout-banner-amber mb-6"><div><h2 className="font-black">Choose your work locations</h2><p className="text-sm">Complete your locations to receive relevant alerts.</p></div><Link className="button button-primary" href="/dashboard/talent/profile">Complete profile</Link></div>:null}
- <form action={updateTalentPreferences} className="panel mb-6 flex flex-wrap items-end gap-4 p-5"><label className="label">Availability<select className="input" name="is_online" defaultValue={String(prefs.data?.is_online??false)}><option value="true">Online for matching</option><option value="false">Offline</option></select></label><label className="label">Browser alerts<select className="input" name="notify_push" defaultValue={String(prefs.data?.notify_push??false)}><option value="true">On</option><option value="false">Off</option></select></label><SubmitButton pendingText="Saving…">Save preferences</SubmitButton></form>
  <nav className="mb-6 flex gap-2" aria-label="Opportunity locations"><Link className={`button ${view==="preferred"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=preferred">Preferred locations</Link><Link className={`button ${view==="other"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=other">Other locations</Link></nav>
  <p className="mb-5 text-sm text-[var(--muted)]">{view==="preferred"?(names.length?`Showing ${names.join(", ")}. Alerts are limited to these cities.`:"Add preferred cities to personalize this tab."):"Explore other cities. These opportunities do not generate alerts."}</p>
 

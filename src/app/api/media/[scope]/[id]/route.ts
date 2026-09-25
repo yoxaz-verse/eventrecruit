@@ -6,7 +6,7 @@ const uuid = /^[0-9a-f-]{36}$/i;
 
 export async function GET(_request: Request, { params }: { params: Promise<{ scope: string; id: string }> }) {
   const { scope, id } = await params;
-  if (!uuid.test(id) || !["talent", "agency", "exhibitor", "event"].includes(scope)) return new Response("Not found", { status: 404 });
+  if (!uuid.test(id) || !["talent", "profile", "agency", "exhibitor", "event"].includes(scope)) return new Response("Not found", { status: 404 });
   const db = await createClient();
   if (!db) return new Response("Unavailable", { status: 503 });
   let path: string | null = null;
@@ -14,6 +14,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sco
 
   if (scope === "talent") {
     const { data } = await db.from("profiles").select("avatar_url,role").eq("id", id).eq("role", "talent").maybeSingle();
+    path = data?.avatar_url ?? null;
+  } else if (scope === "profile") {
+    isPrivate = true;
+    const viewer = await getCurrentProfile();
+    if (!viewer || (viewer.id !== id && viewer.role !== "admin")) return new Response("Forbidden", { status: 403 });
+    const { data } = await db.from("profiles").select("avatar_url").eq("id", id).maybeSingle();
     path = data?.avatar_url ?? null;
   } else if (scope === "agency") {
     const { data } = await db.from("agencies").select("logo_path").eq("id", id).maybeSingle();
@@ -41,7 +47,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sco
     path = exhibitor?.logo_path ?? null;
   }
 
-  if (!path || !path.startsWith(`${scope === "talent" ? "talents" : `${scope}s`}/`)) return new Response("Not found", { status: 404 });
+  const prefix = scope === "talent" ? "talents" : scope === "profile" ? "profiles" : `${scope}s`;
+  if (!path || !path.startsWith(`${prefix}/`)) return new Response("Not found", { status: 404 });
   try {
     const object = await getR2Object(path);
     if (!object?.body) return new Response("Not found", { status: 404 });

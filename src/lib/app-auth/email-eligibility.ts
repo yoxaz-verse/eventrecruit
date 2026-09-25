@@ -2,9 +2,10 @@ export type ExistingEmailPurpose = "activation" | "login" | "recovery";
 
 export function existingEmailError(
   purpose: ExistingEmailPurpose,
-  account: { email_verified_at: string | null } | null,
+  account: { email_verified_at: string | null; disabled_at?: string | null } | null,
 ): string | null {
   if (!account) return "This email is not registered. Create an account to continue.";
+  if (account.disabled_at) return "This account is disabled. Contact support for help.";
   if (purpose === "activation") {
     return account.email_verified_at ? "This account is already verified. Log in instead." : null;
   }

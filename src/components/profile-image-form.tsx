@@ -10,10 +10,12 @@ export function ProfileImageForm({
   kind,
   imageUrl,
   exhibitorId,
+  target,
 }: {
   kind: "Profile picture" | "Agency logo" | "Exhibitor logo";
   imageUrl?: string | null;
   exhibitorId?: string;
+  target?: "avatar";
 }) {
   const [state, action] = useActionState(saveProfileImage, { error: "", success: "" });
   const [imageStatus, setImageStatus] = useState<"idle" | "compressing" | "ready" | "error">("idle");
@@ -21,6 +23,7 @@ export function ProfileImageForm({
   return (
     <form action={action} className="grid gap-4 rounded-2xl border border-[var(--line)] p-5 bg-white shadow-xs">
       {exhibitorId ? <input type="hidden" name="exhibitor_id" value={exhibitorId} /> : null}
+      {target ? <input type="hidden" name="target" value={target} /> : null}
 
       <CompressedImageInput
         name="image"

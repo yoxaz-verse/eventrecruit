@@ -33,20 +33,22 @@ export function DashboardSidebar({
     <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col gap-3 overflow-hidden p-3 md:flex">
       <div className="panel min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[var(--line)] bg-white p-4 shadow-xs flex flex-col justify-between">
         <div>
-          <Link className="brand-link mb-4 inline-flex items-center gap-3 group" href="/">
-            <BrandMark className="shadow-xs transition-transform group-hover:scale-105" />
-            <span className="brand-wordmark font-black tracking-tight text-lg">
-              expo<span className="text-[var(--accent)]">rb</span>
-            </span>
-          </Link>
+          <div className="mb-4 pb-3.5 border-b border-[var(--line)]/70">
+            <Link className="brand-link inline-flex items-center gap-3 group" href="/">
+              <BrandMark className="shadow-xs transition-transform group-hover:scale-105" />
+              <span className="brand-wordmark font-black tracking-tight text-lg">
+                expo<span className="text-[var(--accent)]">rb</span>
+              </span>
+            </Link>
 
-          <div className="mb-4 flex items-center justify-between border-b border-[var(--line)]/60 pb-3">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)] bg-[var(--surface)] px-2.5 py-1 rounded-md border border-[var(--line)] block w-fit">
-              {active} portal
-            </span>
-            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
-            </span>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)] bg-blue-50/80 px-2.5 py-1 rounded-lg border border-blue-100 block w-fit">
+                {active} portal
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1.5 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
+              </span>
+            </div>
           </div>
 
           <p className="mb-2 px-1 text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted)]">

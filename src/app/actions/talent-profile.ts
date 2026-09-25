@@ -13,8 +13,9 @@ export async function saveTalentProfile(_state:{error:string},data:FormData):Pro
   const db=await createClient();
   if(!db)return {error:"Profile editing is temporarily unavailable."};
   const phone=value(data,"phone"),homeLocationId=value(data,"home_location_id");
+  const fullName=value(data,"full_name");
   const preferred=data.getAll("preferred_location_ids").map(String).filter(Boolean);
-  if(!phone||phone.length>40||!homeLocationId||!preferred.length||new Set(preferred).size!==preferred.length)return {error:"Enter your phone and choose a home city plus at least one work city."};
+  if(fullName.length<2||fullName.length>160||!phone||phone.length>40||!homeLocationId||!preferred.length||new Set(preferred).size!==preferred.length)return {error:"Enter your name and phone, then choose a home city plus at least one work city."};
   const locations=await resolveActiveLocations([homeLocationId,...preferred]);
   if(!locations)return {error:"Choose valid active locations."};
   const experience=value(data,"experience_years");
@@ -24,7 +25,7 @@ export async function saveTalentProfile(_state:{error:string},data:FormData):Pro
   const skills=value(data,"skills").split(",").map(item=>item.trim()).filter(Boolean);
   const languages=value(data,"languages").split(",").map(item=>item.trim()).filter(Boolean);
   const results=await Promise.all([
-    db.from("profiles").update({city,home_location_id:homeLocationId,profile_updated_at:new Date().toISOString()}).eq("id",talent.id),
+    db.from("profiles").update({full_name:fullName,city,home_location_id:homeLocationId,profile_updated_at:new Date().toISOString()}).eq("id",talent.id),
     db.from("contact_details").upsert({profile_id:talent.id,phone}),
     db.from("talent_profiles").upsert({profile_id:talent.id,headline:value(data,"headline"),bio:value(data,"bio"),skills,languages,availability:value(data,"availability"),experience_years:Number(experience||0),documents_note:value(data,"documents_note")}),
   ]);

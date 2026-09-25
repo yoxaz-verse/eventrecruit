@@ -178,8 +178,7 @@ a[data-loading="true"]::before,
   100% { background-position: 200% 0; }
 }
 
-.button-spinner,
-.btn-injected-spinner {
+.button-spinner {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -189,11 +188,6 @@ a[data-loading="true"]::before,
   border-radius: 50%;
   animation: button-spin 0.65s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   vertical-align: middle;
-  z-index: 3;
-}
-
-.btn-injected-spinner + svg {
-  display: none !important;
 }
 
 @keyframes button-spin {

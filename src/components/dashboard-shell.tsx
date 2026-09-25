@@ -7,7 +7,6 @@ import { AgencyGlobalSearch } from "@/components/agency-global-search";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { BrandMark } from "@/components/brand-mark";
 import { getCurrentProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 
 export async function DashboardShell({
   active,
@@ -19,13 +18,11 @@ export async function DashboardShell({
   children: React.ReactNode;
 }) {
   const sectionName = current ? current.split("/").pop()?.replace(/-/g, " ") || "overview" : "overview";
-  const profile = active === "exhibitor" ? await getCurrentProfile() : null;
-  const db = profile ? await createClient() : null;
-  const { data: exhibitor } = profile && db
-    ? await db.from("exhibitors").select("id,company_name,logo_path").eq("owner_id", profile.id).maybeSingle()
-    : { data: null };
-  const identityLabel = String(exhibitor?.company_name || profile?.full_name || active);
+  const profile = await getCurrentProfile();
+  const identityLabel = String(profile?.full_name || active);
   const initials = identityLabel.split(/\s+/).filter(Boolean).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase() || active.substring(0, 2).toUpperCase();
+  const profileHref = `/dashboard/${active}/profile`;
+  const avatarScope = active === "talent" ? "talent" : "profile";
 
   return (
     <div className="dashboard-shell min-h-screen bg-[var(--background)]">
@@ -43,9 +40,9 @@ export async function DashboardShell({
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             {active}
           </span>
-          {active === "exhibitor" ? <Link aria-label="Open company profile" className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 text-xs font-black text-white shadow-xs" href="/dashboard/exhibitor/profile">
-            {exhibitor?.logo_path ? <Image unoptimized width={36} height={36} className="h-full w-full bg-white object-contain p-1" src={`/api/media/exhibitor/${exhibitor.id}`} alt="" /> : initials}
-          </Link> : null}
+          <Link aria-label="Open your profile" className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 text-xs font-black text-white shadow-xs" href={profileHref}>
+            {profile?.avatar_url ? <Image unoptimized width={36} height={36} className="h-full w-full bg-white object-cover" src={`/api/media/${avatarScope}/${profile.id}`} alt="" /> : initials}
+          </Link>
         </div>
       </header>
 
@@ -88,12 +85,12 @@ export async function DashboardShell({
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Live System
             </span>
-            {active === "exhibitor" ? <Link aria-label={`Open profile for ${identityLabel}`} className="group flex items-center gap-2 rounded-full p-1 pr-2 text-xs font-extrabold transition-colors hover:bg-[var(--surface)]" href="/dashboard/exhibitor/profile">
+            <Link aria-label={`Open profile for ${identityLabel}`} className="group flex items-center gap-2 rounded-full p-1 pr-2 text-xs font-extrabold transition-colors hover:bg-[var(--surface)]" href={profileHref}>
               <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 text-[11px] font-black text-white shadow-xs">
-                {exhibitor?.logo_path ? <Image unoptimized width={32} height={32} className="h-full w-full bg-white object-contain p-1" src={`/api/media/exhibitor/${exhibitor.id}`} alt="" /> : initials}
+                {profile?.avatar_url ? <Image unoptimized width={32} height={32} className="h-full w-full bg-white object-cover" src={`/api/media/${avatarScope}/${profile.id}`} alt="" /> : initials}
               </span>
               <span className="hidden max-w-32 truncate lg:block">Profile</span>
-            </Link> : <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 text-white font-black text-[11px] flex items-center justify-center shadow-xs">{active.substring(0, 2).toUpperCase()}</div>}
+            </Link>
           </div>
         </div>
       </header>
