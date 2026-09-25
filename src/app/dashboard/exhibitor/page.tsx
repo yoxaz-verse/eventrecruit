@@ -3,13 +3,12 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CalendarDays, ClipboardList, Users, PlusCircle, ArrowRight, Sparkles, Building2 } from "lucide-react";
-import { ProfileImageForm } from "@/components/profile-image-form";
 
 export default async function ExhibitorDashboard() {
   const profile = await requireRole(["exhibitor"]);
   const db = await createClient();
   if (!db) throw new Error("Workspace is temporarily unavailable.");
-  const { data: exhibitor } = await db.from("exhibitors").select("id,company_name,logo_path").eq("owner_id", profile.id).maybeSingle();
+  const { data: exhibitor } = await db.from("exhibitors").select("id,company_name").eq("owner_id", profile.id).maybeSingle();
   const [submissions, requests] = await Promise.all([
     exhibitor ? db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id) : Promise.resolve({ data: [], error: null }),
     db.from("events").select("id,staffing_roles(id)").eq("created_by", profile.id),
@@ -111,15 +110,6 @@ export default async function ExhibitorDashboard() {
         </Link>
       </div>
 
-      {/* Exhibitor Branding Panel */}
-      {exhibitor ? (
-        <div className="panel mt-8 max-w-2xl p-6 bg-white border border-[var(--line)] rounded-2xl shadow-xs">
-          <h3 className="font-extrabold text-base mb-1">Company Branding</h3>
-          <p className="mb-4 text-xs text-[var(--muted)]">Your logo is private. Only you, administrators, and actively assigned staffing agencies can view it.</p>
-          <ProfileImageForm kind="Exhibitor logo" imageUrl={exhibitor.logo_path ? `/api/media/exhibitor/${exhibitor.id}` : null} />
-        </div>
-      ) : null}
     </DashboardShell>
   );
 }
-

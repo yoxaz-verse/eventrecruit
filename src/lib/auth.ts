@@ -15,7 +15,7 @@ export const getCurrentProfile = cache(async function getCurrentProfile() {
   const db = createAdminClient();
   if (!db) return null;
   const {data,error} = await db.from("profiles")
-    .select("id,full_name,role,verification_status,avatar_url")
+    .select("id,full_name,role,verification_status,avatar_url,city")
     .eq("id",account.id).maybeSingle();
   return error ? null : data;
 });

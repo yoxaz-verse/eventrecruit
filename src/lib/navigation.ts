@@ -15,6 +15,7 @@ import {
   Search,
   Bell,
   Settings,
+  ContactRound,
   FileText,
   Handshake,
   type LucideIcon,
@@ -63,6 +64,7 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
   ],
   exhibitor: [
     { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
+    { href: "/dashboard/exhibitor/profile", label: "Company profile", icon: ContactRound },
     { href: "/dashboard/exhibitor/events", label: "My events", icon: CalendarDays },
     { href: "/dashboard/exhibitor/space-inquiries", label: "Space inquiries", icon: ClipboardList },
     { href: "/dashboard/exhibitor/requests", label: "Staff requests", icon: ClipboardList },
