@@ -1,8 +1,7 @@
+import { ApplicationStatusActions } from "@/components/application-status-actions";
 import { ProgressiveImage } from "@/components/progressive-image";
-import { updateApplicationStatus } from "@/app/actions/workflow";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { SubmitButton } from "@/components/submit-button";
-import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { StatusBadge } from "@/components/status-badge";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,7 +16,7 @@ export default async function ExhibitorApplicants() {
     role: role.title,
     event: event.title,
     workDays: `${role.work_starts_on} – ${role.work_ends_on}`,
-    booked: (role.applications ?? []).filter(item => item.status === "accepted").length,
+    booked: (role.applications ?? []).filter(item => item.status === "assigned").length,
     headcount: role.headcount,
   }))));
   const profiles = applications.length
@@ -30,8 +29,8 @@ export default async function ExhibitorApplicants() {
     <div className="grid gap-4">{applications.map(application => {
       const person = byId.get(application.talent_id);
       return <article className="panel p-5" key={application.id}>
-        <div className="flex items-start gap-4">{person?.avatar_url ? <ProgressiveImage src={`/api/media/talent/${application.talent_id}`} alt={`${person.full_name} profile picture`} className="h-16 w-16 rounded-full border border-[var(--line)] object-cover" containerClassName="h-16 w-16 shrink-0"/> : null}<div><span className="badge capitalize">{application.status}</span><h2 className="mt-3 text-xl font-bold">{person?.full_name ?? "Applicant"}</h2><p>{application.role} · {application.event} · {application.workDays}</p><p className="text-sm">Confirmed roster: {application.booked}/{application.headcount}</p>{application.cancellation_requested_at ? <p className="text-sm font-bold">Cancellation requested — choose Cancelled to release this booking.</p> : null}<p className="text-sm text-[var(--muted)]">{person?.city ?? "City not provided"}</p></div></div>
-        <WorkflowActionForm action={updateApplicationStatus} className="mt-4 flex flex-wrap items-center gap-3"><input type="hidden" name="application_id" value={application.id}/><label className="label">Update status<select className="input" name="status" defaultValue={application.status}>{["applied", "under_review", "shortlisted", "confirmed", "rejected", "completed", "closed"].map(status => <option key={status} value={status}>{status.replaceAll("_"," ")}</option>)}</select></label><SubmitButton pendingText="Updating…">Save</SubmitButton></WorkflowActionForm>
+        <div className="flex items-start gap-4">{person?.avatar_url ? <ProgressiveImage src={`/api/media/talent/${application.talent_id}`} alt={`${person.full_name} profile picture`} className="h-16 w-16 rounded-full border border-[var(--line)] object-cover" containerClassName="h-16 w-16 shrink-0"/> : null}<div><StatusBadge status={application.status}/><h2 className="mt-3 text-xl font-bold">{person?.full_name ?? "Applicant"}</h2><p>{application.role} · {application.event} · {application.workDays}</p><p className="text-sm">Confirmed roster: {application.booked}/{application.headcount}</p>{application.cancellation_requested_at ? <p className="text-sm font-bold">Cancellation requested — choose Cancelled to release this booking.</p> : null}<p className="text-sm text-[var(--muted)]">{person?.city ?? "City not provided"}</p></div></div>
+        <ApplicationStatusActions applicationId={application.id} currentStatus={application.status} key={`${application.id}:${application.status}`}/>
       </article>;
     })}{!applications.length && <p className="panel p-5">No applications for your staffing requests yet.</p>}</div>
   </DashboardShell>;

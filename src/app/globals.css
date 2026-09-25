@@ -98,6 +98,7 @@ textarea {
 
 .button {
   position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -112,6 +113,16 @@ textarea {
   text-decoration: none;
   overflow: hidden;
   transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+}
+
+/* Guarantee text, icons, and labels are always visible above any pseudo-element shimmer overlays */
+button > *,
+a.button > *,
+.button > *,
+[role="button"] > *,
+.dashboard-nav-link > * {
+  position: relative;
+  z-index: 2;
 }
 
 button:active,
@@ -153,7 +164,7 @@ a[data-loading="true"]::before,
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.25) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -178,7 +189,7 @@ a[data-loading="true"]::before,
   border-radius: 50%;
   animation: button-spin 0.65s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   vertical-align: middle;
-  z-index: 2;
+  z-index: 3;
 }
 
 .btn-injected-spinner + svg {
@@ -1281,52 +1292,71 @@ a:focus-visible {
 }
 
 .application-status-action {
+  position: relative;
+  isolation: isolate;
   display: flex;
-  min-height: 82px;
-  align-items: center;
+  min-height: 84px;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: white;
-  padding: 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 16px;
   color: var(--foreground);
   text-align: left;
   cursor: pointer;
-  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.application-status-action strong,
+.application-status-action strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
 .application-status-action small {
   display: block;
-}
-
-.application-status-action small {
   margin-top: 4px;
   color: var(--muted);
   font-size: 11px;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .application-status-action:hover {
   border-color: var(--accent);
   background: var(--surface);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
 }
 
 .application-status-action-primary {
   border-color: var(--ink);
   background: var(--ink);
-  color: white;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.22);
+}
+
+.application-status-action-primary strong {
+  color: #ffffff !important;
 }
 
 .application-status-action-primary small {
-  color: #cbd5e1;
+  color: #e2e8f0 !important;
+}
+
+.application-status-action-primary svg {
+  color: #ffffff !important;
 }
 
 .application-status-action-primary:hover {
   border-color: #1e293b;
   background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.3);
 }
 
 .application-status-action:disabled {

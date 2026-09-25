@@ -66,7 +66,7 @@ export function SidebarMiddleCard({ active }: { active: UserRole }) {
           </li>
         ))}
       </ol>
-      <Link href={guide.actionHref} className="mt-4 inline-flex w-full items-center justify-between rounded-xl bg-[var(--ink)] px-3 py-2.5 text-[11px] font-extrabold text-white transition-transform active:scale-[.98]">
+      <Link href={guide.actionHref} className="button button-primary mt-4 flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-extrabold text-white transition-all shadow-md active:scale-[.98]">
         <span>{guide.actionText}</span>
         <ArrowRight size={14} aria-hidden="true" />
       </Link>
