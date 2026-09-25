@@ -14,6 +14,7 @@ import { workDaysOverlap } from "@/lib/talent-jobs";
 import { canManageExhibitor } from "@/lib/agency-workspace";
 import { containsContactDetails } from "@/lib/contact-detector";
 import { applicationProfileCheck } from "@/lib/application-profile";
+import { canTransitionApplication } from "@/lib/application-workflow";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -293,6 +294,7 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
   if(profile.role==="agency"&&status==="assigned"&&(agreedRate===null||!Number.isFinite(agreedRate)||agreedRate<0))return {error:"Enter the agreed worker payout before assigning.",success:""};
   const { data: application } = await supabase.from("applications").select("staffing_role_id,status,cancellation_requested_at").eq("id", applicationId).maybeSingle();
   if (!application || !await staffingOwner(supabase, application.staffing_role_id, profile.id)) return { error: "You cannot update this application.", success: "" };
+  if (!canTransitionApplication(application.status as ApplicationStatus, status)) return { error: "That status change is not available from the applicant's current stage.", success: "" };
   if (application.status === "assigned" && !["assigned","closed","completed","cancelled"].includes(status)) return {error:"Assigned bookings may only be completed, cancelled, or closed.",success:""};
 
   const { data: updated, error } = await supabase

@@ -1,19 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ApplicationStatusActions } from "@/components/application-status-actions";
 import { ProgressiveImage } from "@/components/progressive-image";
-import { updateApplicationStatus } from "@/app/actions/workflow";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { SubmitButton } from "@/components/submit-button";
-import { WorkflowActionForm } from "@/components/workflow-action-form";
+import { StatusBadge } from "@/components/status-badge";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { applicantCountLabel, newestApplicationsFirst, talentRequirementLabel } from "@/lib/staffing-request-view";
-import type { ApplicationStatus } from "@/lib/types";
-
-const applicationStatuses: ApplicationStatus[] = [
-  "applied", "under_review", "shortlisted", "documents_requested", "approved", "assigned",
-  "rejected", "withdrawn", "no_response", "cancelled", "completed", "closed",
-];
 
 const dateTime = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
@@ -97,13 +90,13 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
         return <article className="panel p-6" key={application.id}>
           <div className="flex flex-wrap items-start gap-4">
             {person?.avatar_url ? <ProgressiveImage src={`/api/media/talent/${application.talent_id}`} alt={`${person.full_name} profile picture`} className="h-20 w-20 rounded-full border border-[var(--line)] object-cover" containerClassName="h-20 w-20 shrink-0"/> : <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface)] text-2xl font-black" aria-hidden="true">{person?.full_name?.charAt(0) ?? "?"}</div>}
-            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><span className="badge capitalize">{application.status.replaceAll("_", " ")}</span><span className="badge capitalize">{person?.verification_status?.replaceAll("_", " ") ?? "Unverified"}</span></div><h3 className="mt-3 text-2xl font-black">{person?.full_name ?? "Applicant"}</h3><p className="text-sm text-[var(--muted)]">{talentProfile?.headline || "No professional headline"} · {person?.city || "City not provided"}</p><p className="mt-2 text-sm">Applied {dateTime.format(new Date(application.created_at))}</p></div>
+            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><StatusBadge status={application.status}/><StatusBadge status={person?.verification_status ?? "unverified"}/></div><h3 className="mt-3 text-2xl font-black">{person?.full_name ?? "Applicant"}</h3><p className="text-sm text-[var(--muted)]">{talentProfile?.headline || "No professional headline"} · {person?.city || "City not provided"}</p><p className="mt-2 text-sm">Applied {dateTime.format(new Date(application.created_at))}</p></div>
           </div>
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <div><h4 className="font-bold">Professional profile</h4><p className="mt-2 whitespace-pre-wrap text-sm">{talentProfile?.bio || "No bio provided."}</p><dl className="mt-4 grid gap-3 sm:grid-cols-2"><div><dt className="text-xs font-bold text-[var(--muted)]">Skills</dt><dd className="text-sm">{displayList(talentProfile?.skills)}</dd></div><div><dt className="text-xs font-bold text-[var(--muted)]">Languages</dt><dd className="text-sm">{displayList(talentProfile?.languages)}</dd></div><div><dt className="text-xs font-bold text-[var(--muted)]">Experience</dt><dd className="text-sm">{talentProfile?.experience_years != null ? `${Number(talentProfile.experience_years).toLocaleString("en-IN")} years` : "Not provided"}</dd></div><div><dt className="text-xs font-bold text-[var(--muted)]">Availability</dt><dd className="text-sm">{talentProfile?.availability || "Not provided"}</dd></div></dl></div>
             <div><h4 className="font-bold">Application</h4><p className="mt-2 whitespace-pre-wrap text-sm">{application.cover_note || "No cover note provided."}</p>{application.cancellation_requested_at ? <p className="mt-3 text-sm font-bold">Cancellation requested.</p> : null}<h4 className="mt-5 font-bold">Reputation</h4><dl className="mt-2 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-[var(--muted)]">Rating</dt><dd className="font-bold">{Number(reputation?.average_rating ?? 0).toFixed(1)}</dd></div><div><dt className="text-[var(--muted)]">Trust</dt><dd className="font-bold">{reputation?.trust_score ?? 100}</dd></div><div><dt className="text-[var(--muted)]">Reliability</dt><dd className="font-bold">{reputation?.reliability_score ?? 100}</dd></div><div><dt className="text-[var(--muted)]">Completed</dt><dd className="font-bold">{reputation?.completed_count ?? 0}</dd></div></dl></div>
           </div>
-          <WorkflowActionForm action={updateApplicationStatus} className="mt-5 flex flex-wrap items-end gap-3 border-t border-[var(--line)] pt-5"><input type="hidden" name="application_id" value={application.id}/><label className="label">Update status<select className="input" name="status" defaultValue={application.status}>{applicationStatuses.map(status => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}</select></label><SubmitButton pendingText="Updating…">Save status</SubmitButton></WorkflowActionForm>
+          <ApplicationStatusActions applicationId={application.id} currentStatus={application.status} key={`${application.id}:${application.status}`}/>
         </article>;
       })}{!applications.length ? <p className="panel p-6 text-[var(--muted)]">No talents have applied for this request yet.</p> : null}</div>
     </section>

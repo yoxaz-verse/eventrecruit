@@ -1,21 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { ApplicationStatus, OperationStatus } from "@/lib/types";
 
+export { canTransitionApplication } from "@/lib/application-workflow";
+
 export const applicationPipeline: ApplicationStatus[] = ["applied","shortlisted","documents_requested","under_review","approved","assigned","completed","rejected","withdrawn","no_response","cancelled","closed"];
-
-const transitions: Record<ApplicationStatus, ApplicationStatus[]> = {
-  applied:["shortlisted","under_review","rejected","withdrawn","no_response","cancelled"],
-  shortlisted:["documents_requested","under_review","approved","rejected","withdrawn","no_response","cancelled"],
-  documents_requested:["under_review","approved","rejected","withdrawn","no_response","cancelled"],
-  under_review:["shortlisted","documents_requested","approved","rejected","withdrawn","no_response","cancelled"],
-  approved:["assigned","rejected","withdrawn","cancelled"],
-  assigned:["completed","cancelled","closed"],
-  completed:["closed"], rejected:[], withdrawn:[], no_response:[], cancelled:[], closed:[],
-};
-
-export function canTransitionApplication(from: ApplicationStatus, to: ApplicationStatus) {
-  return from === to || transitions[from]?.includes(to) === true;
-}
 
 export function normalizePhone(value: string) {
   const raw=value.trim(); if(!raw) return "";

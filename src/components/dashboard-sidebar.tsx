@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { UserRole } from "@/lib/types";
 import { SidebarSignOut } from "@/components/sidebar-sign-out";
 import { BrandMark } from "@/components/brand-mark";
+import { SidebarMiddleCard } from "@/components/sidebar-middle-card";
 import { activeNavigationHref, roleNavigation } from "@/lib/navigation";
 
 type PendingNavigation = {
@@ -29,29 +30,29 @@ export function DashboardSidebar({
   const activeManagementHref = activeNavigationHref(currentPath, roleNavigation[active]);
 
   return (
-    <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col gap-3 overflow-hidden p-4 md:flex">
-      <div className="panel min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[var(--line)] bg-white p-4 shadow-sm">
+    <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col gap-3 overflow-hidden p-3 md:flex">
+      <div className="panel min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[var(--line)] bg-white p-4 shadow-xs flex flex-col justify-between">
         <div>
-          <Link className="brand-link mb-4 inline-flex items-center gap-3" href="/">
-            <BrandMark className="shadow-xs" />
-            <span className="brand-wordmark font-black tracking-tight">
+          <Link className="brand-link mb-4 inline-flex items-center gap-3 group" href="/">
+            <BrandMark className="shadow-xs transition-transform group-hover:scale-105" />
+            <span className="brand-wordmark font-black tracking-tight text-lg">
               expo<span className="text-[var(--accent)]">rb</span>
             </span>
           </Link>
 
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between border-b border-[var(--line)]/60 pb-3">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)] bg-[var(--surface)] px-2.5 py-1 rounded-md border border-[var(--line)] block w-fit">
               {active} portal
             </span>
-            <span className="text-[10px] font-bold text-[var(--muted)] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" /> Active
+            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Active
             </span>
           </div>
 
           <p className="mb-2 px-1 text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted)]">
             Management
           </p>
-          <nav className="grid gap-0.5">
+          <nav className="grid gap-1">
             {roleNavigation[active].map((item, index, items) => {
               const Icon = item.icon;
               const isActive = item.href === activeManagementHref;
@@ -81,12 +82,17 @@ export function DashboardSidebar({
               );
             })}
           </nav>
+
+          <div className="mt-5 pt-4 border-t border-[var(--line)]/60">
+            <SidebarMiddleCard active={active} />
+          </div>
         </div>
       </div>
 
-      <div className="panel rounded-2xl border border-[var(--line)] bg-white p-3 shadow-sm">
+      <div className="panel rounded-2xl border border-[var(--line)] bg-white p-3 shadow-xs">
         <SidebarSignOut />
       </div>
     </aside>
   );
 }
+

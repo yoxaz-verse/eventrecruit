@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Search, Calendar } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 import { MobileAppDock } from "@/components/mobile-app-dock";
 import { AgencyGlobalSearch } from "@/components/agency-global-search";
@@ -14,9 +15,10 @@ export function DashboardShell({
   current?: string;
   children: React.ReactNode;
 }) {
+  const sectionName = current ? current.split("/").pop()?.replace(/-/g, " ") || "overview" : "overview";
+
   return (
     <div className="dashboard-shell min-h-screen bg-[var(--background)]">
-      
       {/* Mobile Top App Bar */}
       <header className="dashboard-mobile-header md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[var(--line)] px-4 py-3 flex items-center justify-between shadow-xs">
         <Link className="brand-link flex items-center gap-2.5" href="/">
@@ -27,21 +29,65 @@ export function DashboardShell({
         </Link>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)] bg-[var(--surface)] px-2 py-0.5 rounded-md border border-[var(--line)]">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent)] bg-[var(--surface)] px-2.5 py-1 rounded-lg border border-[var(--line)] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             {active}
           </span>
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
         </div>
       </header>
 
-      {/* Desktop navigation sidebar (hidden on mobile). */}
+      {/* Desktop navigation sidebar */}
       <DashboardSidebar active={active} current={current} />
 
-      {/* Main Content Viewport (Mobile Safe Padding) */}
-      <main className="p-4 pb-24 md:ml-[260px] md:p-8">{active==="agency"?<AgencyGlobalSearch/>:null}{children}</main>
+      {/* Desktop Sticky Header Bar */}
+      <header className="hidden md:flex items-center justify-between h-14 px-8 ml-[260px] border-b border-[var(--line)]/70 bg-white/80 backdrop-blur-md sticky top-0 z-20 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)] bg-blue-50/90 px-2.5 py-1 rounded-md border border-blue-100 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            {active} portal
+          </span>
+          <span className="text-xs text-[var(--muted)] font-bold">/</span>
+          <span className="text-xs font-extrabold text-[var(--foreground)] capitalize">
+            {sectionName}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/browse"
+            className="text-xs font-bold text-[var(--muted)] hover:text-[var(--foreground)] px-3 py-1.5 rounded-xl border border-[var(--line)] bg-white hover:bg-[var(--surface)] transition-all flex items-center gap-1.5 shadow-2xs"
+          >
+            <Search size={14} className="text-[var(--accent)]" />
+            <span>Roles</span>
+          </Link>
+          <Link
+            href="/events"
+            className="text-xs font-bold text-[var(--muted)] hover:text-[var(--foreground)] px-3 py-1.5 rounded-xl border border-[var(--line)] bg-white hover:bg-[var(--surface)] transition-all flex items-center gap-1.5 shadow-2xs"
+          >
+            <Calendar size={14} className="text-[var(--accent)]" />
+            <span>Events</span>
+          </Link>
+
+          <div className="h-4 w-px bg-[var(--line)] mx-0.5" />
+
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-700 border border-emerald-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Live System
+            </span>
+            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 text-white font-black text-[11px] flex items-center justify-center shadow-xs">
+              {active.substring(0, 2).toUpperCase()}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Viewport */}
+      <main className="p-4 pb-24 md:ml-[260px] md:p-8">{active === "agency" ? <AgencyGlobalSearch /> : null}{children}</main>
 
       {/* Mobile Bottom App Navigation Dock */}
       <MobileAppDock activeRole={active} currentPath={current} />
     </div>
   );
 }
+
