@@ -1,5 +1,21 @@
-import { Building2, CheckCircle2, CircleAlert, Mail, MapPin, ShieldCheck } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  CircleAlert,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  Globe,
+  User,
+  Phone,
+  Smartphone,
+  Briefcase,
+  Sparkles,
+  Lock,
+  ArrowRight,
+} from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { saveExhibitorProfile } from "@/app/actions/exhibitor-profile";
 import { AuthActionForm } from "@/components/auth/auth-action-form";
 import { DashboardShell } from "@/components/dashboard-shell";
@@ -21,77 +37,255 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
   const saved = (await searchParams).saved === "1";
   const verified = exhibitor.verification_status === "verified";
 
-  return <DashboardShell active="exhibitor" current="/dashboard/exhibitor/profile">
-    <div className="mx-auto max-w-5xl">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-900 p-6 text-white shadow-xl sm:p-8">
-        <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-          {exhibitor.logo_path ? <Image unoptimized width={96} height={96} className="h-24 w-24 rounded-3xl border border-white/20 bg-white object-contain p-2 shadow-lg" src={`/api/media/exhibitor/${exhibitor.id}`} alt={`${exhibitor.company_name} logo`} /> : <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-white/20 bg-white/10"><Building2 size={40} aria-hidden /></div>}
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${verified ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200" : "border-amber-300/30 bg-amber-400/15 text-amber-100"}`}>
-                {verified ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}{verified ? "Verified exhibitor" : "Verification pending"}
-              </span>
-            </div>
-            <h1 className="mt-3 truncate text-3xl font-black sm:text-4xl">{exhibitor.company_name}</h1>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-blue-100/80">
-              {exhibitor.industry ? <span>{exhibitor.industry}</span> : null}
-              {exhibitor.city || profile.city ? <span className="inline-flex items-center gap-1"><MapPin size={14} />{exhibitor.city || profile.city}</span> : null}
+  return (
+    <DashboardShell active="exhibitor" current="/dashboard/exhibitor/profile">
+      <div className="mx-auto max-w-6xl space-y-6">
+        {/* Hero Header Banner */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 p-6 text-white shadow-xl sm:p-8">
+          <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center">
+            {exhibitor.logo_path ? (
+              <Image unoptimized width={96} height={96} className="h-24 w-24 rounded-3xl border border-white/20 bg-white object-contain p-2 shadow-xl shrink-0" src={`/api/media/exhibitor/${exhibitor.id}`} alt={`${exhibitor.company_name} logo`} />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-white/20 bg-white/10 text-white shadow-xl shrink-0">
+                <Building2 size={40} aria-hidden />
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${verified ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200" : "border-amber-300/30 bg-amber-400/15 text-amber-100"}`}>
+                  {verified ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}
+                  {verified ? "Verified Exhibitor" : "Verification Pending"}
+                </span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-blue-100 border border-white/10">
+                  Exhibitor Account
+                </span>
+              </div>
+              <h1 className="mt-3 truncate text-3xl font-black sm:text-4xl tracking-tight text-white">{exhibitor.company_name}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-blue-100/80">
+                {exhibitor.industry ? <span className="flex items-center gap-1"><Sparkles size={13} className="text-amber-400" />{exhibitor.industry}</span> : null}
+                {exhibitor.city || profile.city ? <span className="inline-flex items-center gap-1"><MapPin size={13} className="text-blue-300" />{exhibitor.city || profile.city}</span> : null}
+                {exhibitor.website ? <a href={exhibitor.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-200 hover:text-white underline"><Globe size={13} />{exhibitor.website.replace(/^https?:\/\//, "")}</a> : null}
+              </div>
             </div>
           </div>
+        </section>
+
+        {/* Saved Notification Callout */}
+        {saved ? (
+          <div className="panel p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between shadow-2xs" role="status">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm text-emerald-950">Profile Saved Successfully!</h4>
+                <p className="text-xs text-emerald-800">Your company information and contact details have been updated across the platform.</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Form & Sidebar Grid */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+          <AuthActionForm action={saveExhibitorProfile} className="panel grid gap-8 p-6 sm:p-8 bg-white border border-[var(--line)] rounded-3xl shadow-xs">
+            {/* Section 1: Company Identity */}
+            <fieldset className="grid gap-5 border-0 p-0">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-[var(--line)]">
+                <Building2 className="text-[var(--accent)]" size={20} />
+                <legend className="text-xl font-black text-[var(--foreground)]">Company Details</legend>
+              </div>
+              <p className="text-xs text-[var(--muted)] -mt-2">Keep the official business identity used across your event registrations and staffing requests accurate.</p>
+
+              <label className="label">
+                Company Name <span className="text-red-600">*</span>
+                <div className="input-icon-wrap">
+                  <Building2 size={17} />
+                  <input className="input" name="company_name" required maxLength={160} defaultValue={exhibitor.company_name} />
+                </div>
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="label">
+                  Company Type <span className="field-optional">Optional</span>
+                  <div className="input-icon-wrap">
+                    <Briefcase size={17} />
+                    <input className="input" name="company_type" maxLength={120} placeholder="Private Limited, Partnership…" defaultValue={exhibitor.company_type ?? ""} />
+                  </div>
+                </label>
+
+                <label className="label">
+                  Industry <span className="field-optional">Optional</span>
+                  <div className="input-icon-wrap">
+                    <Sparkles size={17} />
+                    <input className="input" name="industry" maxLength={160} placeholder="FMCG, Retail, Tech…" defaultValue={exhibitor.industry ?? ""} />
+                  </div>
+                </label>
+              </div>
+
+              <label className="label">
+                Company Description <span className="field-optional">Optional</span>
+                <textarea className="input textarea" name="description" maxLength={5000} rows={4} placeholder="Provide a brief overview of your business..." defaultValue={exhibitor.description ?? ""} />
+              </label>
+            </fieldset>
+
+            {/* Section 2: Location & Web Presence */}
+            <fieldset className="grid gap-5 border-0 border-t border-[var(--line)] p-0 pt-6">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--line)]/60">
+                <MapPin className="text-[var(--accent)]" size={20} />
+                <legend className="text-lg font-extrabold text-[var(--foreground)]">Location & Web Presence</legend>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="label">
+                  Website URL <span className="field-optional">Optional</span>
+                  <div className="input-icon-wrap">
+                    <Globe size={17} />
+                    <input className="input" name="website" type="url" maxLength={2048} placeholder="https://example.com" defaultValue={exhibitor.website ?? ""} />
+                  </div>
+                </label>
+
+                <label className="label">
+                  City <span className="text-red-600">*</span>
+                  <div className="input-icon-wrap">
+                    <MapPin size={17} />
+                    <input autoComplete="address-level2" className="input" name="city" required maxLength={120} defaultValue={exhibitor.city || profile.city || ""} />
+                  </div>
+                </label>
+              </div>
+
+              <label className="label">
+                Business Address <span className="field-optional">Optional</span>
+                <textarea autoComplete="street-address" className="input textarea" name="address" maxLength={500} rows={3} placeholder="Enter full office or registered business address..." defaultValue={exhibitor.address ?? ""} />
+              </label>
+            </fieldset>
+
+            {/* Section 3: Primary Company Contact */}
+            <fieldset className="grid gap-5 border-0 border-t border-[var(--line)] p-0 pt-6">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--line)]/60">
+                <User className="text-[var(--accent)]" size={20} />
+                <legend className="text-lg font-extrabold text-[var(--foreground)]">Primary Company Contact</legend>
+              </div>
+              <p className="text-xs text-[var(--muted)] -mt-2">These details identify the primary business contact for staffing coordination and event logistics.</p>
+
+              <label className="label">
+                Contact Person Name <span className="field-optional">Optional</span>
+                <div className="input-icon-wrap">
+                  <User size={17} />
+                  <input autoComplete="name" className="input" name="primary_contact_name" maxLength={160} defaultValue={exhibitor.primary_contact_name ?? ""} />
+                </div>
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="label">
+                  Company Phone <span className="field-optional">Optional</span>
+                  <div className="input-icon-wrap">
+                    <Phone size={17} />
+                    <input autoComplete="tel" className="input" name="contact_phone" type="tel" maxLength={40} defaultValue={exhibitor.contact_phone ?? ""} />
+                  </div>
+                </label>
+
+                <label className="label">
+                  Company Email <span className="field-optional">Optional</span>
+                  <div className="input-icon-wrap">
+                    <Mail size={17} />
+                    <input autoComplete="email" className="input" name="contact_email" type="email" maxLength={254} defaultValue={exhibitor.contact_email ?? ""} />
+                  </div>
+                </label>
+              </div>
+            </fieldset>
+
+            {/* Section 4: Account Security */}
+            <fieldset className="grid gap-5 border-0 border-t border-[var(--line)] p-0 pt-6">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--line)]/60">
+                <ShieldCheck className="text-[var(--accent)]" size={20} />
+                <legend className="text-lg font-extrabold text-[var(--foreground)]">Account Owner Security</legend>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="label">
+                  Account Holder Name <span className="text-red-600">*</span>
+                  <div className="input-icon-wrap">
+                    <User size={17} />
+                    <input autoComplete="name" className="input" name="full_name" required maxLength={160} defaultValue={profile.full_name} />
+                  </div>
+                </label>
+
+                <label className="label">
+                  Private Account Phone <span className="text-red-600">*</span>
+                  <div className="input-icon-wrap">
+                    <Smartphone size={17} />
+                    <input autoComplete="tel" className="input" name="account_phone" type="tel" required maxLength={40} defaultValue={contact?.phone ?? ""} />
+                  </div>
+                </label>
+              </div>
+
+              <label className="label">
+                Login Email
+                <div className="input flex items-center gap-2.5 bg-[var(--surface)] text-[var(--muted)] font-medium cursor-not-allowed" aria-label="Login email">
+                  <Lock size={16} className="shrink-0 text-[var(--muted)]" aria-hidden />
+                  <span>{account.email}</span>
+                </div>
+                <span className="field-hint">Your sign-in email address cannot be changed here.</span>
+              </label>
+            </fieldset>
+
+            {/* Save Button */}
+            <div className="pt-4 border-t border-[var(--line)] flex items-center justify-end">
+              <SubmitButton className="button button-primary gap-2 px-6 py-3 text-sm shadow-md" pendingText="Saving Profile…">
+                <CheckCircle2 size={18} />
+                <span>Save Exhibitor Profile</span>
+              </SubmitButton>
+            </div>
+          </AuthActionForm>
+
+          {/* Right Sidebar Controls */}
+          <aside className="space-y-6 lg:sticky lg:top-20">
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-[var(--muted)] mb-2.5">Company Logo & Branding</h3>
+              <ProfileImageForm kind="Exhibitor logo" imageUrl={exhibitor.logo_path ? `/api/media/exhibitor/${exhibitor.id}` : null} />
+            </div>
+
+            <section className="panel p-5 bg-white border border-[var(--line)] rounded-2xl shadow-xs space-y-3">
+              <div className="flex items-center gap-2.5">
+                {verified ? (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                    <ShieldCheck size={20} />
+                  </div>
+                ) : (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <CircleAlert size={20} />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-extrabold text-sm text-[var(--foreground)]">Verification Status</h3>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${verified ? "text-emerald-700" : "text-amber-700"}`}>
+                    {verified ? "Verified" : "Pending Review"}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs leading-relaxed text-[var(--muted)]">
+                {verified
+                  ? "Your company identity is verified. Profile edits do not change your verified status."
+                  : "Your company is awaiting verification. Administrators review submissions for staffing approval."}
+              </p>
+            </section>
+
+            <section className="panel p-5 bg-white border border-[var(--line)] rounded-2xl shadow-xs">
+              <h3 className="font-extrabold text-sm text-[var(--foreground)] mb-1">Account & Security Settings</h3>
+              <p className="text-xs text-[var(--muted)] mb-3">
+                Manage notification preferences, password reset recovery, or account deletion controls.
+              </p>
+              <Link href="/dashboard/exhibitor/settings" className="button button-secondary text-xs w-full justify-between gap-2 py-2">
+                <span>Manage Security Settings</span>
+                <ArrowRight size={14} />
+              </Link>
+            </section>
+          </aside>
         </div>
-      </section>
-
-      {saved ? <p className="alert mt-6 border-emerald-200 bg-emerald-50 text-emerald-800" role="status">Profile saved successfully.</p> : null}
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-        <AuthActionForm action={saveExhibitorProfile} className="panel grid gap-7 p-5 sm:p-7">
-          <fieldset className="grid gap-4 border-0 p-0">
-            <legend className="text-xl font-black">Company details</legend>
-            <p className="text-sm text-[var(--muted)]">Keep the business identity used across your events and staffing requests up to date.</p>
-            <label className="label">Company name <span className="text-red-600">*</span><input className="input" name="company_name" required maxLength={160} defaultValue={exhibitor.company_name} /></label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="label">Company type <span className="field-optional">Optional</span><input className="input" name="company_type" maxLength={120} placeholder="Private limited, partnership…" defaultValue={exhibitor.company_type ?? ""} /></label>
-              <label className="label">Industry <span className="field-optional">Optional</span><input className="input" name="industry" maxLength={160} placeholder="FMCG, retail, technology…" defaultValue={exhibitor.industry ?? ""} /></label>
-            </div>
-            <label className="label">Company description <span className="field-optional">Optional</span><textarea className="input textarea" name="description" maxLength={5000} rows={5} defaultValue={exhibitor.description ?? ""} /></label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="label">Website <span className="field-optional">Optional</span><input className="input" name="website" type="url" maxLength={2048} placeholder="https://example.com" defaultValue={exhibitor.website ?? ""} /></label>
-              <label className="label">City <span className="text-red-600">*</span><input autoComplete="address-level2" className="input" name="city" required maxLength={120} defaultValue={exhibitor.city || profile.city || ""} /></label>
-            </div>
-            <label className="label">Business address <span className="field-optional">Optional</span><textarea autoComplete="street-address" className="input textarea" name="address" maxLength={500} rows={3} defaultValue={exhibitor.address ?? ""} /></label>
-          </fieldset>
-
-          <fieldset className="grid gap-4 border-0 border-t border-[var(--line)] p-0 pt-6">
-            <legend className="text-xl font-black">Primary company contact</legend>
-            <p className="text-sm text-[var(--muted)]">These details identify the company contact and are separate from your private account phone.</p>
-            <label className="label">Contact name <span className="field-optional">Optional</span><input autoComplete="name" className="input" name="primary_contact_name" maxLength={160} defaultValue={exhibitor.primary_contact_name ?? ""} /></label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="label">Company phone <span className="field-optional">Optional</span><input autoComplete="tel" className="input" name="contact_phone" type="tel" maxLength={40} defaultValue={exhibitor.contact_phone ?? ""} /></label>
-              <label className="label">Company email <span className="field-optional">Optional</span><input autoComplete="email" className="input" name="contact_email" type="email" maxLength={254} defaultValue={exhibitor.contact_email ?? ""} /></label>
-            </div>
-          </fieldset>
-
-          <fieldset className="grid gap-4 border-0 border-t border-[var(--line)] p-0 pt-6">
-            <legend className="text-xl font-black">Account details</legend>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="label">Account holder name <span className="text-red-600">*</span><input autoComplete="name" className="input" name="full_name" required maxLength={160} defaultValue={profile.full_name} /></label>
-              <label className="label">Private account phone <span className="text-red-600">*</span><input autoComplete="tel" className="input" name="account_phone" type="tel" required maxLength={40} defaultValue={contact?.phone ?? ""} /></label>
-            </div>
-            <label className="label">Login email<div className="input flex items-center gap-2 bg-[var(--surface)] text-[var(--muted)]" aria-label="Login email"><Mail size={16} aria-hidden />{account.email}</div><span className="field-hint">Your sign-in email cannot be changed here.</span></label>
-          </fieldset>
-
-          <SubmitButton className="button button-primary w-full sm:w-fit" pendingText="Saving profile…">Save profile</SubmitButton>
-        </AuthActionForm>
-
-        <aside className="grid gap-5 lg:sticky lg:top-20">
-          <section className="panel p-5">
-            <div className="mb-4 flex items-center gap-2"><ShieldCheck className="text-[var(--accent)]" size={20} /><h2 className="font-black">Verification</h2></div>
-            <p className="text-sm leading-6 text-[var(--muted)]">{verified ? "Your company identity is verified. Profile edits do not change this status." : "Your company is awaiting verification. Administrators control verification status."}</p>
-          </section>
-          <ProfileImageForm kind="Exhibitor logo" imageUrl={exhibitor.logo_path ? `/api/media/exhibitor/${exhibitor.id}` : null} />
-        </aside>
       </div>
-    </div>
-  </DashboardShell>;
+    </DashboardShell>
+  );
 }
+
