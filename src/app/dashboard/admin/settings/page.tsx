@@ -1,11 +1,11 @@
 import { reactivateAccount, reviewAccountDeletion } from "@/app/actions/account-settings";
 import { AccountSettingsPanel } from "@/components/account-settings-panel";
 import { accountSettingsData } from "@/lib/account-settings";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminWorkspace } from "@/lib/dashboard-workspace";
 
 export default async function AdminSettings() {
-  const settings = await accountSettingsData();
-  const db = settings.availability === "ready" ? await createClient() : null;
+  const [settings,{db:workspaceDb}] = await Promise.all([accountSettingsData(),requireAdminWorkspace()]);
+  const db = settings.availability === "ready" ? workspaceDb : null;
   const [pendingResult, disabledResult] = db ? await Promise.all([
     db.from("account_deletion_requests").select("id,profile_id,requested_at,profiles!account_deletion_requests_profile_id_fkey(full_name,role)").eq("status", "pending").order("requested_at"),
     db.from("app_accounts").select("id,email,disabled_at,profiles(full_name,role)").not("disabled_at", "is", null).order("disabled_at", { ascending: false }),

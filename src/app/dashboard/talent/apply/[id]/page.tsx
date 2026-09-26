@@ -3,13 +3,11 @@ import Link from "next/link";
 import { WorkflowActionForm } from "@/components/workflow-action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { applyForRole } from "@/app/actions/workflow";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireTalentWorkspace } from "@/lib/dashboard-workspace";
 import { applicationProfileCheck } from "@/lib/application-profile";
 
 export default async function ApplicationReviewPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{current?:string}>}){
- const talent=await requireRole(["talent"]),{id}=await params,{current}=await searchParams,db=await createClient();
- if(!db)throw new Error("Application review is unavailable.");
+ const [{profile:talent,db},{id},{current}]=await Promise.all([requireTalentWorkspace(),params,searchParams]);
  const [profile,contact,details,role]=await Promise.all([
   db.from("profiles").select("avatar_url,home_location_id,profile_updated_at,verification_status").eq("id",talent.id).single(),
   db.from("contact_details").select("phone").eq("profile_id",talent.id).maybeSingle(),

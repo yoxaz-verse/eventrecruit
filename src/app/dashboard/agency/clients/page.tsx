@@ -7,12 +7,15 @@ import { updateAgencyRelationship } from "@/app/actions/agency-clients";
 import { requireAgencyWorkspace } from "@/lib/dashboard-workspace";
 import { firstRelated, indexBy } from "@/lib/dashboard-read-models";
 import { whatsappUrl } from "@/lib/agency-operations";
+import { dashboardPagination } from "@/lib/pagination";
+import { DashboardPagination } from "@/components/dashboard-pagination";
 import { Building2, User, Phone, Mail, MessageSquare, ArrowRight, RotateCw, X } from "lucide-react";
 
-export default async function AgencyClientsPage() {
-  const { db, entity: agency } = await requireAgencyWorkspace();
+export default async function AgencyClientsPage({searchParams}:{searchParams:Promise<{page?:string}>}) {
+  const [{ db, entity: agency },params] = await Promise.all([requireAgencyWorkspace(),searchParams]);
+  const pagination=dashboardPagination(params.page);
   const [{ data: relationships, error }, { data: clientProfiles }] = await Promise.all([
-    db.from("agency_exhibitor_relationships").select("id,status,invited_email,created_at,exhibitors(id,company_name,kind,industry,primary_contact_name,contact_phone,contact_email)").eq("agency_id", agency.id).order("created_at", { ascending: false }),
+    db.from("agency_exhibitor_relationships").select("id,status,invited_email,created_at,exhibitors(id,company_name,kind,industry,primary_contact_name,contact_phone,contact_email)").eq("agency_id", agency.id).order("created_at", { ascending: false }).range(pagination.from,pagination.to),
     db.from("agency_client_profiles").select("exhibitor_id,whatsapp_phone,payment_status").eq("agency_id", agency.id),
   ]);
 
@@ -117,6 +120,7 @@ export default async function AgencyClientsPage() {
             <EmptyState title="No clients registered yet" description="Invite an exhibitor or add an external client to begin managing their operations." className="col-span-2" />
           ) : null}
         </div>
+        <DashboardPagination path="/dashboard/agency/clients" page={pagination.page} hasNext={(relationships?.length??0)===pagination.pageSize} params={params}/>
       </section>
     </>
   );

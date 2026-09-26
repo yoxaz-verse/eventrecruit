@@ -1,12 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 import { AgencyClientSelector } from "@/components/agency-client-selector";
 import { agencyClients, selectedAgencyClient } from "@/lib/agency-workspace";
-import { createClient } from "@/lib/supabase/server";
+import { requireAgencyWorkspace } from "@/lib/dashboard-workspace";
 import { applicationPipeline } from "@/lib/agency-operations";
 import { createClientShortlist, requestStaffInformation, updateAgencyApplication } from "@/app/actions/agency-operations";
 
 export default async function AgencyApplicants({searchParams}:{searchParams:Promise<{client?:string;status?:string;share?:string}>}){
-  const params=await searchParams,clients=await agencyClients(),selected=selectedAgencyClient(clients,params.client),db=await createClient(); if(!db) throw new Error("Applications unavailable.");
+  const [params,clients,{db}]=await Promise.all([searchParams,agencyClients(),requireAgencyWorkspace()]),selected=selectedAgencyClient(clients,params.client);
   const {data:events}=selected?await db.from("events").select("id,title,staffing_roles(id,title,headcount,applications(id,status,talent_id,updated_at))").eq("exhibitor_id",selected.exhibitorId):{data:[]};
   const roles=(events??[]).flatMap(event=>(event.staffing_roles??[]).map(role=>({...role,eventTitle:event.title,applications:(role.applications??[]).filter(app=>!params.status||app.status===params.status)}))).filter(role=>role.applications.length);
   const talentIds=[...new Set(roles.flatMap(role=>role.applications.map(app=>app.talent_id)))],{data:people}=talentIds.length?await db.from("profiles").select("id,full_name,city,avatar_url,verification_status,talent_profiles(skills,languages,availability,experience_years,documents_note)").in("id",talentIds):{data:[]},peopleMap=new Map((people??[]).map(person=>[person.id,person]));

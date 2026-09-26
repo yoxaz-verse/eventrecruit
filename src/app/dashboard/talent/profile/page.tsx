@@ -2,20 +2,18 @@
 import { AuthActionForm } from "@/components/auth/auth-action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { saveTalentProfile } from "@/app/actions/talent-profile";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireTalentWorkspace } from "@/lib/dashboard-workspace";
 import { activeLocations } from "@/lib/locations";
 import { ProfileImageForm } from "@/components/profile-image-form";
 
 export default async function TalentProfilePage({searchParams}:{searchParams:Promise<{saved?:string;returnTo?:string}>}) {
-  const talent=await requireRole(["talent"]),db=await createClient();
-  if(!db)throw new Error("Profile unavailable.");
+  const [{profile:talent,db},params]=await Promise.all([requireTalentWorkspace(),searchParams]);
   const [locations,profile,account,contact,details,preferred]=await Promise.all([
     activeLocations(),db.from("profiles").select("full_name,home_location_id,avatar_url").eq("id",talent.id).single(),db.from("app_accounts").select("email").eq("id",talent.id).single(),db.from("contact_details").select("phone").eq("profile_id",talent.id).maybeSingle(),db.from("talent_profiles").select("headline,bio,skills,languages,availability,experience_years,documents_note").eq("profile_id",talent.id).maybeSingle(),db.from("talent_preferred_locations").select("location_id").eq("talent_id",talent.id),
   ]);
   if(profile.error||account.error||contact.error||details.error||preferred.error)throw new Error("Unable to load profile.");
   const selected=new Set((preferred.data??[]).map(item=>item.location_id));
-  const params=await searchParams,saved=params.saved==="1",returnTo=params.returnTo?.startsWith("/dashboard/talent/")?params.returnTo:"";
+  const saved=params.saved==="1",returnTo=params.returnTo?.startsWith("/dashboard/talent/")?params.returnTo:"";
   return <><div className="max-w-3xl"><span className="badge badge-accent">Talent profile</span><h1 className="mt-3 text-4xl font-black">Your profile and locations</h1><p className="mt-2 text-[var(--muted)]">Use a clear, recent profile photo. Your selected work cities control matching alerts, and this reusable profile is used for every application.</p>{saved?<p className="alert mt-5" role="status">Profile and preferences saved.</p>:null}<div className="panel mt-6 p-6"><ProfileImageForm kind="Profile picture" imageUrl={profile.data.avatar_url ? `/api/media/talent/${talent.id}` : null}/></div><AuthActionForm action={saveTalentProfile} className="panel mt-6 grid gap-5 p-6">
     <input type="hidden" name="return_to" value={returnTo}/>
     <fieldset className="grid gap-4"><legend className="text-lg font-black">Basic information</legend><div className="grid gap-4 sm:grid-cols-2"><label className="label"><span>Account holder name <span className="text-red-600 ml-1">*</span></span><input className="input" name="full_name" required maxLength={160} defaultValue={profile.data.full_name}/></label><label className="label"><span>Phone <span className="text-red-600 ml-1">*</span></span><input className="input" name="phone" type="tel" required maxLength={40} defaultValue={contact.data?.phone??""}/></label><label className="label"><span>Login email</span><input className="input bg-[var(--surface)] text-[var(--muted)]" readOnly value={account.data.email}/></label><label className="label"><span>Home city <span className="text-red-600 ml-1">*</span></span><select className="input" name="home_location_id" required defaultValue={profile.data.home_location_id??""}><option value="" disabled>Select your home city</option>{locations.map(location=><option key={location.id} value={location.id}>{location.name}</option>)}</select></label></div></fieldset>

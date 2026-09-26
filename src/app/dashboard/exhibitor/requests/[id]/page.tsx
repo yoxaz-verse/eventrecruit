@@ -4,8 +4,7 @@ import { ApplicationStatusActions } from "@/components/application-status-action
 import { ProgressiveImage } from "@/components/progressive-image";
 
 import { StatusBadge } from "@/components/status-badge";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
 import { applicantCountLabel, newestApplicationsFirst, talentRequirementLabel } from "@/lib/staffing-request-view";
 import {
   ArrowLeft,
@@ -37,10 +36,7 @@ function displayRate(role: { rate_mode?: string | null; proposed_rate_min?: numb
 }
 
 export default async function ExhibitorRequestDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const profile = await requireRole(["exhibitor"]);
-  const db = await createClient();
-  if (!db) throw new Error("Request details are temporarily unavailable.");
+  const [{ id },{profile,db}] = await Promise.all([params,requireExhibitorWorkspace()]);
 
   const { data: role, error } = await db.from("staffing_roles").select(`
     id,title,description,headcount,hourly_rate,rate_mode,proposed_rate_min,proposed_rate_max,
@@ -324,4 +320,3 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
     </>
   );
 }
-

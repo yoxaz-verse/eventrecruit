@@ -1,11 +1,11 @@
 
-import { requireRole } from "@/lib/auth";
+import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
 import { ExhibitorEventForm } from "@/components/exhibitor-event-form";
 import { activeLocations, type LocationOption } from "@/lib/locations";
 import Link from "next/link";
 
 export default async function NewExhibitorEvent() {
-  await requireRole(["exhibitor"]);
+  await requireExhibitorWorkspace();
   let locations:LocationOption[]=[];
   let locationError=false;
   try { locations=await activeLocations(); locationError=locations.length===0; } catch (error) {

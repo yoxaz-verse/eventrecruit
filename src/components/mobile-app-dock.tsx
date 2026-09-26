@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Briefcase, CalendarDays, Menu, X } from "lucide-react";
+import { Home, Briefcase, CalendarDays, Menu } from "lucide-react";
 import type { UserRole } from "@/lib/types";
-import { SidebarLiveWidget } from "@/components/sidebar-live-widget";
-import { SidebarMiddleCard } from "@/components/sidebar-middle-card";
-import { activeNavigationHref, isNavigationItemActive, roleNavigation } from "@/lib/navigation";
+import { isNavigationItemActive } from "@/lib/navigation";
+
+const MobileDrawerContent = dynamic(() => import("@/components/mobile-drawer-content").then(module => module.MobileDrawerContent));
 
 interface MobileAppDockProps {
   activeRole?: UserRole;
@@ -90,7 +91,6 @@ export function MobileAppDock({ activeRole = "talent" }: MobileAppDockProps) {
     { href: "/browse", label: "Roles", icon: Briefcase },
     { href: "/events", label: "Events", icon: CalendarDays },
   ];
-  const activeRoleHref = activeNavigationHref(active, roleNavigation[activeRole]);
 
   return (
     <>
@@ -153,59 +153,7 @@ export function MobileAppDock({ activeRole = "talent" }: MobileAppDockProps) {
               visible ? "translate-y-0" : "translate-y-full"
             }`}
           >
-            {/* Handle bar & Close */}
-            <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-1 rounded-full bg-neutral-300 inline-block" />
-                <span id="dashboard-mobile-sheet-title" className="text-xs font-black uppercase tracking-wider text-[var(--accent)]">
-                  {activeRole} menu
-                </span>
-              </div>
-              <button
-                onClick={closeDrawer}
-                className="p-1.5 rounded-full bg-[var(--surface)] text-[var(--muted)] hover:text-black border border-[var(--line)] active:scale-90 transition-transform"
-                aria-label="Close menu"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Portal Navigation Links */}
-            <div className="space-y-1">
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted)] px-1 mb-1">
-                Portal Shortcuts
-              </p>
-              {roleNavigation[activeRole].map((item) => {
-                const Icon = item.icon;
-                const isActive = item.href === activeRoleHref;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => {
-                      setPendingNavigation({ from: pathname, to: item.href });
-                      closeDrawer();
-                    }}
-                    className={`flex items-center gap-3 p-3 rounded-xl text-xs font-extrabold transition-all active:scale-[0.98] ${
-                      isActive
-                        ? "bg-[var(--ink)] text-white shadow-sm"
-                        : "bg-white text-[var(--foreground)] border border-[var(--line)]"
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Middle Card Status */}
-            <SidebarMiddleCard active={activeRole} />
-
-            {/* Live Widget & Signout */}
-            <div className="bg-white p-4 rounded-2xl border border-[var(--line)] shadow-xs">
-              <SidebarLiveWidget />
-            </div>
+            <MobileDrawerContent role={activeRole} activePath={active} onClose={closeDrawer} onNavigate={(href)=>{setPendingNavigation({from:pathname,to:href});closeDrawer();}} />
           </div>
         </div>
       )}
