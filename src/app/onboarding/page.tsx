@@ -71,16 +71,16 @@ export default async function OnboardingPage() {
               <fieldset className="grid gap-4 border-0 p-0">
                 <legend className="mb-3 text-lg font-black">Contact details</legend>
                 <div className="grid gap-4 md:grid-cols-2">
-                  {role === "talent" ? <label className="label">Home city <span className="text-red-600">*</span><select autoComplete="address-level2" className="input" name="home_location_id" required defaultValue=""><option value="" disabled>Select your home city</option>{locations.map(location=><option key={location.id} value={location.id}>{location.name}</option>)}</select></label> : <label className="label">City <span className="text-red-600">*</span><input autoComplete="address-level2" className="input" name="city" required maxLength={120} /></label>}
-                  <label className="label">Phone <span className="text-red-600">*</span><input autoComplete="tel" className="input" name="phone" placeholder="+91 98765 43210" required maxLength={40} type="tel" /><span className="field-hint">Private—used only for account and work coordination.</span></label>
+                  {role === "talent" ? <label className="label"><span>Home city <span className="text-red-600 ml-1">*</span></span><select autoComplete="address-level2" className="input" name="home_location_id" required defaultValue=""><option value="" disabled>Select your home city</option>{locations.map(location=><option key={location.id} value={location.id}>{location.name}</option>)}</select></label> : <label className="label"><span>City <span className="text-red-600 ml-1">*</span></span><input autoComplete="address-level2" className="input" name="city" required maxLength={120} /></label>}
+                  <label className="label"><span>Phone <span className="text-red-600 ml-1">*</span></span><input autoComplete="tel" className="input" name="phone" placeholder="+91 98765 43210" required maxLength={40} type="tel" /><span className="field-hint">Private—used only for account and work coordination.</span></label>
                 </div>
               </fieldset>
 
               {role === "agency" || role === "exhibitor" ? (
                 <fieldset className="grid gap-4 border-0 border-t border-[var(--line)] p-0 pt-5">
                   <legend className="mb-3 text-lg font-black">{role === "agency" ? "Agency" : "Company"} details</legend>
-                  <label className="label">{role === "agency" ? "Agency name" : "Company name"} <span className="text-red-600">*</span><input autoComplete="organization" className="input" name="business_name" required maxLength={160} /></label>
-                  {role === "exhibitor" ? <label className="label">Industry <span className="field-optional">Optional</span><input className="input" name="industry" placeholder="For example: FMCG, retail, technology" /></label> : null}
+                  <label className="label"><span>{role === "agency" ? "Agency name" : "Company name"} <span className="text-red-600 ml-1">*</span></span><input autoComplete="organization" className="input" name="business_name" required maxLength={160} /></label>
+                  {role === "exhibitor" ? <label className="label"><span>Industry <span className="field-optional">Optional</span></span><input className="input" name="industry" placeholder="For example: FMCG, retail, technology" /></label> : null}
                   {role === "agency" ? (
                     <details className="optional-details">
                       <summary>Set commission preferences <span>Optional</span></summary>

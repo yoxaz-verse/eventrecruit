@@ -99,7 +99,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
               <p className="text-xs text-[var(--muted)] -mt-2">Keep the official business identity used across your event registrations and staffing requests accurate.</p>
 
               <label className="label">
-                Company Name <span className="text-red-600">*</span>
+                <span>Company Name <span className="text-red-600 ml-1">*</span></span>
                 <div className="input-icon-wrap">
                   <Building2 size={17} />
                   <input className="input" name="company_name" required maxLength={160} defaultValue={exhibitor.company_name} />
@@ -108,7 +108,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="label">
-                  Company Type <span className="field-optional">Optional</span>
+                  <span>Company Type <span className="field-optional">Optional</span></span>
                   <div className="input-icon-wrap">
                     <Briefcase size={17} />
                     <input className="input" name="company_type" maxLength={120} placeholder="Private Limited, Partnership…" defaultValue={exhibitor.company_type ?? ""} />
@@ -116,7 +116,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
                 </label>
 
                 <label className="label">
-                  Industry <span className="field-optional">Optional</span>
+                  <span>Industry <span className="field-optional">Optional</span></span>
                   <div className="input-icon-wrap">
                     <Sparkles size={17} />
                     <input className="input" name="industry" maxLength={160} placeholder="FMCG, Retail, Tech…" defaultValue={exhibitor.industry ?? ""} />
@@ -125,7 +125,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
               </div>
 
               <label className="label">
-                Company Description <span className="field-optional">Optional</span>
+                <span>Company Description <span className="field-optional">Optional</span></span>
                 <textarea className="input textarea" name="description" maxLength={5000} rows={4} placeholder="Provide a brief overview of your business..." defaultValue={exhibitor.description ?? ""} />
               </label>
             </fieldset>
@@ -139,7 +139,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="label">
-                  Website URL <span className="field-optional">Optional</span>
+                  <span>Website URL <span className="field-optional">Optional</span></span>
                   <div className="input-icon-wrap">
                     <Globe size={17} />
                     <input className="input" name="website" type="url" maxLength={2048} placeholder="https://example.com" defaultValue={exhibitor.website ?? ""} />
@@ -147,7 +147,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
                 </label>
 
                 <label className="label">
-                  City <span className="text-red-600">*</span>
+                  <span>City <span className="text-red-600 ml-1">*</span></span>
                   <div className="input-icon-wrap">
                     <MapPin size={17} />
                     <input autoComplete="address-level2" className="input" name="city" required maxLength={120} defaultValue={exhibitor.city || profile.city || ""} />
@@ -156,7 +156,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
               </div>
 
               <label className="label">
-                Business Address <span className="field-optional">Optional</span>
+                <span>Business Address <span className="field-optional">Optional</span></span>
                 <textarea autoComplete="street-address" className="input textarea" name="address" maxLength={500} rows={3} placeholder="Enter full office or registered business address..." defaultValue={exhibitor.address ?? ""} />
               </label>
             </fieldset>
@@ -170,7 +170,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
               <p className="text-xs text-[var(--muted)] -mt-2">These details identify the primary business contact for staffing coordination and event logistics.</p>
 
               <label className="label">
-                Contact Person Name <span className="field-optional">Optional</span>
+                <span>Contact Person Name <span className="field-optional">Optional</span></span>
                 <div className="input-icon-wrap">
                   <User size={17} />
                   <input autoComplete="name" className="input" name="primary_contact_name" maxLength={160} defaultValue={exhibitor.primary_contact_name ?? ""} />
@@ -179,7 +179,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="label">
-                  Company Phone <span className="field-optional">Optional</span>
+                  <span>Company Phone <span className="field-optional">Optional</span></span>
                   <div className="input-icon-wrap">
                     <Phone size={17} />
                     <input autoComplete="tel" className="input" name="contact_phone" type="tel" maxLength={40} defaultValue={exhibitor.contact_phone ?? ""} />
@@ -187,7 +187,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
                 </label>
 
                 <label className="label">
-                  Company Email <span className="field-optional">Optional</span>
+                  <span>Company Email <span className="field-optional">Optional</span></span>
                   <div className="input-icon-wrap">
                     <Mail size={17} />
                     <input autoComplete="email" className="input" name="contact_email" type="email" maxLength={254} defaultValue={exhibitor.contact_email ?? ""} />
@@ -205,7 +205,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="label">
-                  Account Holder Name <span className="text-red-600">*</span>
+                  <span>Account Holder Name <span className="text-red-600 ml-1">*</span></span>
                   <div className="input-icon-wrap">
                     <User size={17} />
                     <input autoComplete="name" className="input" name="full_name" required maxLength={160} defaultValue={profile.full_name} />
@@ -213,7 +213,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
                 </label>
 
                 <label className="label">
-                  Private Account Phone <span className="text-red-600">*</span>
+                  <span>Private Account Phone <span className="text-red-600 ml-1">*</span></span>
                   <div className="input-icon-wrap">
                     <Smartphone size={17} />
                     <input autoComplete="tel" className="input" name="account_phone" type="tel" required maxLength={40} defaultValue={contact?.phone ?? ""} />
@@ -222,7 +222,7 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
               </div>
 
               <label className="label">
-                Login Email
+                <span>Login Email</span>
                 <div className="input flex items-center gap-2.5 bg-[var(--surface)] text-[var(--muted)] font-medium cursor-not-allowed" aria-label="Login email">
                   <Lock size={16} className="shrink-0 text-[var(--muted)]" aria-hidden />
                   <span>{account.email}</span>

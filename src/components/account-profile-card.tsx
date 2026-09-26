@@ -14,8 +14,8 @@ export async function AccountProfileCard({ id, role, fullName, email, phone, ava
     <AuthActionForm action={saveAccountProfile} className="panel grid gap-5 p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2"><span className="badge capitalize">{role} account</span>{current?.verification_status ? <span className="badge capitalize">{current.verification_status.replaceAll("_", " ")}</span> : null}</div><h2 className="text-xl font-black">Personal details</h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="label">Account holder name <span className="text-red-600">*</span><input autoComplete="name" className="input" name="full_name" required maxLength={160} defaultValue={fullName} /></label>
-        <label className="label">Private phone <span className="text-red-600">*</span><input autoComplete="tel" className="input" name="phone" type="tel" required maxLength={40} defaultValue={phone} /></label>
+        <label className="label"><span>Account holder name <span className="text-red-600 ml-1">*</span></span><input autoComplete="name" className="input" name="full_name" required maxLength={160} defaultValue={fullName} /></label>
+        <label className="label"><span>Private phone <span className="text-red-600 ml-1">*</span></span><input autoComplete="tel" className="input" name="phone" type="tel" required maxLength={40} defaultValue={phone} /></label>
       </div>
       <label className="label">Login email<input className="input bg-[var(--surface)] text-[var(--muted)]" readOnly value={email} /><span className="field-hint">Your sign-in email cannot be changed here.</span></label>
       <SubmitButton className="button button-primary w-full sm:w-fit" pendingText="Saving profile…">Save personal profile</SubmitButton>
