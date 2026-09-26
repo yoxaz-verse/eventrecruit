@@ -119,51 +119,41 @@ export function CompressedImageInput({
         onChange={(e) => void handleSelectFile(e.target.files?.[0])}
       />
 
-      {/* Main Custom Profile Upload Card */}
-      <div className="panel p-5 rounded-2xl bg-white border border-[var(--line)] shadow-xs flex flex-col sm:flex-row items-center gap-5">
-        
+      {/* Custom Profile Upload Row */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 py-1">
         {/* Avatar / Logo Display with Progressive Loading */}
         <div className="relative group shrink-0">
           {previewUrl || currentImageUrl ? (
             <ProgressiveImage
-              containerClassName="h-24 w-24 rounded-2xl border-2 border-[var(--accent)]/30 shadow-md"
-              className="h-24 w-24 rounded-2xl object-cover group-hover:opacity-90 transition-opacity"
+              containerClassName="h-20 w-20 rounded-2xl border-2 border-[var(--accent)]/30 shadow-xs"
+              className="h-20 w-20 rounded-2xl object-cover group-hover:opacity-90 transition-opacity"
               src={previewUrl ?? currentImageUrl ?? ""}
               alt={`Preview of ${label.toLowerCase()}`}
             />
           ) : (
-            <div className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--line)] bg-[var(--surface)] text-[var(--muted)]">
-              <ImageIcon size={28} className="mb-1 text-[var(--muted)]" />
-              <span className="text-[10px] font-extrabold uppercase tracking-wider">No image</span>
+            <div className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--line)] bg-[var(--surface)] text-[var(--muted)]">
+              <ImageIcon size={24} className="mb-1 text-[var(--muted)]" />
+              <span className="text-[9px] font-extrabold uppercase tracking-wider">No image</span>
             </div>
           )}
 
           {/* Active Ready Badge */}
           {status === "ready" && (
-            <span className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-md border-2 border-white">
-              <CheckCircle2 size={14} />
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white shadow-xs border-2 border-white">
+              <CheckCircle2 size={12} />
             </span>
           )}
         </div>
 
-        {/* Info & Action Controls */}
-        <div className="flex-1 space-y-2 text-center sm:text-left min-w-0">
-          <h4 className="text-sm font-black text-[var(--foreground)] tracking-tight">
-            {label}
-          </h4>
-
-          <p className="text-xs text-[var(--muted)] leading-relaxed">
-            Upload a PNG, JPEG, or WebP photo up to 7 MB. You can crop, zoom, and frame your picture after selecting.
-          </p>
-
-          {/* Action Buttons */}
-          <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+        {/* Action Controls */}
+        <div className="flex flex-col items-center sm:items-start gap-1.5 min-w-0">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="button button-primary text-xs gap-1.5 px-4 py-2"
+              className="button button-secondary text-xs gap-1.5 px-3.5 py-2 font-bold"
             >
-              <Upload size={15} />
+              <Upload size={14} />
               <span>{previewUrl || currentImageUrl ? "Change picture" : "Choose picture"}</span>
             </button>
 
@@ -171,13 +161,14 @@ export function CompressedImageInput({
               <button
                 type="button"
                 onClick={() => setIsCropOpen(true)}
-                className="button button-secondary text-xs gap-1.5 px-3.5 py-2 font-bold"
+                className="button button-secondary text-xs gap-1.5 px-3 py-2 font-bold"
               >
-                <Crop size={15} className="text-[var(--accent)]" />
+                <Crop size={14} className="text-[var(--accent)]" />
                 <span>Crop & Adjust</span>
               </button>
             )}
           </div>
+          <span className="text-[11px] font-medium text-[var(--muted)]">PNG, JPEG, WebP · Max 7 MB</span>
         </div>
       </div>
 

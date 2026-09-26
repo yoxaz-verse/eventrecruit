@@ -1,5 +1,62 @@
 
 import { respondToAgencyInvitation, updateAgencyRelationship } from "@/app/actions/agency-clients";
 import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
+import { EmptyState } from "@/components/empty-state";
+import { ShieldCheck } from "lucide-react";
 
-export default async function ExhibitorAgenciesPage(){const {db,entity}=await requireExhibitorWorkspace();const {data:rows,error}=await db.from("agency_exhibitor_relationships").select("id,status,created_at,agencies(name)").eq("exhibitor_id",entity.id).order("created_at",{ascending:false});if(error)throw new Error("Unable to load agency access.");return <><h1 className="text-4xl font-black">Agency access</h1><p className="mt-2 text-[var(--muted)]">Approve or revoke agencies that can act for your exhibitor business.</p><div className="mt-6 grid gap-4">{rows?.map(row=>{const a=Array.isArray(row.agencies)?row.agencies[0]:row.agencies;return <article className="panel flex flex-wrap items-center justify-between gap-4 p-5" key={row.id}><div><span className="badge capitalize">{row.status}</span><h2 className="mt-2 text-xl font-black">{a?.name??"Agency"}</h2></div>{row.status==="pending"?<div className="flex gap-2">{["active","declined"].map(response=><form action={respondToAgencyInvitation} key={response}><input type="hidden" name="relationship_id" value={row.id}/><input type="hidden" name="response" value={response}/><button className={response==="active"?"button button-primary":"button button-secondary"}>{response==="active"?"Accept":"Decline"}</button></form>)}</div>:row.status==="active"?<form action={updateAgencyRelationship}><input type="hidden" name="relationship_id" value={row.id}/><input type="hidden" name="intent" value="revoke"/><button className="button button-secondary">Revoke access</button></form>:null}</article>})}{!rows?.length?<p className="panel p-5">No agency invitations or active relationships.</p>:null}</div></>}
+export default async function ExhibitorAgenciesPage() {
+  const { db, entity } = await requireExhibitorWorkspace();
+  const { data: rows, error } = await db
+    .from("agency_exhibitor_relationships")
+    .select("id,status,created_at,agencies(name)")
+    .eq("exhibitor_id", entity.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Unable to load agency access.");
+
+  return (
+    <>
+      <h1 className="text-4xl font-black">Agency access</h1>
+      <p className="mt-2 text-[var(--muted)]">Approve or revoke agencies that can act for your exhibitor business.</p>
+      <div className="mt-6 grid gap-4">
+        {rows?.map((row) => {
+          const a = Array.isArray(row.agencies) ? row.agencies[0] : row.agencies;
+          return (
+            <article className="panel flex flex-wrap items-center justify-between gap-4 p-5" key={row.id}>
+              <div>
+                <span className="badge capitalize">{row.status}</span>
+                <h2 className="mt-2 text-xl font-black">{a?.name ?? "Agency"}</h2>
+              </div>
+              {row.status === "pending" ? (
+                <div className="flex gap-2">
+                  {["active", "declined"].map((response) => (
+                    <form action={respondToAgencyInvitation} key={response}>
+                      <input type="hidden" name="relationship_id" value={row.id} />
+                      <input type="hidden" name="response" value={response} />
+                      <button className={response === "active" ? "button button-primary" : "button button-secondary"}>
+                        {response === "active" ? "Accept" : "Decline"}
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              ) : row.status === "active" ? (
+                <form action={updateAgencyRelationship}>
+                  <input type="hidden" name="relationship_id" value={row.id} />
+                  <input type="hidden" name="intent" value="revoke" />
+                  <button className="button button-secondary">Revoke access</button>
+                </form>
+              ) : null}
+            </article>
+          );
+        })}
+        {!rows?.length ? (
+          <EmptyState
+            icon={ShieldCheck}
+            title="No agency access granted"
+            description="You haven't received any agency invitations or authorized external agencies to manage your exhibitor account yet."
+          />
+        ) : null}
+      </div>
+    </>
+  );
+}

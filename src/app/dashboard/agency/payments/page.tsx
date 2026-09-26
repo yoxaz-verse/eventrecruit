@@ -1,2 +1,42 @@
 import { agencyDataContext } from "@/lib/agency-data";
-export default async function Payments(){const ctx=await agencyDataContext();if(!ctx)throw new Error("Payments unavailable.");const {data}=await ctx.db.from("staffing_settlements").select("id,status,gross_amount,agency_amount,currency,staffing_roles!inner(title,events!inner(title,agency_id))").eq("staffing_roles.events.agency_id",ctx.agency.id).order("created_at",{ascending:false});return <><h1 className="text-4xl font-black">Payments</h1><p className="mt-2 text-[var(--muted)]">Settlement status for agency-managed staffing requirements.</p><div className="mt-6 grid gap-4">{data?.map(item=><article className="panel flex flex-wrap items-center justify-between gap-4 p-5" key={item.id}><div><span className="badge capitalize">{item.status.replaceAll("_"," ")}</span><h2 className="mt-2 font-black">Staffing settlement</h2></div><div className="text-right"><strong className="text-xl">₹{Number(item.gross_amount).toLocaleString("en-IN")}</strong><p className="text-sm text-[var(--muted)]">Agency ₹{Number(item.agency_amount).toLocaleString("en-IN")}</p></div></article>)}{!data?.length?<p className="panel p-5">No settlements yet.</p>:null}</div></>}
+import { EmptyState } from "@/components/empty-state";
+import { CreditCard } from "lucide-react";
+
+export default async function Payments() {
+  const ctx = await agencyDataContext();
+  if (!ctx) throw new Error("Payments unavailable.");
+
+  const { data } = await ctx.db
+    .from("staffing_settlements")
+    .select("id,status,gross_amount,agency_amount,currency,staffing_roles!inner(title,events!inner(title,agency_id))")
+    .eq("staffing_roles.events.agency_id", ctx.agency.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    <>
+      <h1 className="text-4xl font-black">Payments</h1>
+      <p className="mt-2 text-[var(--muted)]">Settlement status for agency-managed staffing requirements.</p>
+      <div className="mt-6 grid gap-4">
+        {data?.map((item) => (
+          <article className="panel flex flex-wrap items-center justify-between gap-4 p-5" key={item.id}>
+            <div>
+              <span className="badge capitalize">{item.status.replaceAll("_", " ")}</span>
+              <h2 className="mt-2 font-black">Staffing settlement</h2>
+            </div>
+            <div className="text-right">
+              <strong className="text-xl">₹{Number(item.gross_amount).toLocaleString("en-IN")}</strong>
+              <p className="text-sm text-[var(--muted)]">Agency ₹{Number(item.agency_amount).toLocaleString("en-IN")}</p>
+            </div>
+          </article>
+        ))}
+        {!data?.length ? (
+          <EmptyState
+            icon={CreditCard}
+            title="No settlements yet"
+            description="Financial records and settlement statuses for your agency-managed staffing roles will appear here."
+          />
+        ) : null}
+      </div>
+    </>
+  );
+}
