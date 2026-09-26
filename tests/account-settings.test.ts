@@ -33,6 +33,16 @@ test("account settings migration retains records during reviewed deactivation", 
   assert.match(migration, /where status='pending'/);
 });
 
+test("settings forms use serializable server actions and qualified admin relationships", () => {
+  const panel = readFileSync(new URL("../src/components/account-settings-panel.tsx", import.meta.url), "utf8");
+  const adminPage = readFileSync(new URL("../src/app/dashboard/admin/settings/page.tsx", import.meta.url), "utf8");
+  assert.match(panel, /action=\{beginSignedInPasswordReset\}/);
+  assert.doesNotMatch(panel, /action=\{\(\) => beginSignedInPasswordReset\(\)\}/);
+  assert.doesNotMatch(panel, /accountSettingsData/);
+  assert.match(adminPage, /profiles!account_deletion_requests_profile_id_fkey/);
+  assert.match(adminPage, /admin_settings_queue_load_failed/);
+});
+
 test("exhibitors use company branding instead of a personal photo", () => {
   const profilePage = readFileSync(new URL("../src/app/dashboard/exhibitor/profile/page.tsx", import.meta.url), "utf8");
   const shell = readFileSync(new URL("../src/components/dashboard-shell.tsx", import.meta.url), "utf8");
