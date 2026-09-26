@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { SelectedClientContext } from "@/lib/types";
 import { hasExhibitorAccess } from "@/lib/agency-access";
+import { requireAgencyWorkspace } from "@/lib/dashboard-workspace";
 
 type Db = NonNullable<Awaited<ReturnType<typeof createClient>>>;
 
@@ -30,12 +31,7 @@ export async function requireExhibitorAccess(exhibitorId: string) {
 }
 
 export async function agencyClients(): Promise<SelectedClientContext[]> {
-  const profile = await getCurrentProfile();
-  if (!profile || profile.role !== "agency") return [];
-  const db = await createClient();
-  if (!db) return [];
-  const { data: agency } = await db.from("agencies").select("id,name").eq("owner_id", profile.id).maybeSingle();
-  if (!agency) return [];
+  const { db, entity: agency } = await requireAgencyWorkspace();
   const { data } = await db.from("agency_exhibitor_relationships").select("exhibitor_id,exhibitors(id,company_name,kind)").eq("agency_id", agency.id).eq("status", "active");
   return (data ?? []).flatMap((row) => {
     const value = Array.isArray(row.exhibitors) ? row.exhibitors[0] : row.exhibitors;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PlusCircle, Building2, Globe, CalendarDays, MapPin, Sparkles } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard-shell";
+
 import { organizerContext } from "@/lib/organizer-server";
 import { eventPhase, eventTypeLabels, venueSettingLabels, type OrganizerEvent } from "@/lib/organizer";
 
@@ -26,7 +26,7 @@ export default async function OrganizerDashboard({
   const active = filters.includes(filter ?? "") ? filter! : "all";
 
   return (
-    <DashboardShell active="organizer">
+    <>
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-[var(--line)] bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 p-8 text-white shadow-xl mb-8">
         <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
@@ -138,7 +138,6 @@ export default async function OrganizerDashboard({
           </div>
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }
-

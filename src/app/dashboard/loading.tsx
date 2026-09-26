@@ -1,10 +1,8 @@
 import { DualTextSpinner } from "@/components/dual-text-spinner";
-import { DashboardShell } from "@/components/dashboard-shell";
 
 export default function DashboardLoading() {
   return (
-    <DashboardShell active="organizer">
-      <div className="py-12 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="py-12 flex flex-col items-center justify-center min-h-screen">
         <DualTextSpinner
           size="md"
           label="Preparing workspace dashboard"
@@ -16,6 +14,5 @@ export default function DashboardLoading() {
           ]}
         />
       </div>
-    </DashboardShell>
   );
 }

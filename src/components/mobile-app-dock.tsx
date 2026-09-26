@@ -11,10 +11,9 @@ import { activeNavigationHref, isNavigationItemActive, roleNavigation } from "@/
 
 interface MobileAppDockProps {
   activeRole?: UserRole;
-  currentPath?: string;
 }
 
-export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppDockProps) {
+export function MobileAppDock({ activeRole = "talent" }: MobileAppDockProps) {
   const pathname = usePathname();
   
   // Modal state management for smooth enter & exit transitions
@@ -84,7 +83,7 @@ export function MobileAppDock({ activeRole = "talent", currentPath }: MobileAppD
 
   const active = pendingNavigation?.from === pathname
     ? pendingNavigation.to
-    : currentPath ?? pathname;
+    : pathname;
 
   const mainTabs = [
     { href: "/", label: "Home", icon: Home },

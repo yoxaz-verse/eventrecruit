@@ -1,6 +1,5 @@
 import { reactivateAccount, reviewAccountDeletion } from "@/app/actions/account-settings";
 import { AccountSettingsPanel } from "@/components/account-settings-panel";
-import { DashboardShell } from "@/components/dashboard-shell";
 import { accountSettingsData } from "@/lib/account-settings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,7 +15,7 @@ export default async function AdminSettings() {
   const pending = pendingResult.data ?? [];
   const disabled = disabledResult.data ?? [];
 
-  return <DashboardShell active="admin" current="/dashboard/admin/settings">
+  return <>
     <div className="mx-auto max-w-4xl">
       <h1 className="text-4xl font-black">Settings</h1>
       <p className="mt-2 mb-6 text-[var(--muted)]">Manage administrator preferences, security, and account deletion reviews.</p>
@@ -32,5 +31,5 @@ export default async function AdminSettings() {
         </div></section>
       </> : null}
     </div>
-  </DashboardShell>;
+  </>;
 }

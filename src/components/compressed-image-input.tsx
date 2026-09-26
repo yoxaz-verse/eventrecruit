@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Upload, Crop, CheckCircle2, Image as ImageIcon } from "lucide-react";
-import { ImageCropModal } from "@/components/image-crop-modal";
 import { ProgressiveImage } from "@/components/progressive-image";
+
+const ImageCropModal = dynamic(
+  () => import("@/components/image-crop-modal").then((module) => module.ImageCropModal),
+  { loading: () => <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 text-sm font-bold text-white">Preparing image editor…</div> }
+);
 
 export const MAX_SOURCE_IMAGE_BYTES = 7 * 1024 * 1024;
 export const MAX_STORED_IMAGE_BYTES = 500 * 1024;
@@ -195,4 +200,3 @@ export function CompressedImageInput({
     </div>
   );
 }
-

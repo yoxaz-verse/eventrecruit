@@ -16,17 +16,15 @@ type PendingNavigation = {
 
 export function DashboardSidebar({
   active,
-  current,
 }: {
   active: UserRole;
-  current?: string;
 }) {
   const pathname = usePathname();
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
   const currentPath =
     pendingNavigation?.from === pathname
       ? pendingNavigation.to
-      : current ?? pathname;
+      : pathname;
   const activeManagementHref = activeNavigationHref(currentPath, roleNavigation[active]);
 
   return (
@@ -97,4 +95,3 @@ export function DashboardSidebar({
     </aside>
   );
 }
-

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ApplicationStatusActions } from "@/components/application-status-actions";
 import { ProgressiveImage } from "@/components/progressive-image";
-import { DashboardShell } from "@/components/dashboard-shell";
+
 import { StatusBadge } from "@/components/status-badge";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -20,9 +20,6 @@ import {
   Shirt,
   Gift,
   Star,
-  CheckCircle2,
-  Briefcase,
-  UserCheck,
   Building2,
 } from "lucide-react";
 
@@ -91,7 +88,7 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
   ];
 
   return (
-    <DashboardShell active="exhibitor" current="/dashboard/exhibitor/requests">
+    <>
       {/* Back Navigation Button */}
       <Link
         className="button button-secondary text-xs font-bold gap-2 mb-4 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
@@ -324,7 +321,7 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
           ) : null}
         </div>
       </section>
-    </DashboardShell>
+    </>
   );
 }
 

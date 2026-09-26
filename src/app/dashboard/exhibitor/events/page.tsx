@@ -1,21 +1,20 @@
 import Link from "next/link";
-import { DashboardShell } from "@/components/dashboard-shell";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+
+import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
+import { dashboardPagination } from "@/lib/pagination";
+import { DashboardPagination } from "@/components/dashboard-pagination";
 import { StatusBadge } from "@/components/status-badge";
 import { PlusCircle, CalendarDays, MapPin, CheckCircle2, Search } from "lucide-react";
 
-export default async function ExhibitorEvents({ searchParams }: { searchParams: Promise<{submitted?:string}> }) {
-  const profile = await requireRole(["exhibitor"]);
-  const db = await createClient();
-  if (!db) throw new Error("Events are temporarily unavailable.");
-  const { data: exhibitor } = await db.from("exhibitors").select("id").eq("owner_id", profile.id).maybeSingle();
-  const { data, error } = exhibitor ? await db.from("exhibitor_event_submissions").select("id,title,city,venue,starts_at,ends_at,status").eq("exhibitor_id", exhibitor.id).order("created_at", { ascending: false }) : { data: [], error: null };
+export default async function ExhibitorEvents({ searchParams }: { searchParams: Promise<{submitted?:string;page?:string}> }) {
+  const [{db,entity},params] = await Promise.all([requireExhibitorWorkspace(),searchParams]);
+  const pagination = dashboardPagination(params.page);
+  const { data, error } = await db.from("exhibitor_event_submissions").select("id,title,city,venue,starts_at,ends_at,status").eq("exhibitor_id", entity.id).order("created_at", { ascending: false }).range(pagination.from,pagination.to);
   if (error) throw new Error("Unable to load submitted events.");
-  const isSubmitted = (await searchParams).submitted === "1";
+  const isSubmitted = params.submitted === "1";
 
   return (
-    <DashboardShell active="exhibitor" current="/dashboard/exhibitor/events">
+    <>
       <span className="badge badge-accent">Exhibitor panel</span>
       <h1 className="mt-3 text-4xl font-black tracking-tight">Submitted events</h1>
       <p className="mt-2 text-[var(--muted)]">Suggest missing events for review. Admin approval unlocks them for staffing requests.</p>
@@ -83,6 +82,7 @@ export default async function ExhibitorEvents({ searchParams }: { searchParams: 
           </div>
         )}
       </div>
-    </DashboardShell>
+      <DashboardPagination path="/dashboard/exhibitor/events" page={pagination.page} hasNext={(data?.length ?? 0) === pagination.pageSize} params={params} />
+    </>
   );
 }

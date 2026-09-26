@@ -18,27 +18,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { saveExhibitorProfile } from "@/app/actions/exhibitor-profile";
 import { AuthActionForm } from "@/components/auth/auth-action-form";
-import { DashboardShell } from "@/components/dashboard-shell";
+
 import { ProfileImageForm } from "@/components/profile-image-form";
 import { SubmitButton } from "@/components/submit-button";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
 
 export default async function ExhibitorProfilePage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-  const profile = await requireRole(["exhibitor"]);
-  const db = await createClient();
-  if (!db) throw new Error("Profile is temporarily unavailable.");
+  const [{profile,db,entity},params] = await Promise.all([requireExhibitorWorkspace(),searchParams]);
   const [{ data: account, error: accountError }, { data: contact, error: contactError }, { data: exhibitor, error: exhibitorError }] = await Promise.all([
     db.from("app_accounts").select("email").eq("id", profile.id).single(),
     db.from("contact_details").select("phone").eq("profile_id", profile.id).maybeSingle(),
-    db.from("exhibitors").select("id,company_name,company_type,industry,description,website,address,city,primary_contact_name,contact_phone,contact_email,logo_path,verification_status").eq("owner_id", profile.id).single(),
+    db.from("exhibitors").select("id,company_name,company_type,industry,description,website,address,city,primary_contact_name,contact_phone,contact_email,logo_path,verification_status").eq("id", entity.id).single(),
   ]);
   if (accountError || contactError || exhibitorError || !exhibitor) throw new Error("Unable to load your exhibitor profile.");
-  const saved = (await searchParams).saved === "1";
+  const saved = params.saved === "1";
   const verified = exhibitor.verification_status === "verified";
 
   return (
-    <DashboardShell active="exhibitor" current="/dashboard/exhibitor/profile">
+    <>
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Hero Header Banner */}
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 p-6 text-white shadow-xl sm:p-8">
@@ -285,7 +282,6 @@ export default async function ExhibitorProfilePage({ searchParams }: { searchPar
           </aside>
         </div>
       </div>
-    </DashboardShell>
+    </>
   );
 }
-

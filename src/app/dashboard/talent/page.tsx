@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DashboardShell } from "@/components/dashboard-shell";
+
 import { RoleCard } from "@/components/role-card";
 import { SubmitButton } from "@/components/submit-button";
 import { TalentLiveRefresh } from "@/components/talent-live-refresh";
@@ -7,8 +7,7 @@ import { TalentBrowserAlerts } from "@/components/talent-browser-alerts";
 import { EmptyState } from "@/components/empty-state";
 import { CalendarX, Briefcase, BellOff } from "lucide-react";
 import { requestBookingCancellation } from "@/app/actions/talent-jobs";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireTalentWorkspace } from "@/lib/dashboard-workspace";
 import { indiaToday } from "@/lib/organizer";
 import type { EventRole } from "@/lib/types";
 
@@ -16,7 +15,7 @@ type RoleRow={id:string;title:string;description:string|null;headcount:number;ho
 const roleView=(record:RoleRow):EventRole|null=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return event?{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,mapUrl:event.map_url??undefined,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}:null;};
 
 export default async function TalentDashboard({searchParams}:{searchParams:Promise<{view?:string}>}) {
- const talent=await requireRole(["talent"]),db=await createClient();if(!db)throw new Error("Talent opportunities are unavailable.");
+ const {profile:talent,db}=await requireTalentWorkspace();
  const view=(await searchParams).view==="other"?"other":"preferred",today=indiaToday();
  const [prefs,preferred,profile,rolesResult,appsResult,alerts,organizerEvents,submittedEvents]=await Promise.all([
   db.from("talent_job_preferences").select("is_online,notify_push").eq("talent_id",talent.id).maybeSingle(),
@@ -38,7 +37,7 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  const booked=bookingIds.length?await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id,map_url)").in("id",bookingIds):{data:[],error:null};
  if(booked.error)throw new Error("Unable to load bookings.");
  const bookings=(booked.data??[]).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item)),profileComplete=Boolean(profile.data?.home_location_id&&preferredIds.size);
- return <DashboardShell active="talent"><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Opportunities</h1><p className="mt-2 text-[var(--muted)]">Events and staffing requirements organized around the cities where you can work.</p></div><TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
+ return <><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Opportunities</h1><p className="mt-2 text-[var(--muted)]">Events and staffing requirements organized around the cities where you can work.</p></div><TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
  {!profileComplete?<div className="callout-banner callout-banner-amber mb-6"><div><h2 className="font-black">Choose your work locations</h2><p className="text-sm">Complete your locations to receive relevant alerts.</p></div><Link className="button button-primary" href="/dashboard/talent/profile">Complete profile</Link></div>:null}
  <nav className="mb-6 flex gap-2" aria-label="Opportunity locations"><Link className={`button ${view==="preferred"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=preferred">Preferred locations</Link><Link className={`button ${view==="other"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=other">Other locations</Link></nav>
  <p className="mb-5 text-sm text-[var(--muted)]">{view==="preferred"?(names.length?`Showing ${names.join(", ")}. Alerts are limited to these cities.`:"Add preferred cities to personalize this tab."):"Explore other cities. These opportunities do not generate alerts."}</p>
@@ -87,5 +86,5 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  </section>
 
  {bookings.length?<section><h2 className="mb-4 text-2xl font-bold">Your bookings</h2><div className="grid gap-4 md:grid-cols-2">{bookings.map(role=>{const app=applications.get(role.id);return <div key={role.id}><RoleCard role={role} showDate/><p className="mt-2 text-sm">Your status: {app?.status}</p>{app?.status==="accepted"&&!app.cancellation_requested_at?<form action={requestBookingCancellation}><input type="hidden" name="application_id" value={app.id}/><SubmitButton pendingText="Requesting…">Request cancellation</SubmitButton></form>:null}</div>;})}</div></section>:null}
- </DashboardShell>;
+ </>;
 }

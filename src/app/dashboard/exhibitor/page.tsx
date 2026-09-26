@@ -1,23 +1,19 @@
 import Link from "next/link";
-import { DashboardShell } from "@/components/dashboard-shell";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+
+import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
 import { CalendarDays, ClipboardList, Users, PlusCircle, ArrowRight, Sparkles, Building2 } from "lucide-react";
 
 export default async function ExhibitorDashboard() {
-  const profile = await requireRole(["exhibitor"]);
-  const db = await createClient();
-  if (!db) throw new Error("Workspace is temporarily unavailable.");
-  const { data: exhibitor } = await db.from("exhibitors").select("id,company_name").eq("owner_id", profile.id).maybeSingle();
+  const { profile, db, entity: exhibitor } = await requireExhibitorWorkspace();
   const [submissions, requests] = await Promise.all([
-    exhibitor ? db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id) : Promise.resolve({ data: [], error: null }),
+    db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id),
     db.from("events").select("id,staffing_roles(id)").eq("created_by", profile.id),
   ]);
   if (submissions.error || requests.error) throw new Error("Unable to load workspace summary.");
   const requestCount = (requests.data ?? []).reduce((sum, event) => sum + (event.staffing_roles?.length ?? 0), 0);
 
   return (
-    <DashboardShell active="exhibitor">
+    <>
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-[var(--line)] bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-8 text-white shadow-xl mb-8">
         <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
@@ -110,6 +106,6 @@ export default async function ExhibitorDashboard() {
         </Link>
       </div>
 
-    </DashboardShell>
+    </>
   );
 }

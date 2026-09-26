@@ -1,4 +1,4 @@
-import { DashboardShell } from "@/components/dashboard-shell";
+
 import { requireRole } from "@/lib/auth";
 import { ExhibitorEventForm } from "@/components/exhibitor-event-form";
 import { activeLocations, type LocationOption } from "@/lib/locations";
@@ -13,7 +13,7 @@ export default async function NewExhibitorEvent() {
     console.error("Unable to load exhibitor event locations", error instanceof Error ? error.message : "Unknown error");
   }
   return (
-    <DashboardShell active="exhibitor" current="/dashboard/exhibitor/events">
+    <>
       <div className="max-w-2xl">
         <span className="badge badge-accent">Exhibitor panel</span>
         <h1 className="mt-3 mb-2 text-4xl font-black tracking-tight">Submit an event</h1>
@@ -22,6 +22,6 @@ export default async function NewExhibitorEvent() {
         {locationError?<div className="alert mb-5" role="alert">The city list is temporarily unavailable. <Link className="underline" href="/dashboard/exhibitor/events/new">Try loading it again.</Link></div>:null}
         <ExhibitorEventForm locations={locations} locationError={locationError} />
       </div>
-    </DashboardShell>
+    </>
   );
 }

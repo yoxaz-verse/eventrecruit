@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Building2, CalendarDays, ClipboardList, UserCheck, Users, Briefcase, Bell, UserPlus, PlusCircle, ArrowRight, Sparkles } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard-shell";
+
 import { getAgencyDashboard } from "@/lib/agency-data";
 
 export default async function AgencyDashboard() {
@@ -19,7 +19,7 @@ export default async function AgencyDashboard() {
   ];
 
   return (
-    <DashboardShell active="agency">
+    <>
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl border border-[var(--line)] bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 p-8 text-white shadow-xl mb-8">
         <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
@@ -129,7 +129,6 @@ export default async function AgencyDashboard() {
           </div>
         </section>
       </div>
-    </DashboardShell>
+    </>
   );
 }
-

@@ -12,14 +12,11 @@ import {
   ExternalLink,
   ChevronDown,
   ShieldCheck,
-  AlertTriangle,
   Clock,
   Activity,
   DollarSign,
-  CheckCircle2,
   Layers
 } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard-shell";
 import { StatusBadge } from "@/components/status-badge";
 import type { AdminDetailGroup, AdminOrganizationDetail } from "@/lib/admin-organization-detail";
 
@@ -231,17 +228,13 @@ function Accordion({
 export function AdminOrganizationDetailPage({ detail }: { detail: AdminOrganizationDetail }) {
   const verificationField = detail.overview.find((f) => isVerificationField(f.label));
   const phoneField = detail.overview.find((f) => f.label.toLowerCase().includes("phone"));
-  const emailField = detail.overview.find((f) => f.label.toLowerCase().includes("email"));
   const ownerField = detail.overview.find((f) => f.label.toLowerCase() === "account owner");
   const ownerLocationField = detail.overview.find((f) => f.label.toLowerCase() === "owner location");
-  const ownerPhoneField = detail.overview.find((f) => f.label.toLowerCase() === "owner phone");
   const ownerEmailField = detail.overview.find((f) => f.label.toLowerCase() === "owner email");
-  const ownerVerificationField = detail.overview.find((f) => f.label.toLowerCase() === "owner verification");
 
   const ratingField = detail.overview.find((f) => f.label.toLowerCase().includes("rating"));
   const reliabilityField = detail.overview.find((f) => f.label.toLowerCase().includes("reliability"));
   const completedEventsField = detail.overview.find((f) => f.label.toLowerCase().includes("completed events"));
-  const commissionField = detail.overview.find((f) => f.label.toLowerCase().includes("commission"));
 
   // Categorize overview items into structured sections
   const ownerLabels = ["account owner", "owner location", "owner verification", "owner phone", "owner email"];
@@ -254,7 +247,7 @@ export function AdminOrganizationDetailPage({ detail }: { detail: AdminOrganizat
   const metricFields = detail.overview.filter((f) => metricLabels.includes(f.label.toLowerCase()));
 
   return (
-    <DashboardShell active="admin" current="/dashboard/admin/organizations">
+    <>
       {/* Top Back Navigation Bar */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <Link
@@ -478,7 +471,6 @@ export function AdminOrganizationDetailPage({ detail }: { detail: AdminOrganizat
           <Groups groups={detail.finance} />
         </Accordion>
       </div>
-    </DashboardShell>
+    </>
   );
 }
-
