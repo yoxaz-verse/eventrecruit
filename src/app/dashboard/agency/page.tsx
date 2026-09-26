@@ -37,12 +37,12 @@ export default async function AgencyDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-2.5">
-            <Link className="button button-primary gap-2 bg-white text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/agency/staff?add=1">
-              <UserPlus size={17} className="text-blue-600" />
+            <Link className="button button-light gap-2 font-extrabold text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/agency/staff?add=1">
+              <UserPlus size={17} className="text-blue-600 shrink-0" />
               <span>Add Staff</span>
             </Link>
             <Link className="button button-secondary gap-2 text-white border-white/20 bg-white/10 hover:bg-white/20" href="/dashboard/agency/clients">
-              <Building2 size={17} />
+              <Building2 size={17} className="text-white shrink-0" />
               <span>Add Client</span>
             </Link>
             <Link className="button button-secondary gap-2 text-white border-white/20 bg-white/10 hover:bg-white/20" href="/dashboard/agency/requests/new">

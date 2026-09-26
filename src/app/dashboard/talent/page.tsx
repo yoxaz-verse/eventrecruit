@@ -49,8 +49,8 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
         <p className="mt-2 max-w-xl text-sm text-blue-100/80 leading-relaxed">Explore open promoter, host, and coordinator roles matched to your preferred work cities across Kerala.</p>
       </div>
       <div className="flex flex-wrap gap-2.5">
-        <Link className="button button-primary gap-2 bg-white text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/talent/profile">
-          <MapPin size={17} className="text-blue-600" />
+        <Link className="button button-light gap-2 font-extrabold text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/talent/profile">
+          <MapPin size={17} className="text-blue-600 shrink-0" />
           <span>Preferred Cities</span>
         </Link>
       </div>

@@ -31,8 +31,8 @@ export default async function ExhibitorDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Link className="button button-primary gap-2 bg-white text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/exhibitor/requests/new">
-              <PlusCircle size={17} className="text-blue-600" aria-hidden />
+            <Link className="button button-light gap-2 font-extrabold text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/exhibitor/requests/new">
+              <PlusCircle size={17} className="text-blue-600 shrink-0" aria-hidden />
               <span>Create Staffing Request</span>
             </Link>
           </div>
