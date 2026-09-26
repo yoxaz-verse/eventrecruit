@@ -5,7 +5,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { TalentLiveRefresh } from "@/components/talent-live-refresh";
 import { TalentBrowserAlerts } from "@/components/talent-browser-alerts";
 import { EmptyState } from "@/components/empty-state";
-import { CalendarX, Briefcase, BellOff } from "lucide-react";
+import { CalendarX, Briefcase, BellOff, Sparkles, MapPin, CalendarDays, ArrowRight } from "lucide-react";
 import { requestBookingCancellation } from "@/app/actions/talent-jobs";
 import { requireTalentWorkspace } from "@/lib/dashboard-workspace";
 import { indiaToday } from "@/lib/organizer";
@@ -37,7 +37,26 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  const booked=bookingIds.length?await db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id,map_url)").in("id",bookingIds):{data:[],error:null};
  if(booked.error)throw new Error("Unable to load bookings.");
  const bookings=(booked.data??[]).map(record=>roleView(record as RoleRow)).filter((item):item is EventRole=>Boolean(item)),profileComplete=Boolean(profile.data?.home_location_id&&preferredIds.size);
- return <><TalentLiveRefresh/><div className="page-kicker"><span className="badge badge-accent">Event Talent panel</span><h1 className="mt-3 text-4xl font-black">Opportunities</h1><p className="mt-2 text-[var(--muted)]">Events and staffing requirements organized around the cities where you can work.</p></div><TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
+ return <><TalentLiveRefresh/>
+  <div className="relative overflow-hidden rounded-3xl border border-[var(--line)] bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-900 p-8 text-white shadow-xl mb-8">
+    <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
+    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-blue-200 border border-blue-400/30">
+          <Sparkles size={13} className="text-amber-400" /> Event Talent Panel
+        </span>
+        <h1 className="mt-3 text-3xl md:text-4xl font-black tracking-tight text-white">Work Opportunities</h1>
+        <p className="mt-2 max-w-xl text-sm text-blue-100/80 leading-relaxed">Explore open promoter, host, and coordinator roles matched to your preferred work cities across Kerala.</p>
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        <Link className="button button-primary gap-2 bg-white text-slate-900 hover:bg-blue-50 shadow-lg border-0" href="/dashboard/talent/profile">
+          <MapPin size={17} className="text-blue-600" />
+          <span>Preferred Cities</span>
+        </Link>
+      </div>
+    </div>
+  </div>
+  <TalentBrowserAlerts enabled={Boolean(prefs.data?.notify_push)} alerts={alerts.data??[]} publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY??""}/>
  {!profileComplete?<div className="callout-banner callout-banner-amber mb-6"><div><h2 className="font-black">Choose your work locations</h2><p className="text-sm">Complete your locations to receive relevant alerts.</p></div><Link className="button button-primary" href="/dashboard/talent/profile">Complete profile</Link></div>:null}
  <nav className="mb-6 flex gap-2" aria-label="Opportunity locations"><Link className={`button ${view==="preferred"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=preferred">Preferred locations</Link><Link className={`button ${view==="other"?"button-primary":"button-secondary"}`} href="/dashboard/talent?view=other">Other locations</Link></nav>
  <p className="mb-5 text-sm text-[var(--muted)]">{view==="preferred"?(names.length?`Showing ${names.join(", ")}. Alerts are limited to these cities.`:"Add preferred cities to personalize this tab."):"Explore other cities. These opportunities do not generate alerts."}</p>
