@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   BriefcaseBusiness,
+  ArrowRight,
   CalendarDays,
   Clock3,
   IndianRupee,
@@ -25,9 +26,12 @@ import {
 import type { ApplicationStatus } from "@/lib/types";
 
 type EventRow = {
+  id: string;
   title: string;
   venue: string;
   city: string;
+  organizer_event_id: string | null;
+  exhibitor_event_submission_id: string | null;
 };
 
 type StaffingRoleRow = {
@@ -118,6 +122,13 @@ function ApplicationCard({ application }: { application: ApplicationRow }) {
           Last updated {formatDateTime(application.updated_at)}
         </span>
       </div>
+      <Link
+        className="button button-secondary mt-4 w-full gap-2 text-xs font-extrabold sm:w-fit"
+        href={`/dashboard/talent/applications/${application.id}`}
+      >
+        <span>View full details</span>
+        <ArrowRight size={14} aria-hidden />
+      </Link>
     </article>
   );
 }
@@ -160,7 +171,7 @@ export default async function TalentApplicationsPage() {
   const { profile: talent, db } = await requireTalentWorkspace();
   const { data, error } = await db
     .from("applications")
-    .select("id,status,created_at,updated_at,cancellation_requested_at,staffing_roles(title,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,events(title,venue,city))")
+    .select("id,status,created_at,updated_at,cancellation_requested_at,staffing_roles(title,hourly_rate,shift_start,shift_end,work_starts_on,work_ends_on,events(id,title,venue,city,organizer_event_id,exhibitor_event_submission_id))")
     .eq("talent_id", talent.id)
     .order("updated_at", { ascending: false });
 
