@@ -15,6 +15,8 @@ import { canManageExhibitor } from "@/lib/agency-workspace";
 import { containsContactDetails } from "@/lib/contact-detector";
 import { applicationProfileCheck } from "@/lib/application-profile";
 import { canTransitionApplication } from "@/lib/application-workflow";
+import { parseLockedLocation } from "@/lib/location";
+import { resolveActiveLocations } from "@/lib/locations";
 
 const applicationStatuses: ApplicationStatus[] = [
   "applied",
@@ -89,6 +91,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const proposedRateMin=formData.get("proposed_rate_min")?Number(formData.get("proposed_rate_min")):null;
   const proposedRateMax=formData.get("proposed_rate_max")?Number(formData.get("proposed_rate_max")):proposedRateMin;
   const mapUrl=String(formData.get("map_url")??"").trim();
+  const locationId=String(formData.get("location_id")??"").trim();
+  const lockedLocation=parseLockedLocation(formData);
 
   // Contact detail auto-detector check
   const descCheck = containsContactDetails(description);
@@ -142,19 +146,22 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     return { error: "Complete your business profile before posting a staffing request.", success: "" };
   }
 
-  let eventFields = { title: eventTitle, venue, city, location_id:null as string|null, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null, verification_status:"verification_required", map_url:mapUrl||null, payer_type:source };
+  let eventFields = { title: eventTitle, venue, city, location_id:locationId||null, latitude:Number.isFinite(lockedLocation.latitude)?lockedLocation.latitude:null as number|null, longitude:Number.isFinite(lockedLocation.longitude)?lockedLocation.longitude:null as number|null, location_label:lockedLocation.locationLabel||null as string|null, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null, verification_status:"verification_required", map_url:mapUrl||null, payer_type:source };
   if(eventMode==="existing") {
     const selection = parseCatalogSelection(selectedEvent);
     if (!selection) return { error: "Choose an event from the list.", success: "" };
     const { kind, id } = selection;
     const result = kind === "organizer"
-      ? await supabase.from("organizer_events").select("id,title,venue,city,location_id,map_url,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
-      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,map_url,starts_at,ends_at,status").eq("id", id).in("status",["pending","approved"]).maybeSingle();
+      ? await supabase.from("organizer_events").select("id,title,venue,city,location_id,latitude,longitude,location_label,map_url,starts_at,ends_at,status").eq("id", id).eq("status", "published").maybeSingle()
+      : await supabase.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,latitude,longitude,location_label,map_url,starts_at,ends_at,status").eq("id", id).in("status",["pending","approved"]).maybeSingle();
     const selected = result.data;
     if (result.error || !selected || (selected.status!=="pending"&&!isSelectableCatalogEvent(selected, kind, todayInIndia()))) return { error: "This event is not available for requests. Choose another event.", success: "" };
-    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, location_id:selected.location_id, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null, verification_status:selected.status==="pending"?"pending":"verified",map_url:selected.map_url??null,payer_type:source };
+    eventFields = { title: selected.title, venue: selected.venue, city: selected.city, location_id:selected.location_id, latitude:selected.latitude, longitude:selected.longitude, location_label:selected.location_label, starts_at: selected.starts_at, ends_at: selected.ends_at, organizer_event_id: kind === "organizer" ? id : null, exhibitor_event_submission_id: kind === "exhibitor" ? id : null, verification_status:selected.status==="pending"?"pending":"verified",map_url:selected.map_url??null,payer_type:source };
   } else {
     if(!eventTitle||!venue||!city||!validDate(startsAt)||!validDate(endsAt)||endsAt<startsAt) return {error:"Complete the event title, venue, city, and valid dates.",success:""};
+    const catalogLocations=locationId?await resolveActiveLocations([locationId]):null;
+    if(!locationId||!catalogLocations?.length||!lockedLocation.valid) return {error:"Choose a Kerala city and select a complete venue address.",success:""};
+    eventFields.city=catalogLocations[0].name;
   }
   if (workStartsOn < eventFields.starts_at || workEndsOn > eventFields.ends_at) return { error: "Work days must fall within the event dates.", success: "" };
 
@@ -230,8 +237,11 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   revalidatePath("/dashboard/exhibitor");
   revalidatePath("/dashboard/exhibitor/requests");
   revalidatePath("/dashboard/agency");
+  revalidatePath("/dashboard/agency/requests");
   if(eventFields.verification_status!=="verified"){const {data:pending}=await supabase.from("verification_requests").select("id").eq("entity_type","event").eq("entity_id",event.id).eq("status","pending").maybeSingle();if(!pending)await supabase.from("verification_requests").insert({entity_type:"event",entity_id:event.id,requester_id:user.id,status:"pending",notes:"Staffing request submitted with an event requiring verification"});}
-  return { error: "", success: eventFields.verification_status==="verified"?"Staffing request submitted.":"Staffing request submitted. The event is awaiting verification." };
+  redirect(source === "agency"
+    ? `/dashboard/agency/requests?client=${encodeURIComponent(requestedExhibitorId)}`
+    : "/dashboard/exhibitor/requests");
 }
 
 export async function applyForRole(_state: WorkflowFormState, formData: FormData): Promise<WorkflowFormState> {
@@ -241,24 +251,25 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
   const user = await getCurrentAccount();
 
   if (!user) redirect("/login");
-  const profile = await actor();
   const roleId = String(formData.get("staffing_role_id") ?? "");
-  const { data: openRole } = await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on,required_skills,preferred_skills,required_languages").eq("id", roleId).eq("status", "open").maybeSingle();
-  if (!canApply(profile.role,profile.verification_status,openRole ? "open" : "closed")) return { error: "A verified talent account and open role are required.", success: "" };
-  const [profileData,contactData,talentData]=await Promise.all([
-    supabase.from("profiles").select("avatar_url,home_location_id,profile_updated_at").eq("id",user.id).single(),
-    supabase.from("contact_details").select("phone").eq("profile_id",user.id).maybeSingle(),
-    supabase.from("talent_profiles").select("skills,languages,availability,documents_note").eq("profile_id",user.id).maybeSingle(),
+  const [profile, openRoleResult, contactData, talentData, assignedApplications] = await Promise.all([
+    actor(),
+    supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on,required_skills,preferred_skills,required_languages").eq("id", roleId).eq("status", "open").maybeSingle(),
+    supabase.from("contact_details").select("phone").eq("profile_id", user.id).maybeSingle(),
+    supabase.from("talent_profiles").select("skills,languages,availability,documents_note").eq("profile_id", user.id).maybeSingle(),
+    supabase.from("applications").select("id,status,staffing_roles(work_starts_on,work_ends_on)").eq("talent_id", user.id).eq("status", "assigned"),
   ]);
-  if(profileData.error||contactData.error||talentData.error)return {error:"Unable to check your profile. Please retry.",success:""};
-  const check=applicationProfileCheck({avatarUrl:profileData.data.avatar_url,homeLocationId:profileData.data.home_location_id,profileUpdatedAt:profileData.data.profile_updated_at,phone:contactData.data?.phone,skills:talentData.data?.skills,languages:talentData.data?.languages,availability:talentData.data?.availability,documentsNote:talentData.data?.documents_note},{requiredSkills:openRole!.required_skills,preferredSkills:openRole!.preferred_skills,requiredLanguages:openRole!.required_languages});
+  const openRole = openRoleResult.data;
+  if (!canApply(profile.role,profile.verification_status,openRole ? "open" : "closed")) return { error: "A verified talent account and open role are required.", success: "" };
+  if(openRoleResult.error||contactData.error||talentData.error||assignedApplications.error)return {error:"Unable to check your profile. Please retry.",success:""};
+  const check=applicationProfileCheck({avatarUrl:profile.avatar_url,homeLocationId:profile.home_location_id,profileUpdatedAt:profile.profile_updated_at,phone:contactData.data?.phone,skills:talentData.data?.skills,languages:talentData.data?.languages,availability:talentData.data?.availability,documentsNote:talentData.data?.documents_note},{requiredSkills:openRole!.required_skills,preferredSkills:openRole!.preferred_skills,requiredLanguages:openRole!.required_languages});
   if(!check.canApply)return {error:`Complete these required profile items first: ${check.required.join(", ")}.`,success:""};
   if(check.stale&&formData.get("profile_current")!=="1")return {error:"Review your profile or confirm that the current information is still accurate.",success:""};
-  const {data:existing}=await supabase.from("applications").select("id,staffing_role_id,status").eq("talent_id",user.id).eq("status","assigned");
-  if (existing?.length) {
-    const {data:booked}=await supabase.from("staffing_roles").select("id,work_starts_on,work_ends_on").in("id",existing.map(item=>item.staffing_role_id));
-    if (booked?.some(item=>workDaysOverlap(item,openRole!))) return {error:"You are already booked on one or more of these days.",success:""};
-  }
+  const bookedRoles=(assignedApplications.data??[]).flatMap(application=>{
+    const role=Array.isArray(application.staffing_roles)?application.staffing_roles[0]:application.staffing_roles;
+    return role?[role]:[];
+  });
+  if (bookedRoles.some(role=>workDaysOverlap(role,openRole!))) return {error:"You are already booked on one or more of these days.",success:""};
 
   const coverNote = String(formData.get("cover_note") ?? "").trim();
   const noteCheck = containsContactDetails(coverNote);
@@ -273,7 +284,6 @@ export async function applyForRole(_state: WorkflowFormState, formData: FormData
   });
 
   if (error) return { error: "Unable to apply for this role. Check whether you have already applied and try again.", success: "" };
-  revalidatePath("/browse");
   return { error: "", success: "Application sent." };
 }
 

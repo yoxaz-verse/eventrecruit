@@ -3,6 +3,7 @@ import "server-only";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { indiaToday, type OrganizerEvent } from "@/lib/organizer";
+import { formatShiftTime, formatDateRangeDisplay, formatTitleCase } from "@/lib/formatters";
 import type { EventRole } from "@/lib/types";
 
 export const PUBLIC_CACHE_TAGS = {
@@ -84,7 +85,7 @@ const getCachedOpenRoles = unstable_cache(async (): Promise<PublicDataResult<Eve
     if (!event) return [];
     const exhibitor = Array.isArray(event.exhibitors) ? event.exhibitors[0] : event.exhibitors;
     const agency = Array.isArray(event.agencies) ? event.agencies[0] : event.agencies;
-    return [{ id: record.id, eventTitle: event.title, company: exhibitor?.company_name, agency: agency?.name, location: `${event.venue}, ${event.city}`, mapUrl: event.map_url ?? undefined, date: `${record.work_starts_on} – ${record.work_ends_on}`, shift: `${record.shift_start} – ${record.shift_end}`, role: record.title, description: record.description ?? undefined, headcount: record.headcount, rate: Number(record.hourly_rate), skills: record.required_skills ?? [], status: "open" as const }];
+    return [{ id: record.id, eventTitle: formatTitleCase(event.title), company: exhibitor?.company_name ? formatTitleCase(exhibitor.company_name) : undefined, agency: agency?.name ? formatTitleCase(agency.name) : undefined, location: formatTitleCase(`${event.venue}, ${event.city}`), mapUrl: event.map_url ?? undefined, date: formatDateRangeDisplay(record.work_starts_on, record.work_ends_on), shift: formatShiftTime(record.shift_start, record.shift_end), role: formatTitleCase(record.title), description: record.description ?? undefined, headcount: record.headcount, rate: Number(record.hourly_rate), skills: record.required_skills ?? [], status: "open" as const }];
   });
   return { data, available: true };
 }, ["public-open-roles-v1"], { revalidate: 60, tags: [PUBLIC_CACHE_TAGS.roles] });

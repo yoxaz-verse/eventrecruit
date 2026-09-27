@@ -2,6 +2,7 @@ import { CalendarDays, MapPin, Users, Clock, Send, ExternalLink, ShieldCheck } f
 import Link from "next/link";
 import type { EventRole } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
+import { formatHourlyRate } from "@/lib/formatters";
 
 export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = false }: { role: EventRole; apply?: boolean; rateUnit?: "day" | "hour"; showDate?: boolean }) {
   return (
@@ -59,7 +60,7 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
             ))}
           </div>
           <div className="shrink-0 font-black text-sm text-[var(--accent)] bg-[var(--surface)] px-3 py-1.5 rounded-xl border border-[var(--line)] shadow-2xs">
-            ₹{role.rate.toLocaleString("en-IN")}/{rateUnit}
+            {formatHourlyRate(role.rate, rateUnit)}
           </div>
         </div>
 

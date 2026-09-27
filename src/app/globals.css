@@ -31,7 +31,7 @@
 }
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: var(--ink);
 }
 
@@ -42,7 +42,7 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: var(--font-geist), "Helvetica Neue", Arial, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 a {

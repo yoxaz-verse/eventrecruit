@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useState } from "react";
 import { submitExhibitorEvent } from "@/app/actions/exhibitor-events";
 import { SubmitButton } from "@/components/submit-button";
 import { VenueLocationPicker } from "@/components/venue-location-picker";
@@ -8,7 +8,10 @@ import type { LocationOption } from "@/lib/locations";
 import { EventAmenitiesField } from "@/components/event-amenities-field";
 
 export function ExhibitorEventForm({exhibitorId,locations=[],locationError=false}:{exhibitorId?:string;locations?:LocationOption[];locationError?:boolean}){
-  const [state,action]=useActionState(submitExhibitorEvent,{error:""});
+  const [state,action,pending]=useActionState(submitExhibitorEvent,{error:""});
+  const [venueLocationValid,setVenueLocationValid]=useState(false);
+  const [errorDismissed,setErrorDismissed]=useState(false);
+  const handleLocationValidity=useCallback((valid:boolean)=>{setVenueLocationValid(valid);setErrorDismissed(true);},[]);
   const unavailable=locationError||locations.length===0;
-  return <form action={action} className="panel grid gap-5 p-6">{exhibitorId?<input type="hidden" name="exhibitor_id" value={exhibitorId}/>:null}<label className="label">Event title<input className="input" name="title" maxLength={160} required/></label><label className="label">Description<textarea className="input textarea" name="description" maxLength={10000}/></label><label className="label"><span>Venue name <span className="text-red-600 ml-1">*</span></span><input className="input" name="venue" required maxLength={200} placeholder="For example: Lulu International Convention Centre"/></label><VenueLocationPicker locations={locations}/><div className="grid gap-4 sm:grid-cols-2"><label className="label">Starts<input className="input" name="starts_at" type="date" required/></label><label className="label">Ends<input className="input" name="ends_at" type="date" required/></label></div><EventAmenitiesField/>{state.error?<p className="alert" role="alert">{state.error}</p>:null}<SubmitButton pendingText="Submitting…" disabled={unavailable}>Submit event for approval</SubmitButton></form>
+  return <form action={action} onSubmit={()=>setErrorDismissed(false)} className="panel grid gap-5 p-6">{exhibitorId?<input type="hidden" name="exhibitor_id" value={exhibitorId}/>:null}<label className="label">Event title<input className="input" name="title" maxLength={160} required/></label><label className="label">Description<textarea className="input textarea" name="description" maxLength={10000}/></label><label className="label"><span>Venue name <span className="text-red-600 ml-1">*</span></span><input className="input" name="venue" required maxLength={200} placeholder="For example: Lulu International Convention Centre"/></label><VenueLocationPicker locations={locations} onValidityChange={handleLocationValidity}/><div className="grid gap-4 sm:grid-cols-2"><label className="label">Starts<input className="input" name="starts_at" type="date" required/></label><label className="label">Ends<input className="input" name="ends_at" type="date" required/></label></div><EventAmenitiesField/>{state.error&&!pending&&!errorDismissed?<p className="alert" role="alert">{state.error}</p>:null}{!unavailable&&!venueLocationValid?<p className="text-sm text-[var(--muted)]" role="status">Choose an exact venue address to confirm its location before submitting.</p>:null}<SubmitButton pendingText="Submitting…" disabled={unavailable||!venueLocationValid}>Submit event for approval</SubmitButton></form>
 }

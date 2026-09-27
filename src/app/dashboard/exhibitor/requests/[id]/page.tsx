@@ -6,6 +6,7 @@ import { ProgressiveImage } from "@/components/progressive-image";
 import { StatusBadge } from "@/components/status-badge";
 import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
 import { applicantCountLabel, newestApplicationsFirst, talentRequirementLabel } from "@/lib/staffing-request-view";
+import { formatDateRangeDisplay, formatShiftTime } from "@/lib/formatters";
 import {
   ArrowLeft,
   CalendarDays,
@@ -74,8 +75,8 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
   const requestFacts = [
     { label: "Pay Rate", value: displayRate(role), icon: Banknote, color: "text-emerald-600 bg-emerald-50" },
     { label: "Talent Requirement", value: `${role.headcount} ${role.headcount === 1 ? "person" : "people"}`, icon: Users, color: "text-blue-600 bg-blue-50" },
-    { label: "Work Dates", value: `${role.work_starts_on} – ${role.work_ends_on}`, icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
-    { label: "Shift Hours", value: `${role.shift_start.slice(0, 5)} – ${role.shift_end.slice(0, 5)}`, icon: Clock, color: "text-amber-600 bg-amber-50" },
+    { label: "Work Dates", value: formatDateRangeDisplay(role.work_starts_on, role.work_ends_on), icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
+    { label: "Shift Hours", value: formatShiftTime(role.shift_start, role.shift_end), icon: Clock, color: "text-amber-600 bg-amber-50" },
     { label: "Required Skills", value: displayList(role.required_skills), icon: Sparkles, color: "text-violet-600 bg-violet-50" },
     { label: "Languages", value: displayList(role.required_languages), icon: Globe, color: "text-sky-600 bg-sky-50" },
     { label: "Worker Standard", value: role.worker_standard || "Standard verified", icon: ShieldCheck, color: "text-rose-600 bg-rose-50" },

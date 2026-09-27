@@ -10,6 +10,10 @@ function normalizedCity(value: string) {
   return cityAliases[normalized] ?? normalized;
 }
 
+export function locationNamesMatch(first: string, second: string) {
+  return Boolean(first.trim() && second.trim()) && normalizedCity(first) === normalizedCity(second);
+}
+
 export function matchingLocationId(city: string, locations: NamedLocationOption[]) {
   const match=normalizedCity(city);
   return locations.find(location=>normalizedCity(location.name)===match)?.id ?? "";

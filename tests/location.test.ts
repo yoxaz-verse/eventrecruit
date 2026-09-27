@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { isIndiaCoordinate, normalizePhotonCollection, normalizePhotonFeature, parseLockedLocation } from "../src/lib/location";
+import { locationNamesMatch } from "../src/lib/location-options";
 
 const indianFeature = {
   geometry: { type: "Point", coordinates: [77.209, 28.6139] },
@@ -12,6 +13,13 @@ test("normalizes an Indian Photon point", () => {
     id: "W:123", venue: "Pragati Maidan", city: "New Delhi", label: "Pragati Maidan, New Delhi, Delhi, India",
     latitude: 28.6139, longitude: 77.209, countryCode: "IN",
   });
+});
+
+test("matches catalog cities using supported aliases", () => {
+  assert.equal(locationNamesMatch("Kochi", "Ernakulam"), true);
+  assert.equal(locationNamesMatch("Cochin", "Ernakulam"), true);
+  assert.equal(locationNamesMatch("Kozhikode", "Ernakulam"), false);
+  assert.equal(locationNamesMatch("", "Ernakulam"), false);
 });
 
 test("filters malformed and non-Indian Photon results and enforces the limit", () => {

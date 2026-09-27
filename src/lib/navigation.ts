@@ -3,6 +3,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  ClipboardCheck,
   BadgeIndianRupee,
   BookOpenCheck,
   Globe,
@@ -80,6 +81,7 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
   ],
   talent: [
     { href: "/dashboard/talent", label: "Opportunities", icon: Sparkles },
+    { href: "/dashboard/talent/applications", label: "My applications", icon: ClipboardCheck },
     { href: "/dashboard/talent/profile", label: "My profile", icon: UserRound },
     { href: "/dashboard/talent/settings", label: "Settings", icon: Settings },
   ],

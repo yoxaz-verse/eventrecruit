@@ -1,21 +1,30 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { CalendarPlus, ShieldAlert } from "lucide-react";
+import { useActionState, useCallback, useMemo, useState } from "react";
+import { CalendarPlus, MapPin, ShieldAlert } from "lucide-react";
 import { createStaffingRole } from "@/app/actions/workflow";
 import { SubmitButton } from "@/components/submit-button";
 import { usePreserveFormValues } from "@/components/use-preserve-form-values";
 import type { SelectableEvent } from "@/lib/exhibitor-events";
+import type { LocationOption } from "@/lib/locations";
 import { containsContactDetails } from "@/lib/contact-detector";
+import { VenueLocationPicker, type ConfirmedVenueLocation } from "@/components/venue-location-picker";
 
-export function StaffingRequestForm({ source, events = [], exhibitorId }: { source: "agency" | "exhibitor"; events?: SelectableEvent[]; exhibitorId?: string }) {
+export function StaffingRequestForm({ source, events = [], exhibitorId, locations = [], locationError = false }: { source: "agency" | "exhibitor"; events?: SelectableEvent[]; exhibitorId?: string; locations?: LocationOption[]; locationError?: boolean }) {
   const [state, action, pending] = useActionState(createStaffingRole, { error: "", success: "" });
   const { formRef, capture } = usePreserveFormValues(state.error, pending);
 
   const [description, setDescription] = useState("");
   const [skills, setSkills] = useState("");
   const [eventMode,setEventMode]=useState<"existing"|"inline">(events.length?"existing":"inline");
+  const [selectedEventValue,setSelectedEventValue]=useState("");
+  const [eventSearch,setEventSearch]=useState("");
+  const [venue,setVenue]=useState("");
+  const [inlineLocationValid,setInlineLocationValid]=useState(false);
   const [rateMode,setRateMode]=useState<"fixed"|"range"|"negotiable">("fixed");
+  const selectedEvent=events.find(event=>event.value===selectedEventValue);
+  const filteredEvents=useMemo(()=>{const query=eventSearch.trim().toLocaleLowerCase("en-IN");return query?events.filter(event=>[event.title,event.venue,event.city,event.attribution].some(value=>value.toLocaleLowerCase("en-IN").includes(query))):events;},[eventSearch,events]);
+  const handleConfirmedLocation=useCallback((confirmed:ConfirmedVenueLocation|null)=>{setInlineLocationValid(Boolean(confirmed));if(confirmed)setVenue(confirmed.location.venue);},[]);
 
   const descCheck = containsContactDetails(description);
   const skillsCheck = containsContactDetails(skills);
@@ -48,21 +57,25 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
       <fieldset className="grid gap-4">
         <legend className="label">Event</legend>
         <div className="flex flex-wrap gap-2">
-          <button className={`button ${eventMode==='existing'?'button-primary':'button-secondary'}`} type="button" disabled={!events.length} onClick={()=>setEventMode('existing')}>Link existing event</button>
-          <button className={`button ${eventMode==='inline'?'button-primary':'button-secondary'}`} type="button" onClick={()=>setEventMode('inline')}>Add event details</button>
+          <button className={`button ${eventMode==='existing'?'button-primary':'button-secondary'}`} type="button" disabled={!events.length} onClick={()=>setEventMode('existing')}>Use existing event</button>
+          <button className={`button ${eventMode==='inline'?'button-primary':'button-secondary'}`} type="button" onClick={()=>setEventMode('inline')}>Enter missing event</button>
         </div>
       {eventMode==='existing' ? <>
-        <label className="label">
-          <span>Event <span className="text-red-500">*</span></span>
-          <select className="input font-medium" name="selected_event" required defaultValue="">
-            <option value="">Select an event</option>
-            {events.map(event => <option key={event.value} value={event.value}>{event.title} · {event.city} · {event.starts_at} · {event.attribution}</option>)}
-          </select>
-        </label>
+        {selectedEvent?<div className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+          <input type="hidden" name="selected_event" value={selectedEvent.value}/>
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="badge">{selectedEvent.attribution}</span><h3 className="mt-2 text-lg font-black">{selectedEvent.title}</h3></div><button className="button button-secondary" type="button" onClick={()=>setSelectedEventValue("")}>Change event</button></div>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2"><div><dt className="font-bold text-[var(--muted)]">Venue</dt><dd>{selectedEvent.venue}</dd></div><div><dt className="font-bold text-[var(--muted)]">Location</dt><dd className="flex gap-1.5"><MapPin size={16} className="mt-0.5 shrink-0 text-[var(--accent)]" aria-hidden/><span>{selectedEvent.locationLabel||selectedEvent.city}</span></dd></div><div><dt className="font-bold text-[var(--muted)]">Event starts</dt><dd>{selectedEvent.starts_at}</dd></div><div><dt className="font-bold text-[var(--muted)]">Event ends</dt><dd>{selectedEvent.ends_at}</dd></div></dl>
+          <p className="text-xs text-[var(--muted)]">These event details are inherited and cannot be changed for this staffing request.</p>
+        </div>:<div className="grid gap-3">
+          <label className="label">Search events<input className="input" type="search" value={eventSearch} onChange={event=>setEventSearch(event.target.value)} placeholder="Search by event, venue, city, or organizer"/></label>
+          <label className="label"><span>Event <span className="text-red-500">*</span></span><select className="input font-medium" required value={selectedEventValue} onChange={event=>setSelectedEventValue(event.target.value)}><option value="">Select an event</option>{filteredEvents.map(event => <option key={event.value} value={event.value}>{event.title} · {event.venue} · {event.city} · {event.attribution}</option>)}</select></label>
+          {!filteredEvents.length?<p className="text-sm text-[var(--muted)]">No events match that search. Choose “Enter missing event” to continue without creating it separately.</p>:null}
+        </div>}
       </> : <div className="grid gap-4 rounded-xl border border-[var(--line)] p-4">
         <p className="text-sm text-[var(--muted)]">The request can be submitted now. Its event will be marked Verification required for admin review.</p>
         <label className="label">Event title <input className="input" name="event_title" required maxLength={160}/></label>
-        <div className="grid gap-3 sm:grid-cols-2"><label className="label">City <input className="input" name="city" required maxLength={120}/></label><label className="label">Venue or address <input className="input" name="venue" required maxLength={200}/></label></div>
+        <label className="label">Venue name <input className="input" name="venue" required maxLength={200} value={venue} onChange={event=>setVenue(event.target.value)} placeholder="Filled from the selected address; edit if needed"/></label>
+        {locationError||!locations.length?<p className="alert" role="alert">The city and address list is temporarily unavailable. Reload this page to try again.</p>:<VenueLocationPicker locations={locations} onConfirmedLocationChange={handleConfirmedLocation}/>}
         <div className="grid gap-3 sm:grid-cols-2"><label className="label">Event starts <input className="input" name="starts_at" required type="date"/></label><label className="label">Event ends <input className="input" name="ends_at" required type="date"/></label></div>
         <label className="label">Shareable map link <span className="field-optional">Optional</span><input className="input" name="map_url" type="url" placeholder="https://maps.google.com/..."/></label>
       </div>}
@@ -162,7 +175,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId }: { sour
 
       {!pending && state.error ? <p className="alert" role="alert">{state.error}</p> : null}
       {!pending && state.success ? <p className="alert" role="status">{state.success}</p> : null}
-      <SubmitButton disabled={contactDetected} pendingText="Submitting request…">Submit staffing request</SubmitButton>
+      <SubmitButton disabled={contactDetected||(eventMode==='inline'&&(locationError||!inlineLocationValid))} pendingText="Submitting request…">Submit staffing request</SubmitButton>
     </form>
   );
 }

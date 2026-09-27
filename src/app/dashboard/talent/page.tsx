@@ -9,10 +9,11 @@ import { CalendarX, Briefcase, BellOff, Sparkles, MapPin, CalendarDays, ArrowRig
 import { requestBookingCancellation } from "@/app/actions/talent-jobs";
 import { requireTalentWorkspace } from "@/lib/dashboard-workspace";
 import { indiaToday } from "@/lib/organizer";
+import { formatShiftTime, formatDateRangeDisplay, formatTitleCase } from "@/lib/formatters";
 import type { EventRole } from "@/lib/types";
 
 type RoleRow={id:string;title:string;description:string|null;headcount:number;hourly_rate:number;shift_start:string;shift_end:string;work_starts_on:string;work_ends_on:string;required_skills:string[]|null;status:string;events:{title:string;venue:string;city:string;location_id:string|null;map_url:string|null}|{title:string;venue:string;city:string;location_id:string|null;map_url:string|null}[]|null};
-const roleView=(record:RoleRow):EventRole|null=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return event?{id:record.id,eventTitle:event.title,location:`${event.venue}, ${event.city}`,mapUrl:event.map_url??undefined,date:`${record.work_starts_on} – ${record.work_ends_on}`,shift:`${record.shift_start} – ${record.shift_end}`,role:record.title,description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}:null;};
+const roleView=(record:RoleRow):EventRole|null=>{const event=Array.isArray(record.events)?record.events[0]:record.events;return event?{id:record.id,eventTitle:formatTitleCase(event.title),location:formatTitleCase(`${event.venue}, ${event.city}`),mapUrl:event.map_url??undefined,date:formatDateRangeDisplay(record.work_starts_on,record.work_ends_on),shift:formatShiftTime(record.shift_start,record.shift_end),role:formatTitleCase(record.title),description:record.description??undefined,headcount:record.headcount,rate:Number(record.hourly_rate),skills:record.required_skills??[],status:record.status as EventRole["status"]}:null;};
 
 export default async function TalentDashboard({searchParams}:{searchParams:Promise<{view?:string}>}) {
  const {profile:talent,db}=await requireTalentWorkspace();
@@ -62,9 +63,44 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
  <p className="mb-5 text-sm text-[var(--muted)]">{view==="preferred"?(names.length?`Showing ${names.join(", ")}. Alerts are limited to these cities.`:"Add preferred cities to personalize this tab."):"Explore other cities. These opportunities do not generate alerts."}</p>
 
  <section className="mb-8">
-   <h2 className="text-2xl font-bold">Upcoming events</h2>
+   <h2 className="text-2xl font-bold tracking-tight">Upcoming events</h2>
    {events.length ? (
-     <div className="mt-4 grid gap-4 md:grid-cols-2">{events.map(event=><article className="panel p-5" key={`${event.source}-${event.id}`}><span className="badge">{event.source}</span><h3 className="mt-3 text-xl font-black"><Link href={event.href}>{event.title}</Link></h3><p className="text-sm">{event.venue}, {event.city}</p><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p></article>)}</div>
+     <div className="mt-4 grid gap-4 md:grid-cols-2">
+       {events.map(event => (
+         <article className="panel p-5 border border-[var(--line)] rounded-2xl bg-white shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group" key={`${event.source}-${event.id}`}>
+           <div>
+             <div className="flex items-center justify-between gap-2 mb-3">
+               <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-extrabold text-blue-700 border border-blue-200/70 uppercase tracking-wider">
+                 <Sparkles size={11} className="text-blue-500" />
+                 {event.source === "Exhibitor-submitted" ? "Exhibitor Event" : "Organizer Event"}
+               </span>
+               <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                 Upcoming
+               </span>
+             </div>
+             <h3 className="text-lg font-black tracking-tight text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors">
+               <Link href={event.href}>{formatTitleCase(event.title)}</Link>
+             </h3>
+             <div className="mt-3 space-y-1.5 text-xs font-medium text-[var(--muted)]">
+               <p className="flex items-center gap-2">
+                 <MapPin size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
+                 <span className="font-semibold text-slate-700">{formatTitleCase(`${event.venue}, ${event.city}`)}</span>
+               </p>
+               <p className="flex items-center gap-2">
+                 <CalendarDays size={15} className="text-[var(--accent)] shrink-0" aria-hidden />
+                 <span>{formatDateRangeDisplay(event.starts_at, event.ends_at)}</span>
+               </p>
+             </div>
+           </div>
+           <div className="mt-4 pt-3 border-t border-[var(--line)]/60 flex items-center justify-between">
+             <Link className="inline-flex items-center gap-1 text-xs font-black text-[var(--accent)] hover:underline" href={event.href}>
+               <span>View event details</span>
+               <ArrowRight size={14} />
+             </Link>
+           </div>
+         </article>
+       ))}
+     </div>
    ) : (
      <EmptyState
        icon={CalendarX}

@@ -31,7 +31,7 @@ export async function submitExhibitorEvent(_state: ExhibitorEventFormState, form
   const venue = String(formData.get("venue") ?? "").trim();
   const locationId = String(formData.get("location_id") ?? "").trim();
   const catalogLocations=locationId?await resolveActiveLocations([locationId]):[];
-  if(!locationId || !catalogLocations) return { error: "Choose an active city from the list." };
+  if(!locationId || !catalogLocations?.length) return { error: "Choose an active city from the list." };
   const city=String(formData.get("city")??"").trim();
   const starts_at = String(formData.get("starts_at") ?? "");
   const ends_at = String(formData.get("ends_at") ?? "");
@@ -41,10 +41,10 @@ export async function submitExhibitorEvent(_state: ExhibitorEventFormState, form
   const location = parseLockedLocation(formData);
   if (!title || title.length > 160) return { error: "Enter an event title within 160 characters." };
   if (!venue || venue.length > 200) return { error: "Enter a venue name within 200 characters." };
-  if (!city || city.length > 120) return { error: "Choose and lock a complete venue location." };
+  if (!city || city.length > 120) return { error: "Choose and confirm a complete venue location." };
   if (description.length > 10000) return { error: "Keep the event description within 10,000 characters." };
   if (!validDate(starts_at) || !validDate(ends_at) || !isUpcomingDateRange(starts_at, ends_at, todayInIndia())) return { error: "Use current or upcoming dates, with the end date on or after the start date." };
-  if (!location.valid) return { error: "Choose and lock an Indian venue location before submitting." };
+  if (!location.valid) return { error: "Choose and confirm an Indian venue location before submitting." };
   if (!validEventAmenities(amenities, rawCustomAmenities)) return { error: "Choose valid amenities and add no more than 10 unique custom amenities." };
   const { data: owned, error: ownerError } = await db.from("exhibitors").select("id").eq("owner_id", profile.id).maybeSingle();
   if (ownerError) {

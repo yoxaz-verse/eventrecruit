@@ -19,18 +19,23 @@ const VenueLocationMap = dynamic(() => import("@/components/venue-location-map")
 export type InitialVenueLocation = Partial<Pick<LocationResult, "city" | "label" | "latitude" | "longitude" | "countryCode">>;
 type LocationOption = { id: string; name: string; state_name: string; country_name: string };
 
-export function VenueLocationPicker({ initial, locations = [], initialLocationId }: { initial?: InitialVenueLocation; locations?: LocationOption[]; initialLocationId?: string | null }) {
+type LockedVenueLocation = { location: LocationResult; locationId: string; cityName: string };
+export type ConfirmedVenueLocation = LockedVenueLocation;
+
+export function VenueLocationPicker({ initial, locations = [], initialLocationId, onValidityChange, onConfirmedLocationChange, autoConfirm = true }: { initial?: InitialVenueLocation; locations?: LocationOption[]; initialLocationId?: string | null; onValidityChange?: (valid: boolean) => void; onConfirmedLocationChange?: (location: ConfirmedVenueLocation | null) => void; autoConfirm?: boolean }) {
   const listId = useId();
   const searchRequestRef = useRef<AbortController | null>(null);
   const reverseRequestRef = useRef<AbortController | null>(null);
   const reverseSequenceRef = useRef(0);
   const hasInitialPin = Number.isFinite(initial?.latitude) && Number.isFinite(initial?.longitude) && initial?.countryCode === "IN";
   const [query, setQuery] = useState(initial?.label || "");
-  const [location, setLocation] = useState<LocationResult | null>(hasInitialPin ? {
+  const initialResult: LocationResult | null = hasInitialPin ? {
     id: "saved", venue: "", city: initial?.city ?? "", label: initial?.label ?? "",
     latitude: initial!.latitude!, longitude: initial!.longitude!, countryCode: "IN",
-  } : null);
-  const [locked, setLocked] = useState(Boolean(hasInitialPin));
+  } : null;
+  const [location, setLocation] = useState<LocationResult | null>(initialResult);
+  const initialCityName=locations.find(option=>option.id===initialLocationId)?.name??initial?.city??"";
+  const [lockedLocation, setLockedLocation] = useState<LockedVenueLocation | null>(initialResult && initialLocationId && initialCityName ? { location: initialResult, locationId: initialLocationId, cityName: initialCityName } : null);
   const [results, setResults] = useState<LocationResult[]>([]);
   const [status, setStatus] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -38,6 +43,12 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
   const [locationId, setLocationId] = useState(initialLocationId ?? "");
   const [locationResolved, setLocationResolved] = useState(Boolean(hasInitialPin));
   const [reversePending, setReversePending] = useState(false);
+  const locked = Boolean(lockedLocation);
+
+  useEffect(() => {
+    onValidityChange?.(Boolean(lockedLocation));
+    onConfirmedLocationChange?.(lockedLocation);
+  }, [lockedLocation, onConfirmedLocationChange, onValidityChange]);
 
   const cancelReverse = () => {
     reverseSequenceRef.current += 1;
@@ -72,7 +83,12 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
 
   const choose = (result: LocationResult) => {
     cancelReverse();
-    setLocation(result); setLocationId(matchingLocationId(result.city,locations)); setQuery(result.label); setResults([]); setStatus("Pin selected. Drag it or click the map to fine-tune, then lock it."); setLocked(false); setSearchEnabled(false);
+    const matchedLocationId=matchingLocationId(result.city,locations);
+    const confirmedLocationId=matchedLocationId||locationId;
+    const cityName=locations.find(option=>option.id===confirmedLocationId)?.name??"";
+    setLocation(result); setLocationId(confirmedLocationId); setQuery(result.label); setResults([]); setActiveIndex(-1); setSearchEnabled(false);
+    if(autoConfirm&&confirmedLocationId&&cityName){setLockedLocation({location:result,locationId:confirmedLocationId,cityName});setStatus("Address selected and confirmed.");}
+    else {setLockedLocation(null);setStatus(confirmedLocationId?"Pin selected. Confirm the location to continue.":"Select the matching Kerala city, then confirm the location.");}
     setLocationResolved(true);
   };
   const reverse = async (latitude: number, longitude: number) => {
@@ -81,7 +97,7 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
     const sequence = reverseSequenceRef.current + 1;
     reverseSequenceRef.current = sequence;
     reverseRequestRef.current = controller;
-    setLocked(false); setResults([]); setSearchEnabled(false); setReversePending(true); setLocationResolved(false); setStatus("Identifying location…");
+    setLockedLocation(null); setResults([]); setSearchEnabled(false); setReversePending(true); setLocationResolved(false); setStatus("Identifying location…");
     setQuery(""); setLocationId("");
     setLocation({ id: `selected:${latitude}:${longitude}`, venue: "", city: "", label: "", latitude, longitude, countryCode: "IN" });
     try {
@@ -90,7 +106,8 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
       if (!response.ok) throw new Error(payload.error);
       if (sequence !== reverseSequenceRef.current) return;
       const result = { ...payload.result, latitude, longitude } as LocationResult;
-      setLocation(result); setLocationId(matchingLocationId(result.city, locations)); setQuery(result.label); setResults([]); setStatus("Pin selected. Drag it or click the map to fine-tune, then lock it."); setSearchEnabled(false); setLocationResolved(true);
+      const matchedLocationId=matchingLocationId(result.city, locations);
+      setLocation(result); setLocationId(matchedLocationId); setQuery(result.label); setResults([]); setStatus(matchedLocationId?"Pin selected. Drag it or click the map to fine-tune, then lock it.":"Select the matching Kerala city, then lock the location."); setSearchEnabled(false); setLocationResolved(true);
     } catch (error) {
       if ((error as Error).name !== "AbortError" && sequence === reverseSequenceRef.current) setStatus(error instanceof Error ? error.message : "Unable to identify that location.");
     } finally {
@@ -100,11 +117,11 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
       }
     }
   };
-  const reset = () => { searchRequestRef.current?.abort(); cancelReverse(); setQuery(""); setLocation(null); setLocationId(""); setLocked(false); setLocationResolved(false); setResults([]); setStatus(""); setSearchEnabled(false); };
+  const reset = () => { searchRequestRef.current?.abort(); cancelReverse(); setQuery(""); setLocation(null); setLocationId(""); setLockedLocation(null); setLocationResolved(false); setResults([]); setStatus(""); setSearchEnabled(false); };
   const useCurrentLocation = () => {
     cancelReverse();
     const sequence = reverseSequenceRef.current;
-    setLocked(false); setResults([]); setLocationResolved(false); setReversePending(true);
+    setLockedLocation(null); setResults([]); setLocationResolved(false); setReversePending(true);
     if (!navigator.geolocation) { setReversePending(false); setStatus("Your browser does not support location access."); return; }
     setStatus("Finding your location…");
     navigator.geolocation.getCurrentPosition(
@@ -123,11 +140,11 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
 
   return <fieldset className="grid gap-3 border-t border-[var(--line)] pt-5">
     <legend className="text-lg font-bold">Venue location</legend>
-    <p className="text-sm text-[var(--muted)]">Choose a Kerala city, search for the exact address, adjust the pin if needed, then lock it. The venue name is entered separately above.</p>
-    <label className="label"><span>City <span aria-hidden="true" className="text-red-600">*</span></span><select className="input" required value={locationId} onChange={event=>setLocationId(event.target.value)}><option value="" disabled>Select a Kerala city</option>{initialLocationId&&!locations.some(option=>option.id===initialLocationId)?<option value={initialLocationId}>{initial?.city??"Current city"}</option>:null}{locations.map(option=><option key={option.id} value={option.id}>{option.name}</option>)}</select></label>
+    <p className="text-sm text-[var(--muted)]">Choose a Kerala city, then select the exact venue address. Selecting an address confirms it automatically.</p>
+    <label className="label"><span>City <span aria-hidden="true" className="text-red-600">*</span></span><select className="input" required value={locationId} onChange={event=>{setLocationId(event.target.value);setLockedLocation(null);setStatus("City changed. Confirm the address and lock the location again.");}}><option value="" disabled>Select a Kerala city</option>{initialLocationId&&!locations.some(option=>option.id===initialLocationId)?<option value={initialLocationId}>{initial?.city??"Current city"}</option>:null}{locations.map(option=><option key={option.id} value={option.id}>{option.name}</option>)}</select></label>
     <div className="relative">
       <label className="label" htmlFor={`${listId}-input`}>Venue address
-        <input id={`${listId}-input`} className="input" value={query} autoComplete="off" role="combobox" aria-autocomplete="list" aria-controls={listId} aria-expanded={results.length > 0} aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined} disabled={locked} maxLength={500} placeholder={reversePending ? "Identifying location…" : "Start typing the venue address or nearby landmark"} onKeyDown={onKeyDown} onChange={event => { cancelReverse(); setQuery(event.target.value); setSearchEnabled(true); setLocked(false); setLocationResolved(false); setLocation(null); setResults([]); setStatus(""); }}/>
+        <input id={`${listId}-input`} className="input" value={query} autoComplete="off" role="combobox" aria-autocomplete="list" aria-controls={listId} aria-expanded={results.length > 0} aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined} disabled={locked} maxLength={500} placeholder={reversePending ? "Identifying location…" : "Start typing the venue address or nearby landmark"} onKeyDown={onKeyDown} onChange={event => { cancelReverse(); setQuery(event.target.value); setSearchEnabled(true); setLockedLocation(null); setLocationResolved(false); setLocation(null); setResults([]); setStatus(""); }}/>
       </label>
       {results.length > 0 && <ul id={listId} role="listbox" className="absolute z-[1001] mt-1 max-h-64 w-full overflow-auto rounded-xl border border-[var(--line)] bg-white p-1 shadow-xl">
         {results.map((result, index) => <li id={`${listId}-${index}`} role="option" aria-selected={activeIndex === index} key={result.id}><button className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--soft)] ${activeIndex === index ? "bg-[var(--soft)]" : ""}`} type="button" onMouseDown={event => event.preventDefault()} onClick={() => choose(result)}><span className="block font-bold">{result.venue}</span><span className="block text-[var(--muted)]">{result.label}</span></button></li>)}
@@ -139,14 +156,14 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
     </>}
     <div className="flex flex-wrap gap-2">
       {!locked && <button className="button button-secondary" type="button" onClick={useCurrentLocation}>Use my location</button>}
-      {location && !locked && <button className="button button-primary" type="button" disabled={!locationResolved || reversePending} onClick={() => { setLocked(true); setResults([]); setStatus("Location locked."); }}>Lock location</button>}
+      {location && !locked && <button className="button button-primary" type="button" disabled={!locationResolved || reversePending || !locationId} onClick={() => { const cityName=locations.find(option=>option.id===locationId)?.name??(locationId===initialLocationId?initialCityName:""); if(!cityName)return; setLockedLocation({location,locationId,cityName}); setResults([]); setStatus("Address confirmed."); }}>Confirm location</button>}
       {(query || location) && !locked && <button className="button button-secondary" type="button" onClick={reset}>Reset</button>}
-      {locked && <button className="button button-secondary" type="button" onClick={() => { setLocked(false); setStatus("Location unlocked. Search or move the pin, then lock it again."); }}>Unlock to edit</button>}
+      {locked && <button className="button button-secondary" type="button" onClick={() => { setLockedLocation(null); setStatus("Location is editable. Select an address again to confirm it."); }}>Edit location</button>}
     </div>
     <p className={`text-sm ${locked ? "text-[var(--success)]" : "text-[var(--muted)]"}`} aria-live="polite">{status || (query.length > 0 && query.length < 3 ? "Type at least 3 characters to search." : "")}</p>
-    <input type="hidden" name="city" value={location?.city ?? ""}/>
-    <input type="hidden" name="location_label" value={location?.label ?? ""}/><input type="hidden" name="latitude" value={location?.latitude ?? ""}/>
-    <input type="hidden" name="longitude" value={location?.longitude ?? ""}/><input type="hidden" name="location_country_code" value={location?.countryCode ?? ""}/>
-    <input type="hidden" name="location_id" value={locationId}/><input type="hidden" name="location_locked" value={locked ? "1" : "0"}/>
+    <input type="hidden" name="city" value={lockedLocation?.cityName ?? ""}/>
+    <input type="hidden" name="location_label" value={lockedLocation?.location.label ?? ""}/><input type="hidden" name="latitude" value={lockedLocation?.location.latitude ?? ""}/>
+    <input type="hidden" name="longitude" value={lockedLocation?.location.longitude ?? ""}/><input type="hidden" name="location_country_code" value={lockedLocation?.location.countryCode ?? ""}/>
+    <input type="hidden" name="location_id" value={lockedLocation?.locationId ?? ""}/><input type="hidden" name="location_locked" value={locked ? "1" : "0"}/>
   </fieldset>;
 }
