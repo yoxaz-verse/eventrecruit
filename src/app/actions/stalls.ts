@@ -9,8 +9,6 @@ import { parseCatalogSelection } from "@/lib/event-selection";
 import { parseLockedLocation } from "@/lib/location";
 import { resolveActiveLocations } from "@/lib/locations";
 import { validDate } from "@/lib/organizer";
-import { validBrandImageSignature } from "@/lib/image-upload";
-import { putR2Object } from "@/lib/r2";
 
 export type StallFormState={error:string};
 const text=(formData:FormData,key:string,max:number)=>String(formData.get(key)??"").trim().slice(0,max);
@@ -44,18 +42,13 @@ export async function saveStall(_state:StallFormState,formData:FormData):Promise
     const locations=locationId?await resolveActiveLocations([locationId]):[];
     if(!title||!venue||!validDate(starts)||!validDate(ends)||ends<starts||!location.valid||!locations?.length)return {error:"Complete the missing event with valid venue, location, and dates."};
     const inserted=await db.from("events").insert({exhibitor_id:exhibitorId,title,venue,city:locations[0].name,location_id:locationId,latitude:location.latitude,longitude:location.longitude,location_label:location.locationLabel,map_url:text(formData,"map_url",1000)||null,starts_at:starts,ends_at:ends,verification_status:"verification_required",created_by:profile.id,actor_id:profile.id}).select("id").single();
+    if(inserted.error)return {error:inserted.error.code==="23503"?"The selected venue location is no longer available. Choose it again.":"Unable to create the missing event. Check its location and dates, then try again."};
     eventId=inserted.data?.id??"";
   } else return {error:"Choose an event option."};
   if(!eventId)return {error:"Unable to prepare the event for this stall."};
   const area=String(formData.get("area_sqft")??"").trim();
   const {data:stall,error}=await db.from("exhibitor_stalls").insert({exhibitor_id:exhibitorId,event_id:eventId,created_by:profile.id,name,booth_number:text(formData,"booth_number",80)||null,booth_location:text(formData,"booth_location",240)||null,area_sqft:area?Number(area):null,dimensions:text(formData,"dimensions",160)||null,description:text(formData,"description",5000),products_services:text(formData,"products_services",5000),branding_notes:text(formData,"branding_notes",3000),utilities:text(formData,"utilities",3000),equipment:text(formData,"equipment",3000),setup_at:String(formData.get("setup_at")??"")||null,teardown_at:String(formData.get("teardown_at")??"")||null,vendor_details:text(formData,"vendor_details",3000),permits_documents:text(formData,"permits_documents",3000),instructions:text(formData,"instructions",5000)}).select("id").single();
-  if(error||!stall)return {error:"Unable to save the stall. Check its details and try again."};
-  const image=formData.get("image");
-  if(image instanceof File&&image.size){
-    if(!(await validBrandImageSignature(image)))return {error:"The stall was saved, but its image must be a compressed WebP no larger than 500 KB."};
-    const imagePath=`stalls/${stall.id}/${crypto.randomUUID()}.webp`;
-    try{await putR2Object(imagePath,image);const linked=await db.from("exhibitor_stalls").update({image_path:imagePath,updated_at:new Date().toISOString()}).eq("id",stall.id);if(linked.error)throw linked.error;}catch{return {error:"The stall was saved, but its image could not be uploaded. Open the stall and try again."};}
-  }
+  if(error||!stall)return {error:error?.code==="23503"?"The selected event is no longer available. Choose it again.":error?.code==="42501"?"You no longer have permission to create a stall for this exhibitor.":"Unable to save the stall details. Review the required fields and try again."};
   revalidatePath("/dashboard/exhibitor/stalls");
   redirect(profile.role==="agency"?`/dashboard/agency/requests/new?client=${encodeURIComponent(exhibitorId)}&stall=${stall.id}`:`/dashboard/exhibitor/requests/new?stall=${stall.id}`);
 }

@@ -137,6 +137,29 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
     if (event.key === "Escape") { setResults([]); setActiveIndex(-1); }
     if (event.key === "Enter" && activeIndex >= 0) { event.preventDefault(); choose(results[activeIndex]); }
   };
+  const confirmLocation = () => {
+    if (!location || !locationResolved) {
+      setStatus("Select an exact venue address or map point before confirming.");
+      return;
+    }
+    if (reversePending) {
+      setStatus("Wait until the selected location has been identified.");
+      return;
+    }
+    if (!locationId) {
+      setStatus("Select the matching Kerala city before confirming this location.");
+      return;
+    }
+    const cityName = locations.find(option => option.id === locationId)?.name
+      ?? (locationId === initialLocationId ? initialCityName : "");
+    if (!cityName) {
+      setStatus("The selected city is unavailable. Choose a Kerala city from the list and try again.");
+      return;
+    }
+    setLockedLocation({ location, locationId, cityName });
+    setResults([]);
+    setStatus("Location confirmed. You can now save the stall.");
+  };
 
   return <fieldset className="grid gap-3 border-t border-[var(--line)] pt-5">
     <legend className="text-lg font-bold">Venue location</legend>
@@ -156,11 +179,11 @@ export function VenueLocationPicker({ initial, locations = [], initialLocationId
     </>}
     <div className="flex flex-wrap gap-2">
       {!locked && <button className="button button-secondary" type="button" onClick={useCurrentLocation}>Use my location</button>}
-      {location && !locked && <button className="button button-primary" type="button" disabled={!locationResolved || reversePending || !locationId} onClick={() => { const cityName=locations.find(option=>option.id===locationId)?.name??(locationId===initialLocationId?initialCityName:""); if(!cityName)return; setLockedLocation({location,locationId,cityName}); setResults([]); setStatus("Address confirmed."); }}>Confirm location</button>}
+      {location && !locked && <button className="button button-primary" type="button" aria-describedby={`${listId}-status`} onClick={confirmLocation}>Confirm location</button>}
       {(query || location) && !locked && <button className="button button-secondary" type="button" onClick={reset}>Reset</button>}
       {locked && <button className="button button-secondary" type="button" onClick={() => { setLockedLocation(null); setStatus("Location is editable. Select an address again to confirm it."); }}>Edit location</button>}
     </div>
-    <p className={`text-sm ${locked ? "text-[var(--success)]" : "text-[var(--muted)]"}`} aria-live="polite">{status || (query.length > 0 && query.length < 3 ? "Type at least 3 characters to search." : "")}</p>
+    <p id={`${listId}-status`} className={`text-sm ${locked ? "text-[var(--success)]" : "text-[var(--muted)]"}`} aria-live="polite">{status || (query.length > 0 && query.length < 3 ? "Type at least 3 characters to search." : "")}</p>
     <input type="hidden" name="city" value={lockedLocation?.cityName ?? ""}/>
     <input type="hidden" name="location_label" value={lockedLocation?.location.label ?? ""}/><input type="hidden" name="latitude" value={lockedLocation?.location.latitude ?? ""}/>
     <input type="hidden" name="longitude" value={lockedLocation?.location.longitude ?? ""}/><input type="hidden" name="location_country_code" value={lockedLocation?.location.countryCode ?? ""}/>
