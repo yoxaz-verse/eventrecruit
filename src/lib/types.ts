@@ -38,6 +38,7 @@ export type InformationVisibility = "internal" | "staff" | "client_shareable";
 
 export type EventLifecycleStatus = "draft" | "submitted" | "published" | "cancelled";
 export type RateMode = "fixed" | "range" | "negotiable";
+export type OpportunityType = "paid" | "volunteer";
 export type VerificationRequestStatus = "pending" | "verified" | "rejected" | "cancelled";
 export type SettlementStatus = "pending" | "sent" | "received" | "processing" | "partially_paid" | "paid" | "failed" | "refunded";
 export type PayoutRecipientType = "agency" | "talent";
@@ -53,6 +54,7 @@ export type EventRole = {
   description?: string;
   headcount: number;
   rate: number;
+  opportunityType?: OpportunityType;
   skills: string[];
   preferredSkills?: string[];
   languages?: string[];

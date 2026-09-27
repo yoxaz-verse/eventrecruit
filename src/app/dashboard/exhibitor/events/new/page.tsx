@@ -4,7 +4,7 @@ import { ExhibitorEventForm } from "@/components/exhibitor-event-form";
 import { activeLocations, type LocationOption } from "@/lib/locations";
 import Link from "next/link";
 
-export default async function NewExhibitorEvent() {
+export default async function NewExhibitorEvent({searchParams}:{searchParams:Promise<{returnTo?:string}>}) {
   await requireExhibitorWorkspace();
   let locations:LocationOption[]=[];
   let locationError=false;
@@ -20,7 +20,7 @@ export default async function NewExhibitorEvent() {
         <p className="mb-6 text-[var(--muted)]">Propose an upcoming event for admin review and approval.</p>
 
         {locationError?<div className="alert mb-5" role="alert">The city list is temporarily unavailable. <Link className="underline" href="/dashboard/exhibitor/events/new">Try loading it again.</Link></div>:null}
-        <ExhibitorEventForm locations={locations} locationError={locationError} />
+        <ExhibitorEventForm locations={locations} locationError={locationError} returnToStall={(await searchParams).returnTo==="stall"} />
       </div>
     </>
   );

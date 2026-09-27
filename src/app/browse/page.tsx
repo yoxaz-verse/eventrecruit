@@ -46,19 +46,19 @@ export default async function BrowsePage({
             <form className="panel filter-panel my-8 grid gap-4 p-6 shadow-md md:grid-cols-[1fr_220px_auto]" action="/browse">
               <label className="label">
                 <span>Role or event title</span>
-                <div className="relative">
-                  <input className="input pl-10" name="q" placeholder="e.g. Promoter, Host, Demo..." defaultValue={q} maxLength={160} />
-                  <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-hidden />
+                <div className="input-icon-wrap">
+                  <Search size={18} aria-hidden />
+                  <input className="input" name="q" placeholder="e.g. Promoter, Host, Demo..." defaultValue={q} maxLength={160} />
                 </div>
               </label>
               <label className="label">
                 <span>City location</span>
-                <div className="relative">
-                  <select className="input pl-10" name="city" defaultValue={city}>
+                <div className="input-icon-wrap">
+                  <MapPin size={18} aria-hidden />
+                  <select className="input" name="city" defaultValue={city}>
                     <option value="">All cities</option>
                     {cities.map((name) => <option key={name} value={name}>{name}</option>)}
                   </select>
-                  <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" aria-hidden />
                 </div>
               </label>
               <button className="button button-primary self-end gap-2 px-6" type="submit">

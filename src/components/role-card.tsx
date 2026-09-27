@@ -10,6 +10,7 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-[var(--line)]/60">
           <div>
+            {role.opportunityType==="volunteer"?<span className="badge badge-accent mb-2">Volunteer · unpaid</span>:null}
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1">
               <ShieldCheck size={13} className="text-[var(--accent)]" />
               <span>{role.eventTitle}</span>
@@ -60,7 +61,7 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
             ))}
           </div>
           <div className="shrink-0 font-black text-sm text-[var(--accent)] bg-[var(--surface)] px-3 py-1.5 rounded-xl border border-[var(--line)] shadow-2xs">
-            {formatHourlyRate(role.rate, rateUnit)}
+            {role.opportunityType==="volunteer"?"Unpaid volunteer":formatHourlyRate(role.rate, rateUnit)}
           </div>
         </div>
 

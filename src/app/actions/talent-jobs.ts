@@ -8,7 +8,7 @@ export async function updateTalentPreferences(form:FormData) {
   const talent = await requireRole(["talent"]);
   const db = await createClient();
   if (!db) throw new Error("Preferences unavailable.");
-  const {error} = await db.from("talent_job_preferences").upsert({talent_id:talent.id,is_online:form.get("is_online")==="true",notify_push:form.get("notify_push")==="true",updated_at:new Date().toISOString()});
+  const {error} = await db.from("talent_job_preferences").upsert({talent_id:talent.id,available_for_work:form.get("available_for_work")==="true",presence_visible:form.get("presence_visible")==="true",notify_push:form.get("notify_push")==="true",updated_at:new Date().toISOString()});
   if (error) throw new Error("Unable to save preferences.");
   revalidatePath("/dashboard/talent");
   invalidatePublicData(PUBLIC_CACHE_TAGS.roles);

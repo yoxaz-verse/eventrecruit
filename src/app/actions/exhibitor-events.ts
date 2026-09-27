@@ -61,6 +61,7 @@ export async function submitExhibitorEvent(_state: ExhibitorEventFormState, form
   }
   revalidatePath("/dashboard/exhibitor/events");
   revalidatePath("/dashboard/admin/events");
+  if(formData.get("return_to_stall")==="1") redirect(profile.role === "agency" ? `/dashboard/agency/stalls/new?client=${exhibitor.id}` : "/dashboard/exhibitor/stalls/new");
   redirect(profile.role === "agency" ? `/dashboard/agency/events?client=${exhibitor.id}&submitted=1` : "/dashboard/exhibitor/events?submitted=1");
 }
 

@@ -93,6 +93,7 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   const mapUrl=String(formData.get("map_url")??"").trim();
   const locationId=String(formData.get("location_id")??"").trim();
   const lockedLocation=parseLockedLocation(formData);
+  const stallId=String(formData.get("stall_id")??"");
 
   // Contact detail auto-detector check
   const descCheck = containsContactDetails(description);
@@ -147,7 +148,12 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
   }
 
   let eventFields = { title: eventTitle, venue, city, location_id:locationId||null, latitude:Number.isFinite(lockedLocation.latitude)?lockedLocation.latitude:null as number|null, longitude:Number.isFinite(lockedLocation.longitude)?lockedLocation.longitude:null as number|null, location_label:lockedLocation.locationLabel||null as string|null, starts_at: startsAt, ends_at: endsAt, organizer_event_id: null as string | null, exhibitor_event_submission_id: null as string | null, verification_status:"verification_required", map_url:mapUrl||null, payer_type:source };
-  if(eventMode==="existing") {
+  if(eventMode==="stall") {
+    const {data:stall,error:stallError}=await supabase.from("exhibitor_stalls").select("id,event_id,exhibitor_id,events(id,title,venue,city,location_id,latitude,longitude,location_label,map_url,starts_at,ends_at,verification_status)").eq("id",stallId).eq("exhibitor_id",requestedExhibitorId).maybeSingle();
+    const selected=Array.isArray(stall?.events)?stall.events[0]:stall?.events;
+    if(stallError||!stall||!selected)return {error:"Choose a stall you can manage.",success:""};
+    eventFields={title:selected.title,venue:selected.venue,city:selected.city,location_id:selected.location_id,latitude:selected.latitude,longitude:selected.longitude,location_label:selected.location_label,starts_at:selected.starts_at,ends_at:selected.ends_at,organizer_event_id:null,exhibitor_event_submission_id:null,verification_status:selected.verification_status,map_url:selected.map_url??null,payer_type:source};
+  } else if(eventMode==="existing") {
     const selection = parseCatalogSelection(selectedEvent);
     if (!selection) return { error: "Choose an event from the list.", success: "" };
     const { kind, id } = selection;
@@ -172,7 +178,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     const { data } = await supabase.from("events").select("id").eq("exhibitor_id", requestedExhibitorId).eq(catalogColumn, catalogId).maybeSingle();
     return data;
   };
-  let event = await findExisting();
+  const stallEventId=eventMode==="stall"?(await supabase.from("exhibitor_stalls").select("event_id").eq("id",stallId).eq("exhibitor_id",requestedExhibitorId).single()).data?.event_id:null;
+  let event = stallEventId?{id:stallEventId}:await findExisting();
   let createdEvent = false;
   if (!event) {
     const inserted = await supabase.from("events").insert({
@@ -222,6 +229,8 @@ export async function createStaffingRole(_state: WorkflowFormState, formData: Fo
     application_deadline:String(formData.get("application_deadline")??"")||null,
     publication_status:"draft",
     operation_status:"requirement_received",
+    stall_id:stallId||null,
+    opportunity_type:"paid",
   }).select("id").single();
 
   if (error) {
@@ -300,7 +309,7 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
   if (!applicationStatuses.includes(status)) {
     return { error: "Choose a valid application status.", success: "" };
   }
-  if (!["exhibitor", "agency"].includes(profile.role)) return { error: "You cannot update this application.", success: "" };
+  if (!["exhibitor", "agency", "organizer"].includes(profile.role)) return { error: "You cannot update this application.", success: "" };
   if(profile.role==="agency"&&status==="assigned"&&(agreedRate===null||!Number.isFinite(agreedRate)||agreedRate<0))return {error:"Enter the agreed worker payout before assigning.",success:""};
   const { data: application } = await supabase.from("applications").select("staffing_role_id,status,cancellation_requested_at").eq("id", applicationId).maybeSingle();
   if (!application || !await staffingOwner(supabase, application.staffing_role_id, profile.id)) return { error: "You cannot update this application.", success: "" };
@@ -320,6 +329,7 @@ export async function updateApplicationStatus(_state: WorkflowFormState, formDat
   revalidatePath("/dashboard/exhibitor/applicants");
   revalidatePath(`/dashboard/exhibitor/requests/${application.staffing_role_id}`);
   revalidatePath("/dashboard/agency");
+  revalidatePath("/dashboard/organizer");
   return { error: "", success: "Application updated." };
 }
 

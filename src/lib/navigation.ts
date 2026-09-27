@@ -19,6 +19,7 @@ import {
   ContactRound,
   FileText,
   Handshake,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
@@ -72,6 +73,7 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
     { href: "/dashboard/exhibitor/profile", label: "Profile", icon: ContactRound },
     { href: "/dashboard/exhibitor/events", label: "My events", icon: CalendarDays },
+    { href: "/dashboard/exhibitor/stalls", label: "Stalls", icon: Store },
     { href: "/dashboard/exhibitor/space-inquiries", label: "Space inquiries", icon: ClipboardList },
     { href: "/dashboard/exhibitor/requests", label: "Staff requests", icon: ClipboardList },
     { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck },

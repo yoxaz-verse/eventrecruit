@@ -6,7 +6,7 @@ const uuid = /^[0-9a-f-]{36}$/i;
 
 export async function GET(_request: Request, { params }: { params: Promise<{ scope: string; id: string }> }) {
   const { scope, id } = await params;
-  if (!uuid.test(id) || !["talent", "profile", "agency", "exhibitor", "event"].includes(scope)) return new Response("Not found", { status: 404 });
+  if (!uuid.test(id) || !["talent", "profile", "agency", "exhibitor", "event", "stall"].includes(scope)) return new Response("Not found", { status: 404 });
   const db = await createClient();
   if (!db) return new Response("Unavailable", { status: 503 });
   let path: string | null = null;
@@ -32,6 +32,20 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sco
       if (!viewer || (viewer.role !== "admin" && company?.owner_id !== viewer.id)) return new Response("Not found", { status: 404 });
     }
     path = event?.logo_path ?? null;
+  } else if (scope === "stall") {
+    isPrivate = true;
+    const viewer = await getCurrentProfile();
+    if (!viewer) return new Response("Unauthorized", { status: 401 });
+    const { data: stall } = await db.from("exhibitor_stalls").select("image_path,exhibitor_id,exhibitors(owner_id)").eq("id", id).maybeSingle();
+    const exhibitor = Array.isArray(stall?.exhibitors) ? stall.exhibitors[0] : stall?.exhibitors;
+    let allowed = viewer.role === "admin" || exhibitor?.owner_id === viewer.id;
+    if (!allowed && viewer.role === "agency" && stall?.exhibitor_id) {
+      const { data: agency } = await db.from("agencies").select("id").eq("owner_id", viewer.id).maybeSingle();
+      const { data: relationship } = agency ? await db.from("agency_exhibitor_relationships").select("id").eq("agency_id", agency.id).eq("exhibitor_id", stall.exhibitor_id).eq("status", "active").maybeSingle() : { data: null };
+      allowed = Boolean(relationship);
+    }
+    if (!allowed) return new Response("Forbidden", { status: 403 });
+    path = stall?.image_path ?? null;
   } else {
     isPrivate = true;
     const viewer = await getCurrentProfile();

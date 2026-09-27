@@ -4,8 +4,13 @@ import { ApplicationStatusActions } from "@/components/application-status-action
 import { ProgressiveImage } from "@/components/progressive-image";
 
 import { StatusBadge } from "@/components/status-badge";
+import { ActiveApplicantFilter } from "@/components/active-applicant-filter";
+import { RecruiterPresenceRefresh } from "@/components/recruiter-presence-refresh";
+import { TalentPresenceBadges } from "@/components/talent-presence-badges";
 import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
 import { applicantCountLabel, newestApplicationsFirst, talentRequirementLabel } from "@/lib/staffing-request-view";
+import { activeApplicantsFirst, filterActiveApplicants } from "@/lib/talent-presence";
+import { talentPresenceById } from "@/lib/talent-presence-server";
 import { formatDateRangeDisplay, formatShiftTime } from "@/lib/formatters";
 import {
   ArrowLeft,
@@ -36,8 +41,9 @@ function displayRate(role: { rate_mode?: string | null; proposed_rate_min?: numb
   return `₹${minimum}`;
 }
 
-export default async function ExhibitorRequestDetail({ params }: { params: Promise<{ id: string }> }) {
-  const [{ id },{profile,db}] = await Promise.all([params,requireExhibitorWorkspace()]);
+export default async function ExhibitorRequestDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{active?:string}> }) {
+  const [{ id },query,{profile,db}] = await Promise.all([params,searchParams,requireExhibitorWorkspace()]);
+  const activeOnly=query.active==="1";
 
   const { data: role, error } = await db.from("staffing_roles").select(`
     id,title,description,headcount,hourly_rate,rate_mode,proposed_rate_min,proposed_rate_max,
@@ -54,9 +60,9 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
 
   const event = Array.isArray(role.events) ? role.events[0] : role.events;
   const settlement = Array.isArray(role.staffing_settlements) ? role.staffing_settlements[0] : role.staffing_settlements;
-  const applications = newestApplicationsFirst(role.applications ?? []);
-  const talentIds = [...new Set(applications.map((application) => application.talent_id))];
-  const [profilesResult, reputationResult] = talentIds.length
+  const rawApplications = newestApplicationsFirst(role.applications ?? []);
+  const talentIds = [...new Set(rawApplications.map((application) => application.talent_id))];
+  const [profilesResult, reputationResult, presence] = talentIds.length
     ? await Promise.all([
         db
           .from("profiles")
@@ -66,11 +72,14 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
           .from("profile_reputation")
           .select("profile_id,trust_score,average_rating,reliability_score,communication_score,professionalism_score,completed_count,cancellations,disputes")
           .in("profile_id", talentIds),
+        talentPresenceById(db,talentIds),
       ])
-    : [{ data: [], error: null }, { data: [], error: null }];
+    : [{ data: [], error: null }, { data: [], error: null }, new Map()];
   if (profilesResult.error || reputationResult.error) throw new Error("Unable to load applicant profiles.");
   const people = new Map((profilesResult.data ?? []).map((person) => [person.id, person]));
   const reputations = new Map((reputationResult.data ?? []).map((reputation) => [reputation.profile_id, reputation]));
+  const presenceFor=(talentId:string)=>presence.get(talentId)??{availableForWork:false,onlineNow:false,activeNow:false};
+  const applications=filterActiveApplicants(activeApplicantsFirst(rawApplications,item=>presenceFor(item.talent_id),(a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)),item=>presenceFor(item.talent_id),activeOnly);
 
   const requestFacts = [
     { label: "Pay Rate", value: displayRate(role), icon: Banknote, color: "text-emerald-600 bg-emerald-50" },
@@ -85,7 +94,7 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
   ];
 
   return (
-    <>
+    <><RecruiterPresenceRefresh/>
       {/* Back Navigation Button */}
       <Link
         className="button button-secondary text-xs font-bold gap-2 mb-4 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
@@ -185,9 +194,9 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-black tracking-tight text-[var(--foreground)]">Applicants</h2>
-            <p className="text-xs text-[var(--muted)] mt-0.5">Applications are sorted with newest submissions first.</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">Active talent appear first, followed by newest submissions.</p>
           </div>
-          <span className="badge badge-surface text-xs font-bold">{applications.length} Total</span>
+          <div className="flex flex-wrap items-center gap-2"><ActiveApplicantFilter activeOnly={activeOnly} allHref={`/dashboard/exhibitor/requests/${id}`} activeHref={`/dashboard/exhibitor/requests/${id}?active=1`}/><span className="badge badge-surface text-xs font-bold">{applications.length} Total</span></div>
         </div>
 
         <div className="grid gap-6">
@@ -217,6 +226,7 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
                       <div className="flex flex-wrap items-center gap-2">
                         <StatusBadge status={application.status} />
                         <StatusBadge status={person?.verification_status ?? "unverified"} />
+                        <TalentPresenceBadges presence={presenceFor(application.talent_id)} />
                       </div>
                       <h3 className="mt-1 text-2xl font-black tracking-tight text-[var(--foreground)]">{person?.full_name ?? "Applicant"}</h3>
                       <p className="text-xs font-bold text-[var(--muted)]">
@@ -310,9 +320,9 @@ export default async function ExhibitorRequestDetail({ params }: { params: Promi
           {!applications.length ? (
             <div className="panel p-10 text-center bg-white border border-[var(--line)] rounded-3xl">
               <Users size={32} className="mx-auto text-[var(--muted)] mb-2" />
-              <p className="text-base font-extrabold text-[var(--foreground)]">No applications submitted yet</p>
+              <p className="text-base font-extrabold text-[var(--foreground)]">{activeOnly?"No active applicants":"No applications submitted yet"}</p>
               <p className="mt-1 text-xs text-[var(--muted)] max-w-sm mx-auto">
-                Once verified talent apply for this role, their profiles and application notes will appear right here.
+                {activeOnly?"No applicants are both available for work and online now.":"Once verified talent apply for this role, their profiles and application notes will appear right here."}
               </p>
             </div>
           ) : null}

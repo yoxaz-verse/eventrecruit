@@ -4,19 +4,25 @@ import { ProgressiveImage } from "@/components/progressive-image";
 import { StatusBadge } from "@/components/status-badge";
 import { DashboardPageHeader } from "@/components/dashboard-primitives";
 import { EmptyState } from "@/components/empty-state";
+import { ActiveApplicantFilter } from "@/components/active-applicant-filter";
+import { RecruiterPresenceRefresh } from "@/components/recruiter-presence-refresh";
+import { TalentPresenceBadges } from "@/components/talent-presence-badges";
 import { requireExhibitorWorkspace } from "@/lib/dashboard-workspace";
+import { activeApplicantsFirst, filterActiveApplicants } from "@/lib/talent-presence";
+import { talentPresenceById } from "@/lib/talent-presence-server";
 import { Building2, MapPin, CalendarDays, Users, AlertCircle, Sparkles, User } from "lucide-react";
 
-export default async function ExhibitorApplicants() {
+export default async function ExhibitorApplicants({searchParams}:{searchParams:Promise<{active?:string}>}) {
+  const activeOnly=(await searchParams).active==="1";
   const { profile, db } = await requireExhibitorWorkspace();
   const { data: events, error } = await db
     .from("events")
-    .select("id,title,staffing_roles(id,title,headcount,work_starts_on,work_ends_on,applications(id,status,talent_id,cancellation_requested_at))")
+    .select("id,title,staffing_roles(id,title,headcount,work_starts_on,work_ends_on,applications(id,status,talent_id,cancellation_requested_at,created_at))")
     .eq("created_by", profile.id);
 
   if (error) throw new Error("Unable to load applicants.");
 
-  const applications = (events ?? []).flatMap((event) =>
+  const rawApplications = (events ?? []).flatMap((event) =>
     (event.staffing_roles ?? []).flatMap((role) =>
       (role.applications ?? []).map((application) => ({
         ...application,
@@ -29,19 +35,23 @@ export default async function ExhibitorApplicants() {
     )
   );
 
-  const profiles = applications.length
+  const profiles = rawApplications.length
     ? await db
         .from("profiles")
         .select("id,full_name,city,avatar_url")
-        .in("id", [...new Set(applications.map((item) => item.talent_id))])
+        .in("id", [...new Set(rawApplications.map((item) => item.talent_id))])
     : { data: [], error: null };
 
   if (profiles.error) throw new Error("Unable to load applicant profiles.");
   const byId = new Map((profiles.data ?? []).map((person) => [person.id, person]));
+  const presence=await talentPresenceById(db,rawApplications.map(item=>item.talent_id));
+  const presenceFor=(talentId:string)=>presence.get(talentId)??{availableForWork:false,onlineNow:false,activeNow:false};
+  const applications=filterActiveApplicants(activeApplicantsFirst(rawApplications,item=>presenceFor(item.talent_id),(a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)),item=>presenceFor(item.talent_id),activeOnly);
 
   return (
-    <>
+    <><RecruiterPresenceRefresh/>
       <DashboardPageHeader eyebrow="Exhibitor panel" title="Applicants" description="Review incoming talent profiles, evaluate experience, request documents, and confirm assignments." />
+      <div className="mt-6"><ActiveApplicantFilter activeOnly={activeOnly} allHref="/dashboard/exhibitor/applicants" activeHref="/dashboard/exhibitor/applicants?active=1"/></div>
 
       <div className="mt-6 grid gap-5">
         {applications.map((application) => {
@@ -73,6 +83,7 @@ export default async function ExhibitorApplicants() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={application.status} />
+                      <TalentPresenceBadges presence={presenceFor(application.talent_id)} />
                       {application.cancellation_requested_at && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-700 border border-red-200">
                           <AlertCircle size={13} />
@@ -132,7 +143,7 @@ export default async function ExhibitorApplicants() {
         })}
 
         {!applications.length && (
-          <EmptyState title="No applications yet" description="Applications submitted for your staffing requests will appear here." />
+          <EmptyState title={activeOnly?"No active applicants":"No applications yet"} description={activeOnly?"No applicants are both available for work and online now.":"Applications submitted for your staffing requests will appear here."} />
         )}
       </div>
     </>

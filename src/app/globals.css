@@ -283,7 +283,9 @@ a:focus-visible {
   align-items: center;
 }
 
-.input-icon-wrap .input {
+.input-icon-wrap .input,
+.input-icon-wrap input,
+.input-icon-wrap select {
   padding-left: 44px !important;
 }
 

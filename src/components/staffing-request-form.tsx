@@ -9,14 +9,16 @@ import type { SelectableEvent } from "@/lib/exhibitor-events";
 import type { LocationOption } from "@/lib/locations";
 import { containsContactDetails } from "@/lib/contact-detector";
 import { VenueLocationPicker, type ConfirmedVenueLocation } from "@/components/venue-location-picker";
+import type { StallSummary } from "@/lib/exhibitor-stalls";
 
-export function StaffingRequestForm({ source, events = [], exhibitorId, locations = [], locationError = false }: { source: "agency" | "exhibitor"; events?: SelectableEvent[]; exhibitorId?: string; locations?: LocationOption[]; locationError?: boolean }) {
+export function StaffingRequestForm({ source, events = [], stalls = [], selectedStall = "", exhibitorId, locations = [], locationError = false }: { source: "agency" | "exhibitor"; events?: SelectableEvent[]; stalls?: StallSummary[]; selectedStall?: string; exhibitorId?: string; locations?: LocationOption[]; locationError?: boolean }) {
   const [state, action, pending] = useActionState(createStaffingRole, { error: "", success: "" });
   const { formRef, capture } = usePreserveFormValues(state.error, pending);
 
   const [description, setDescription] = useState("");
   const [skills, setSkills] = useState("");
-  const [eventMode,setEventMode]=useState<"existing"|"inline">(events.length?"existing":"inline");
+  const [eventMode,setEventMode]=useState<"stall"|"existing"|"inline">(stalls.length?"stall":events.length?"existing":"inline");
+  const [stallId,setStallId]=useState(selectedStall&&stalls.some(stall=>stall.id===selectedStall)?selectedStall:stalls[0]?.id??"");
   const [selectedEventValue,setSelectedEventValue]=useState("");
   const [eventSearch,setEventSearch]=useState("");
   const [venue,setVenue]=useState("");
@@ -54,7 +56,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId, location
           <p className="text-xs text-[var(--muted)]">Specify shift times, headcount, and required capabilities.</p>
         </div>
       </div>
-      <fieldset className="grid gap-4">
+      {stalls.length?<fieldset className="grid gap-4"><legend className="label">Stall</legend><label className="label">Choose the stall this team will work at<select className="input" name="stall_id" required value={stallId} onChange={event=>setStallId(event.target.value)}><option value="">Select a stall</option>{stalls.map(stall=><option key={stall.id} value={stall.id}>{stall.name} · {stall.eventTitle} · {stall.eventCity}</option>)}</select></label><p className="text-xs text-[var(--muted)]">The event and verification details are inherited from the stall.</p></fieldset>:<fieldset className="grid gap-4">
         <legend className="label">Event</legend>
         <div className="flex flex-wrap gap-2">
           <button className={`button ${eventMode==='existing'?'button-primary':'button-secondary'}`} type="button" disabled={!events.length} onClick={()=>setEventMode('existing')}>Use existing event</button>
@@ -79,7 +81,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId, location
         <div className="grid gap-3 sm:grid-cols-2"><label className="label">Event starts <input className="input" name="starts_at" required type="date"/></label><label className="label">Event ends <input className="input" name="ends_at" required type="date"/></label></div>
         <label className="label">Shareable map link <span className="field-optional">Optional</span><input className="input" name="map_url" type="url" placeholder="https://maps.google.com/..."/></label>
       </div>}
-      </fieldset>
+      </fieldset>}
       <label className="label">
         <span>Role title <span className="text-red-500">*</span></span>
         <input className="input" name="title" placeholder="e.g. Lead Generation Specialist" required />
@@ -175,7 +177,7 @@ export function StaffingRequestForm({ source, events = [], exhibitorId, location
 
       {!pending && state.error ? <p className="alert" role="alert">{state.error}</p> : null}
       {!pending && state.success ? <p className="alert" role="status">{state.success}</p> : null}
-      <SubmitButton disabled={contactDetected||(eventMode==='inline'&&(locationError||!inlineLocationValid))} pendingText="Submitting request…">Submit staffing request</SubmitButton>
+      <SubmitButton disabled={contactDetected||(eventMode==='stall'&&!stallId)||(eventMode==='inline'&&(locationError||!inlineLocationValid))} pendingText="Submitting request…">Submit staffing request</SubmitButton>
     </form>
   );
 }

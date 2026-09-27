@@ -122,6 +122,9 @@ export default async function OrganizerDashboard({
                 <Link className="button button-secondary text-xs py-2 px-3.5" href={`/dashboard/organizer/events/${e.id}/participants`}>
                   Exhibitor Directory
                 </Link>
+                <Link className="button button-secondary text-xs py-2 px-3.5" href={`/dashboard/organizer/events/${e.id}/volunteers`}>
+                  Volunteers
+                </Link>
               </div>
             </article>
           ))}
