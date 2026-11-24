@@ -4,21 +4,21 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkNewPassword } from "@/lib/password-strength";
-import { createAndSendOtp, consumeOtp } from "@/lib/app-auth/otp";
 import { hashPassword, verifyPassword } from "@/lib/app-auth/crypto";
-import { issueToken, revokeAllSessions, revokeToken, tokenAccount } from "@/lib/app-auth/session";
+import { commitSessionCookie, issueTokenForVerifiedAccount, prepareSessionToken, revokeAllSessions, revokeToken, tokenAccount } from "@/lib/app-auth/session";
 import { AuthEmailStageError, authEmailDiagnostic } from "@/lib/email/failure";
-import { consumeAuthEmailLimit } from "@/lib/email/rate-limit";
 import type { UserRole } from "@/lib/types";
 import { validOtp } from "@/lib/app-auth/otp-code";
 import { consumePasswordLoginLimit } from "@/lib/app-auth/password-rate-limit";
-import { existingEmailError, type ExistingEmailPurpose } from "@/lib/app-auth/email-eligibility";
+import type { ExistingEmailPurpose } from "@/lib/app-auth/email-eligibility";
 import { getCurrentAccount } from "@/lib/auth";
-import { nextAccountPath } from "@/lib/onboarding";
+import { nextAccountPath, onboardingPath } from "@/lib/onboarding";
+import { prepareExistingOtp, prepareSignupOtp, sendPreparedOtp, verifyPreparedOtp } from "@/lib/app-auth/otp-preparation";
+import { createAuthPerformance } from "@/lib/app-auth/performance";
 
 export type AuthFormState = { error: string };
 type Purpose = "signup" | "activation" | "login" | "recovery";
-const roles: UserRole[] = ["organizer", "agency", "exhibitor", "talent"];
+const roles: UserRole[] = ["organizer", "agency", "sponsor_agency", "exhibitor", "talent"];
 const codeSentMessage = "We sent a code. Check your inbox and spam folder.";
 const sendFailed = "We could not send a verification code right now. Please try again in a minute.";
 const authUnavailable = "Authentication is temporarily unavailable. Please try again later.";
@@ -31,28 +31,31 @@ function log(event: string, error: unknown) {
   const diagnostic = error instanceof AuthEmailStageError ? authEmailDiagnostic(error) : { stage: "unexpected", category: "service_error" };
   console.error(JSON.stringify({event, request_id: randomUUID(), ...(diagnostic.stage === "smtp_delivery" ? {transport:"mxroute_https_api"} : {}), ...diagnostic}));
 }
-async function rateLimit(email: string) {
-  try { const result = await consumeAuthEmailLimit(email); return result.allowed ? null : `Please wait ${result.retry_after_seconds} seconds before requesting another code.`; }
-  catch (error) { log("auth_rate_limit_failed", error); return authUnavailable; }
-}
-async function account(email: string) {
-  const { data, error } = await db().from("app_accounts").select("id,email,password_hash,email_verified_at,disabled_at").eq("email",email).maybeSingle();
+async function account(email: string, client = db()) {
+  const { data, error } = await client.from("app_accounts").select("id,email,password_hash,email_verified_at,disabled_at").eq("email",email).maybeSingle();
   if (error) throw new AuthEmailStageError("account_lookup", ["PGRST205","42P01"].includes(error.code) ? "migration_missing" : "database_error");
   return data;
 }
 async function sendExisting(data: FormData, purpose: ExistingEmailPurpose): Promise<AuthFormState> {
   const email = emailOf(data);
   if (!isEmail(email)) return {error:"Enter a valid email address."};
-  let found: NonNullable<Awaited<ReturnType<typeof account>>> | null = null;
-  try { found = await account(email); }
-  catch (error) { log("auth_email_account_lookup_failed", error); return {error:authUnavailable}; }
-  const eligibilityError = existingEmailError(purpose, found);
-  if (eligibilityError) return {error:eligibilityError};
-  if (!found) return {error:authUnavailable};
-  const limited = await rateLimit(email); if (limited) return {error:limited};
+  const timing = createAuthPerformance(`otp_${purpose}`);
+  const client = createAdminClient();
+  if (!client) { timing.finish("unavailable"); return {error:authUnavailable}; }
   try {
-    await createAndSendOtp(found.id,email,purpose);
-  } catch (error) { log("auth_email_send_failed",error); return {error:sendFailed}; }
+    const { prepared, code } = await timing.measure("database_preparation", () => prepareExistingOtp(client, email, purpose));
+    if (prepared.status !== "ready") {
+      timing.finish(prepared.status);
+      if (prepared.status === "not_registered") return {error:"This email is not registered. Create an account to continue."};
+      if (prepared.status === "disabled") return {error:"This account is disabled. Contact support for help."};
+      if (prepared.status === "already_verified") return {error:"This account is already verified. Log in instead."};
+      if (prepared.status === "not_verified") return {error:"This account is not verified yet. Complete signup verification first."};
+      if (prepared.status === "rate_limited") return {error:`Please wait ${prepared.retry_after_seconds ?? 60} seconds before requesting another code.`};
+      return {error:authUnavailable};
+    }
+    await timing.measure("email_delivery", () => sendPreparedOtp(client, prepared, email, code));
+    timing.finish("sent");
+  } catch (error) { timing.finish("failed"); log("auth_email_send_failed",error); return {error:sendFailed}; }
   redirect(url("/verify-otp",codeSentMessage,{email,type:purpose === "login" ? "magiclink" : purpose}));
 }
 
@@ -63,38 +66,30 @@ export async function signUpWithEmailVerification(_state:AuthFormState,data:Form
   if(!isEmail(email))return {error:"Enter a valid email address."};
   const strength=checkNewPassword(password); if(!strength.strong)return {error:strength.reason};
   if(!roles.includes(role))return {error:"Choose a valid account type."};
-  let found: NonNullable<Awaited<ReturnType<typeof account>>> | null = null;
-  try { found=await account(email); }
-  catch(error){log("signup_account_lookup_failed",error);return {error:authUnavailable};}
-  if(found?.email_verified_at)redirect("/login?message=account-exists");
-  const limited=await rateLimit(email); if(limited)return {error:limited};
-  let purpose:Purpose="signup";
+  const timing = createAuthPerformance("signup");
+  const client = createAdminClient();
+  if (!client) { timing.finish("unavailable"); return {error:authUnavailable}; }
+  let purpose: Purpose = "signup";
+  let accountExists = false;
   try {
-    if(!found){
-      const hashed=await hashPassword(password);
-      const {data:created,error}=await db().from("app_accounts").insert({email,password_hash:hashed}).select("id").single();
-      if(error||!created)throw new AuthEmailStageError("otp_store","database_error");
-      const targetAccount: NonNullable<Awaited<ReturnType<typeof account>>> = {id:created.id,email,password_hash:hashed,email_verified_at:null,disabled_at:null};
-      found=targetAccount;
-      const {error:profileError}=await db().from("profiles").insert({id:targetAccount.id,full_name:fullName,role});
-      if(profileError){await db().from("app_accounts").delete().eq("id",targetAccount.id);throw new AuthEmailStageError("otp_store","database_error");}
-      if(role!=="talent")await db().from("verification_requests").insert({entity_type:"account",entity_id:targetAccount.id,requester_id:targetAccount.id,status:"pending",notes:`New ${role} account verification`});
-      if(role==="talent"){
-        const {error:talentError}=await db().from("talent_profiles").insert({profile_id:targetAccount.id});
-        const {error:reputationError}=await db().from("profile_reputation").upsert({profile_id:targetAccount.id,role:"talent"});
-        if(talentError||reputationError){await db().from("app_accounts").delete().eq("id",targetAccount.id);throw new AuthEmailStageError("otp_store","database_error");}
-      }
+    const hashed = await timing.measure("password_hash", () => hashPassword(password));
+    const { prepared, code } = await timing.measure("database_preparation", () => prepareSignupOtp(client, {email,passwordHash:hashed,fullName,role}));
+    if (prepared.status === "already_verified") {
+      accountExists = true;
+      timing.finish("already_verified");
+    } else if (prepared.status !== "created" && prepared.status !== "activation") {
+      timing.finish(prepared.status);
+      if (prepared.status === "disabled") return {error:"This account is disabled. Contact support for help."};
+      if (prepared.status === "role_conflict") return {error:"A signup for this email is pending with a different account type. Use the activation code or contact support."};
+      if (prepared.status === "rate_limited") return {error:`Please wait ${prepared.retry_after_seconds ?? 60} seconds before requesting another code.`};
+      return {error:authUnavailable};
     } else {
-      purpose="activation";
-      const {data:pendingProfile,error:pendingError}=await db().from("profiles").select("role").eq("id",found.id).maybeSingle();
-      if(pendingError||!pendingProfile)throw new AuthEmailStageError("otp_store","database_error");
-      if(pendingProfile.role!==role)return {error:"A signup for this email is pending with a different account type. Use the activation code or contact support."};
-      const hashed=await hashPassword(password);
-      const {error:passwordError}=await db().from("app_accounts").update({password_hash:hashed}).eq("id",found.id);
-      if(passwordError)throw new AuthEmailStageError("otp_store","database_error");
+      purpose = prepared.purpose === "activation" ? "activation" : "signup";
+      await timing.measure("email_delivery", () => sendPreparedOtp(client, prepared, email, code));
+      timing.finish(prepared.status);
     }
-    await createAndSendOtp(found.id,email,purpose);
-  } catch(error){log("signup_email_send_failed",error);return {error:sendFailed};}
+  } catch(error){timing.finish("failed");log("signup_email_send_failed",error);return {error:sendFailed};}
+  if (accountExists) redirect("/login?message=account-exists");
   redirect(url("/verify-otp",codeSentMessage,{email,type:purpose}));
 }
 
@@ -103,16 +98,21 @@ export async function signInWithPassword(_state:AuthFormState,data:FormData):Pro
   let accountId = "";
   if(!isEmail(email))return {error:"Enter a valid email address."};
   if(!password)return {error:"Enter your password."};
+  const timing = createAuthPerformance("password_login");
+  const client = createAdminClient();
+  if (!client) { timing.finish("unavailable"); return {error:"Login is temporarily unavailable."}; }
   try {
-    const limit=await consumePasswordLoginLimit(email);
-    if(!limit.allowed)return {error:`Too many password login attempts. Try again in ${limit.retry_after_seconds} seconds.`};
-    const found=await account(email);
-    if(found?.disabled_at)return {error:"This account is disabled. Contact support for help."};
-    if(!found||!found.email_verified_at||!await verifyPassword(password,found.password_hash))return {error:"Invalid email or password."};
-    await issueToken(found.id,"session");
+    const limit=await timing.measure("rate_limit", () => consumePasswordLoginLimit(email, client));
+    if(!limit.allowed){timing.finish("rate_limited");return {error:`Too many password login attempts. Try again in ${limit.retry_after_seconds} seconds.`};}
+    const found=await timing.measure("account_lookup", () => account(email, client));
+    if(found?.disabled_at){timing.finish("disabled");return {error:"This account is disabled. Contact support for help."};}
+    if(!found||!found.email_verified_at||!await timing.measure("password_verify", () => verifyPassword(password,found.password_hash))){timing.finish("invalid");return {error:"Invalid email or password."};}
+    await timing.measure("session_creation", () => issueTokenForVerifiedAccount(found.id,"session",client));
     accountId = found.id;
-  } catch(error){log("password_login_failed",error);return {error:"Login is temporarily unavailable."};}
-  redirect(await nextAccountPath(accountId));
+  } catch(error){timing.finish("failed");log("password_login_failed",error);return {error:"Login is temporarily unavailable."};}
+  const destination = await timing.measure("destination_resolution", () => nextAccountPath(accountId));
+  timing.finish("signed_in");
+  redirect(destination);
 }
 export async function requestLoginOtp(_state:AuthFormState,data:FormData){return sendExisting(data,"login");}
 export async function resendLoginOtp(_state:AuthFormState,data:FormData){return sendExisting(data,"login");}
@@ -129,22 +129,35 @@ export async function verifyEmailOtp(_state:AuthFormState,data:FormData):Promise
   if(!isEmail(email))return {error:"Enter a valid email address."};
   if(!validOtp(code))return {error:"Enter the 6 digit OTP code."};
   if(!["signup","activation","login","recovery"].includes(purpose))return {error:"Invalid OTP type."};
+  const timing = createAuthPerformance("otp_verification");
+  const client = createAdminClient();
+  if (!client) { timing.finish("unavailable"); return {error:"Verification is temporarily unavailable."}; }
+  let verifiedRole: UserRole | undefined;
   try {
-    const found=await account(email);
-    if(!found||!await consumeOtp(found.id,purpose,code))return {error:codeFailed};
+    const found=await timing.measure("account_lookup", () => account(email, client));
+    if(!found) { timing.finish("invalid"); return {error:codeFailed}; }
     verifiedAccountId = found.id;
-    if(purpose==="signup"||purpose==="activation"){
-      const {error}=await db().from("app_accounts").update({email_verified_at:new Date().toISOString()}).eq("id",found.id);
-      if(error)throw new Error("Activation failed.");
-      await issueToken(found.id,"session");
-    }else if(purpose==="login")await issueToken(found.id,"session");
-    else await issueToken(found.id,"reset");
-  }catch(error){log("otp_verification_failed",error);return {error:"Verification is temporarily unavailable."};}
-  if(purpose==="recovery")redirect("/reset-password");
-  if(purpose==="signup"||purpose==="activation"){
-    redirect(await nextAccountPath(verifiedAccountId));
-  }
-  redirect(await nextAccountPath(verifiedAccountId));
+    const sessionPurpose = purpose === "recovery" ? "reset" : "session";
+    const preparedToken = prepareSessionToken(sessionPurpose);
+    const verification = await timing.measure("verification_and_session", () => verifyPreparedOtp(client, {
+      accountId: found.id,
+      email,
+      purpose,
+      code,
+      tokenHash: preparedToken.tokenHash,
+      sessionPurpose,
+      sessionExpiresAt: preparedToken.expiresAt,
+    }));
+    if (!verification.verified) { timing.finish("invalid"); return {error:codeFailed}; }
+    verifiedRole = verification.role;
+    await timing.measure("session_cookie", () => commitSessionCookie(preparedToken));
+  }catch(error){timing.finish("failed");log("otp_verification_failed",error);return {error:"Verification is temporarily unavailable."};}
+  if(purpose==="recovery") { timing.finish("verified"); redirect("/reset-password"); }
+  const destination = (purpose === "signup" || purpose === "activation") && verifiedRole
+    ? onboardingPath(verifiedRole)
+    : await timing.measure("destination_resolution", () => nextAccountPath(verifiedAccountId));
+  timing.finish("verified");
+  redirect(destination);
 }
 export async function updatePassword(_state:AuthFormState,data:FormData):Promise<AuthFormState>{
   const password=String(data.get("password")??""), confirm=String(data.get("confirm_password")??"");

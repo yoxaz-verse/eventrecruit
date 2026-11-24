@@ -59,6 +59,9 @@ export default async function VerifyOtpPage({
         showTabs={false}
       >
         <AuthMessage message={message} />
+        <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
+          Codes expire after 10 minutes. Email delivery can take a moment; wait for the resend timer before requesting a replacement code.
+        </p>
         <AuthActionForm action={verifyEmailOtp} className="grid gap-4 mt-3">
           <input name="type" type="hidden" value={type} />
           <label className="label text-xs">
@@ -73,7 +76,7 @@ export default async function VerifyOtpPage({
             />
           </label>
           <OtpInput />
-          <SubmitButton className="button button-primary w-full mt-2 font-extrabold text-sm py-3 shadow-md" pendingText="Verifying…">
+          <SubmitButton className="button button-primary w-full mt-2 font-extrabold text-sm py-3 shadow-md" pendingText="Verifying and signing you in…">
             Verify and continue
           </SubmitButton>
         </AuthActionForm>

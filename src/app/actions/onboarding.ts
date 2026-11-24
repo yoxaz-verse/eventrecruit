@@ -26,7 +26,7 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
   if (profileError) return { error: "Unable to load your profile. Please try again." };
 
   if (profile.role === "organizer") redirect("/dashboard/organizer/company");
-  if (!["talent", "agency", "exhibitor"].includes(profile.role)) return { error: "This account type cannot use this form." };
+  if (!["talent", "agency", "sponsor_agency", "exhibitor"].includes(profile.role)) return { error: "This account type cannot use this form." };
 
   const validationError = validateOnboarding(profile.role as UserRole, formData);
   if (validationError) return { error: validationError };
@@ -95,6 +95,15 @@ export async function completeOnboarding(_state: { error: string }, formData: Fo
       { onConflict: "owner_id" },
     );
     if (error) return { error: "Unable to save your agency profile. Please try again." };
+  }
+
+  if (profile.role === "sponsor_agency") {
+    const website = value(formData, "website");
+    if (website) { try { if (new URL(website).protocol !== "https:") return { error: "Sponsor agency websites must use HTTPS." }; } catch { return { error: "Enter a valid sponsor agency website." }; } }
+    const { data: agency, error } = await supabase.from("sponsor_agencies").upsert({ owner_id: user.id, name: value(formData, "business_name"), city, contact_phone: phone, website: website || null, description: value(formData, "description") }, { onConflict: "owner_id" }).select("id").single();
+    if (error || !agency) return { error: "Unable to save your sponsor agency profile." };
+    const { data: pending } = await supabase.from("verification_requests").select("id").eq("entity_type", "sponsor_agency").eq("entity_id", agency.id).eq("status", "pending").maybeSingle();
+    if (!pending) await supabase.from("verification_requests").insert({ entity_type: "sponsor_agency", entity_id: agency.id, requester_id: user.id, status: "pending", notes: "Sponsor agency verification" });
   }
 
   if (profile.role === "exhibitor") {

@@ -39,6 +39,13 @@ const roleGuides: Record<UserRole, Guide> = {
     actionText: "Add a client",
     actionHref: "/dashboard/agency/clients",
   },
+  sponsor_agency: {
+    title: "Pitch a sponsor brand",
+    description: "Add a brand, then match it with an event opportunity.",
+    steps: ["Complete verification", "Add sponsor brands", "Submit a proposal"],
+    actionText: "Find opportunities",
+    actionHref: "/dashboard/sponsor_agency/opportunities",
+  },
   admin: {
     title: "Review what needs attention",
     description: "Start with submitted events awaiting a decision.",

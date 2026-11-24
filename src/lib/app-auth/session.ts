@@ -2,10 +2,12 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateToken, tokenHash } from "./crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const sessionCookie = "expo_session";
 const resetCookie = "expo_reset";
 const sessionAge = 60 * 60 * 24 * 14;
+export type SessionPurpose = "session" | "reset";
 
 function db() {
   const client = createAdminClient();
@@ -20,17 +22,40 @@ async function setTokenCookie(name: string, token: string, age: number) {
   });
 }
 
-export async function issueToken(accountId: string, purpose: "session" | "reset") {
-  const { data: account } = await db().from("app_accounts").select("id").eq("id", accountId).is("disabled_at", null).maybeSingle();
-  if (!account) throw new Error("This account is disabled.");
+export function prepareSessionToken(purpose: SessionPurpose) {
   const token = generateToken();
   const age = purpose === "session" ? sessionAge : 600;
-  const { error } = await db().from("app_sessions").insert({
-    token_hash: tokenHash(token), account_id: accountId, purpose,
-    expires_at: new Date(Date.now() + age * 1000).toISOString(),
+  return {
+    token,
+    tokenHash: tokenHash(token),
+    age,
+    expiresAt: new Date(Date.now() + age * 1000).toISOString(),
+    purpose,
+  };
+}
+
+export async function commitSessionCookie(prepared: ReturnType<typeof prepareSessionToken>) {
+  await setTokenCookie(prepared.purpose === "session" ? sessionCookie : resetCookie, prepared.token, prepared.age);
+}
+
+async function persistSessionToken(accountId: string, purpose: SessionPurpose, client: SupabaseClient) {
+  const prepared = prepareSessionToken(purpose);
+  const { error } = await client.from("app_sessions").insert({
+    token_hash: prepared.tokenHash, account_id: accountId, purpose,
+    expires_at: prepared.expiresAt,
   });
   if (error) throw new Error("Unable to create a session.");
-  await setTokenCookie(purpose === "session" ? sessionCookie : resetCookie, token, age);
+  await commitSessionCookie(prepared);
+}
+
+export async function issueToken(accountId: string, purpose: "session" | "reset", client: SupabaseClient = db()) {
+  const { data: account } = await client.from("app_accounts").select("id").eq("id", accountId).is("disabled_at", null).maybeSingle();
+  if (!account) throw new Error("This account is disabled.");
+  await persistSessionToken(accountId, purpose, client);
+}
+
+export async function issueTokenForVerifiedAccount(accountId: string, purpose: SessionPurpose, client: SupabaseClient) {
+  await persistSessionToken(accountId, purpose, client);
 }
 
 export async function tokenAccount(purpose: "session" | "reset") {

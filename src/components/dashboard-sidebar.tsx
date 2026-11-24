@@ -56,6 +56,7 @@ export function DashboardSidebar({
             {roleNavigation[active].map((item, index, items) => {
               const Icon = item.icon;
               const isActive = item.href === activeManagementHref;
+              const isNested = Boolean(item.parentHref);
               return (
                 <div key={item.href}>
                   {item.group && item.group !== items[index - 1]?.group ? (
@@ -64,7 +65,9 @@ export function DashboardSidebar({
                     </p>
                   ) : null}
                   <Link
-                    className={`dashboard-nav-link flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                    className={`dashboard-nav-link flex items-center gap-2.5 rounded-xl py-2 text-xs font-bold transition-all ${
+                      isNested ? "ml-5 border-l-2 border-[var(--line)] px-3" : "px-3"
+                    } ${
                       isActive
                         ? "dashboard-nav-active shadow-sm text-white"
                         : "hover:bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]"
@@ -75,7 +78,7 @@ export function DashboardSidebar({
                       setPendingNavigation({ from: pathname, to: item.href })
                     }
                   >
-                    <Icon size={17} aria-hidden />
+                    <Icon size={isNested ? 15 : 17} aria-hidden />
                     <span>{item.label}</span>
                   </Link>
                 </div>

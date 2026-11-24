@@ -1,6 +1,6 @@
 "use client";
 import { useActionState } from "react";
-import { Building2, UserRoundCheck, Users, Briefcase, User, Mail, CheckCircle2 } from "lucide-react";
+import { Building2, UserRoundCheck, Users, Briefcase, User, Mail, CheckCircle2, Megaphone } from "lucide-react";
 import { signUpWithEmailVerification } from "@/app/actions/auth";
 import { PasswordField } from "@/components/auth/password-field";
 import { SubmitButton } from "@/components/submit-button";
@@ -38,6 +38,14 @@ const roles = [
     icon: Users,
     tag: "Agencies",
     color: "bg-purple-50 text-purple-700 border-purple-200",
+  },
+  {
+    value: "sponsor_agency",
+    title: "Sponsor Agency",
+    text: "Represent brands & sponsor events.",
+    icon: Megaphone,
+    tag: "Sponsors",
+    color: "bg-rose-50 text-rose-700 border-rose-200",
   },
 ];
 
@@ -133,11 +141,9 @@ export function SignupForm({ selectedRole }: { selectedRole: string }) {
         </div>
       </fieldset>
 
-      <SubmitButton className="button button-primary w-full mt-1 shadow-md font-bold py-2.5 text-sm" pendingText="Creating account…">
+      <SubmitButton className="button button-primary w-full mt-1 shadow-md font-bold py-2.5 text-sm" pendingText="Creating account and sending code…">
         Create account & verify email
       </SubmitButton>
     </form>
   );
 }
-
-

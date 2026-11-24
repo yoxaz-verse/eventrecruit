@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
 import { accountSettingsAvailability } from "@/lib/account-settings-state";
 
-const roles: UserRole[] = ["admin", "organizer", "agency", "exhibitor", "talent"];
+const roles: UserRole[] = ["admin", "organizer", "agency", "sponsor_agency", "exhibitor", "talent"];
 
 function logSettingsFailure(stage: string, error: { code?: string | null } | null) {
   if (error) console.error(JSON.stringify({ event: "account_settings_load_failed", stage, code: error.code ?? "unknown" }));

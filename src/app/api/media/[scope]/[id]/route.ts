@@ -6,7 +6,7 @@ const uuid = /^[0-9a-f-]{36}$/i;
 
 export async function GET(_request: Request, { params }: { params: Promise<{ scope: string; id: string }> }) {
   const { scope, id } = await params;
-  if (!uuid.test(id) || !["talent", "profile", "agency", "exhibitor", "event", "stall"].includes(scope)) return new Response("Not found", { status: 404 });
+  if (!uuid.test(id) || !["talent", "profile", "agency", "sponsor_agency", "sponsor_brand", "exhibitor", "event", "stall"].includes(scope)) return new Response("Not found", { status: 404 });
   const db = await createClient();
   if (!db) return new Response("Unavailable", { status: 503 });
   let path: string | null = null;
@@ -24,6 +24,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sco
   } else if (scope === "agency") {
     const { data } = await db.from("agencies").select("logo_path").eq("id", id).maybeSingle();
     path = data?.logo_path ?? null;
+  } else if (scope === "sponsor_agency") {
+    const { data } = await db.from("sponsor_agencies").select("logo_path").eq("id", id).maybeSingle();
+    path = data?.logo_path ?? null;
+  } else if (scope === "sponsor_brand") {
+    const { data } = await db.from("sponsor_brands").select("logo_path,is_active").eq("id", id).maybeSingle();
+    if (!data?.is_active) return new Response("Not found", { status: 404 });
+    path = data.logo_path ?? null;
   } else if (scope === "event") {
     const { data: event } = await db.from("organizer_events").select("logo_path,status,company_id").eq("id", id).maybeSingle();
     if (event?.status !== "published") {
@@ -61,7 +68,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sco
     path = exhibitor?.logo_path ?? null;
   }
 
-  const prefix = scope === "talent" ? "talents" : scope === "profile" ? "profiles" : `${scope}s`;
+  const prefix = scope === "talent" ? "talents" : scope === "profile" ? "profiles" : scope === "sponsor_agency" ? "sponsor_agencies" : `${scope}s`;
   if (!path || !path.startsWith(`${prefix}/`)) return new Response("Not found", { status: 404 });
   try {
     const object = await getR2Object(path);

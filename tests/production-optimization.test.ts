@@ -30,3 +30,29 @@ test("approved event participation has a targeted directory index", () => {
   assert.match(migration, /exhibitor_event_participation\(event_id, exhibitor_id\)/);
   assert.match(migration, /where status = 'approved'/);
 });
+
+test("public navigation is session-neutral so discovery pages can be prerendered", () => {
+  const navigation = source("src/components/top-nav.tsx");
+  assert.doesNotMatch(navigation, /getCurrentAccount|cookies\(/);
+  assert.match(navigation, /href="\/dashboard"/);
+  assert.doesNotMatch(source("src/app/page.tsx"), /getCurrentAccount/);
+});
+
+test("the homepage uses a bounded dedicated event preview", () => {
+  const data = source("src/lib/public-data.ts");
+  assert.match(data, /public-homepage-events-v1/);
+  assert.match(data, /\.limit\(3\)/);
+  assert.match(source("src/app/page.tsx"), /getPublicHomepageEvents/);
+});
+
+test("loading fallbacks remain server-rendered and lightweight", () => {
+  assert.doesNotMatch(source("src/app/loading.tsx"), /DualTextSpinner|use client/);
+  assert.doesNotMatch(source("src/components/loading-skeleton.tsx"), /use client/);
+  assert.match(source("src/components/dashboard-loading.tsx"), /LoadingSkeleton/);
+});
+
+test("server performance logs are opt-in and contain no user identifiers", () => {
+  const performance = source("src/lib/server-performance.ts");
+  assert.match(performance, /SERVER_PERFORMANCE_LOGGING/);
+  assert.doesNotMatch(performance, /email|account_id|profile_id|token/);
+});

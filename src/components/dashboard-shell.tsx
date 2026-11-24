@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Calendar } from "lucide-react";
+import { Search, Calendar, Bell } from "lucide-react";
 import type { UserRole } from "@/lib/types";
 import { MobileAppDock } from "@/components/mobile-app-dock";
 import { AgencyGlobalSearch } from "@/components/agency-global-search";
@@ -8,19 +8,25 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { BrandMark } from "@/components/brand-mark";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { ResponsibilityPanel } from "@/components/responsibility-panel";
+import { buildResponsibilityChecklist } from "@/lib/role-capabilities";
+import { notificationSummary } from "@/lib/platform-notifications";
 
 export async function DashboardShell({
   active,
   identity,
+  profileComplete,
   children,
 }: {
   active: UserRole;
   identity?: { id: string; label: string; imageUrl?: string | null; imageFit?: "cover" | "contain" };
+  profileComplete?: boolean;
   children: React.ReactNode;
 }) {
+  const currentProfile = await getCurrentProfile();
   let resolvedIdentity = identity;
   if (!resolvedIdentity) {
-    const profile = await getCurrentProfile();
+    const profile = currentProfile;
     const db = active === "exhibitor" ? await createClient() : null;
     const { data: exhibitor } = profile && db
       ? await db.from("exhibitors").select("id,company_name,logo_path").eq("owner_id", profile.id).maybeSingle()
@@ -39,6 +45,12 @@ export async function DashboardShell({
   const initials = identityLabel.split(/\s+/).filter(Boolean).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase() || active.substring(0, 2).toUpperCase();
   const profileHref = `/dashboard/${active}/profile`;
   const identityImageUrl = resolvedIdentity.imageUrl;
+  const notifications = currentProfile ? await notificationSummary(currentProfile.id) : { unread: 0, available: false };
+  const responsibilityItems = buildResponsibilityChecklist({
+    role: active,
+    verificationStatus: currentProfile?.verification_status,
+    profileComplete: profileComplete ?? Boolean(currentProfile?.full_name && (active === "talent" ? currentProfile.home_location_id : active === "admin" || currentProfile.city)),
+  });
 
   return (
     <div className="dashboard-shell min-h-screen bg-[var(--background)]">
@@ -94,6 +106,11 @@ export async function DashboardShell({
 
           <div className="h-4 w-px bg-[var(--line)] mx-0.5" />
 
+          <Link aria-label={`${notifications.unread} unread notifications`} className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[var(--muted)] transition hover:text-[var(--accent)]" href={`/dashboard/${active}/notifications`}>
+            <Bell size={17} />
+            {notifications.unread ? <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-black text-white">{Math.min(notifications.unread, 99)}</span> : null}
+          </Link>
+
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-700 border border-emerald-200">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -110,7 +127,7 @@ export async function DashboardShell({
       </header>
 
       {/* Main Content Viewport */}
-      <main className="p-4 pb-24 md:ml-[260px] md:p-8">{active === "agency" ? <AgencyGlobalSearch /> : null}{children}</main>
+      <main className="p-4 pb-24 md:ml-[260px] md:p-8">{active === "agency" ? <AgencyGlobalSearch /> : null}<ResponsibilityPanel role={active} items={responsibilityItems} />{children}</main>
 
       {/* Mobile Bottom App Navigation Dock */}
       <MobileAppDock activeRole={active} />

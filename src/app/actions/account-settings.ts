@@ -8,7 +8,7 @@ import { revokeAllSessions } from "@/lib/app-auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
 
-const roles: UserRole[] = ["admin", "organizer", "agency", "exhibitor", "talent"];
+const roles: UserRole[] = ["admin", "organizer", "agency", "sponsor_agency", "exhibitor", "talent"];
 
 export async function saveAccountPreferences(data: FormData) {
   const profile = await requireRole(roles);

@@ -20,6 +20,7 @@ import {
   FileText,
   Handshake,
   Store,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
@@ -29,15 +30,17 @@ export type NavigationItem = {
   label: string;
   icon: LucideIcon;
   group?: string;
+  parentHref?: string;
 };
 
 export const roleNavigation: Record<UserRole, NavigationItem[]> = {
   organizer: [
     { href: "/dashboard/organizer", label: "Overview", icon: Building2 },
     { href: "/dashboard/organizer/events/new", label: "Create event", icon: CalendarDays },
-    { href: "/dashboard/organizer/company", label: "Company profile", icon: Building2 },
+    { href: "/dashboard/organizer/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/organizer/profile", label: "Profile", icon: UserRound },
     { href: "/dashboard/organizer/settings", label: "Settings", icon: Settings },
+    { href: "/dashboard/organizer/company", label: "My company", icon: Building2, parentHref: "/dashboard/organizer/settings" },
   ],
   admin: [
     { href: "/dashboard/admin", label: "Overview", icon: ShieldCheck },
@@ -50,6 +53,7 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/admin/settlements", label: "Settlements", icon: BadgeIndianRupee },
     { href: "/dashboard/admin/verifications", label: "Verifications", icon: ShieldCheck },
     { href: "/dashboard/admin/reputation", label: "Reputation", icon: Star },
+    { href: "/dashboard/admin/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/admin/profile", label: "Profile", icon: UserRound },
     { href: "/dashboard/admin/settings", label: "Settings", icon: Settings },
   ],
@@ -65,9 +69,18 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/agency/operations", label: "Current operations", icon: Briefcase, group:"Operations" },
     { href: "/dashboard/agency/payments", label: "Payments", icon: BadgeIndianRupee, group:"Operations" },
     { href: "/dashboard/agency/documents", label: "Documents", icon: FileText, group:"Operations" },
-    { href: "/dashboard/agency/notifications", label: "Notifications", icon: Bell, group:"Account" },
     { href: "/dashboard/agency/profile", label: "Profile", icon: UserRound, group:"Account" },
     { href: "/dashboard/agency/settings", label: "Settings", icon: Settings, group:"Account" },
+    { href: "/dashboard/agency/notifications", label: "Notifications", icon: Bell, group:"Account" },
+  ],
+  sponsor_agency: [
+    { href: "/dashboard/sponsor_agency", label: "Overview", icon: Megaphone, group: "Workspace" },
+    { href: "/dashboard/sponsor_agency/opportunities", label: "Opportunities", icon: Search, group: "Marketplace" },
+    { href: "/dashboard/sponsor_agency/proposals", label: "Proposals", icon: ClipboardList, group: "Marketplace" },
+    { href: "/dashboard/sponsor_agency/brands", label: "Sponsor brands", icon: Building2, group: "Brands" },
+    { href: "/dashboard/sponsor_agency/profile", label: "Agency profile", icon: UserRound, group: "Account" },
+    { href: "/dashboard/sponsor_agency/notifications", label: "Notifications", icon: Bell, group: "Account" },
+    { href: "/dashboard/sponsor_agency/settings", label: "Settings", icon: Settings, group: "Account" },
   ],
   exhibitor: [
     { href: "/dashboard/exhibitor", label: "Overview", icon: Building2 },
@@ -79,12 +92,14 @@ export const roleNavigation: Record<UserRole, NavigationItem[]> = {
     { href: "/dashboard/exhibitor/applicants", label: "Applicants", icon: UserCheck },
     { href: "/dashboard/exhibitor/reputation", label: "Reputation", icon: Star },
     { href: "/dashboard/exhibitor/agencies", label: "Agency access", icon: Users },
+    { href: "/dashboard/exhibitor/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/exhibitor/settings", label: "Settings", icon: Settings },
   ],
   talent: [
     { href: "/dashboard/talent", label: "Opportunities", icon: Sparkles },
     { href: "/dashboard/talent/applications", label: "My applications", icon: ClipboardCheck },
     { href: "/dashboard/talent/profile", label: "My profile", icon: UserRound },
+    { href: "/dashboard/talent/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/talent/settings", label: "Settings", icon: Settings },
   ],
 };

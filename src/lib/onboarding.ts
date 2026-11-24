@@ -36,6 +36,10 @@ export async function nextAccountPath(accountId: string): Promise<string> {
     const { data } = await db.from("agencies").select("name").eq("owner_id", accountId).maybeSingle();
     return hasCoreProfile(role, profile.city, contact.phone, data) ? "/dashboard/agency" : "/onboarding";
   }
+  if (role === "sponsor_agency") {
+    const { data } = await db.from("sponsor_agencies").select("name").eq("owner_id", accountId).maybeSingle();
+    return hasCoreProfile(role, profile.city, contact.phone, data) ? "/dashboard/sponsor_agency" : "/onboarding";
+  }
   if (role === "exhibitor") {
     const { data } = await db.from("exhibitors").select("company_name").eq("owner_id", accountId).maybeSingle();
     return hasCoreProfile(role, profile.city, contact.phone, data) ? "/dashboard/exhibitor" : "/onboarding";

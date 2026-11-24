@@ -1,0 +1,12 @@
+import Link from "next/link";
+import { requireSponsorAgencyWorkspace } from "@/lib/dashboard-workspace";
+
+export default async function SponsorOpportunities({ searchParams }: { searchParams: Promise<{city?:string;industry?:string}> }) {
+  const [{ db }, filters] = await Promise.all([requireSponsorAgencyWorkspace(), searchParams]);
+  let query = db.from("event_sponsorship_settings").select("event_id,brief,target_amount,accepts_cash,accepts_in_kind,accepts_custom_proposals,response_deadline,desired_industries,organizer_events!inner(title,city,starts_at,ends_at,status),sponsorship_packages(id,name,price,available_slots,is_active)").eq("is_enabled", true).eq("organizer_events.status", "published").order("response_deadline", { ascending: true, nullsFirst: false });
+  if (filters.city) query = query.ilike("organizer_events.city", `%${filters.city}%`);
+  if (filters.industry) query = query.contains("desired_industries", [filters.industry]);
+  const { data, error } = await query;
+  if (error) throw new Error("Unable to load sponsorship opportunities.");
+  return <><h1 className="text-4xl font-black">Sponsorship opportunities</h1><p className="mt-2 text-[var(--muted)]">Pitch one of your sponsor brands to published events.</p><form className="panel mt-6 flex flex-wrap gap-3 p-4"><input className="input max-w-xs" name="city" defaultValue={filters.city} placeholder="Filter by city"/><input className="input max-w-xs" name="industry" defaultValue={filters.industry} placeholder="Filter by industry"/><button className="button button-secondary">Filter</button></form><div className="mt-6 grid gap-5 lg:grid-cols-2">{data?.map(row=>{const event=Array.isArray(row.organizer_events)?row.organizer_events[0]:row.organizer_events;return <article className="panel p-6" key={row.event_id}><h2 className="text-2xl font-black">{event?.title}</h2><p className="mt-1 text-sm text-[var(--muted)]">{event?.city} · {event?.starts_at}–{event?.ends_at}</p><p className="mt-4 whitespace-pre-wrap">{row.brief}</p><div className="mt-4 flex flex-wrap gap-2"><span className="badge">{row.accepts_cash?"Cash":""}{row.accepts_cash&&row.accepts_in_kind?" + ":""}{row.accepts_in_kind?"In-kind":""}</span>{row.target_amount?<span className="badge">Target ₹{Number(row.target_amount).toLocaleString("en-IN")}</span>:null}</div><Link className="button button-primary mt-5" href={`/dashboard/sponsor_agency/opportunities/${row.event_id}`}>View and propose</Link></article>})}{!data?.length?<p className="panel p-6 text-[var(--muted)]">No matching opportunities.</p>:null}</div></>;
+}

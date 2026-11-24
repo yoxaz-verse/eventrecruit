@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, CalendarDays, Home, LayoutDashboard, LogIn } from "lucide-react";
+import { Briefcase, CalendarDays, Home, LayoutDashboard } from "lucide-react";
 import { isNavigationItemActive } from "@/lib/navigation";
 import { BrandMark } from "@/components/brand-mark";
 
@@ -18,20 +18,19 @@ const pageLabels: Array<[string, string]> = [
   ["/", "Discover"],
 ];
 
-export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
+export function PublicMobileNavigation() {
   const pathname = usePathname();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
   const activePath = optimisticPath&&optimisticPath!==pathname ? optimisticPath : pathname;
-  const accountHref = signedIn ? "/dashboard" : "/login";
-  const accountLabel = signedIn ? "Portal" : "Account";
+  const accountHref = "/dashboard";
   const pageLabel = pageLabels.find(([path]) => isNavigationItemActive(activePath, path))?.[1] ?? "exporb";
 
   const tabs = [
     { href: "/", label: "Home", icon: Home },
     { href: "/events", label: "Events", icon: CalendarDays },
     { href: "/browse", label: "Roles", icon: Briefcase },
-    { href: accountHref, label: accountLabel, icon: signedIn ? LayoutDashboard : LogIn },
+    { href: accountHref, label: "Account", icon: LayoutDashboard },
   ];
 
   return (
@@ -47,9 +46,9 @@ export function PublicMobileNavigation({ signedIn }: { signedIn: boolean }) {
             className="mobile-account-shortcut"
             href={accountHref}
             onClick={() => setOptimisticPath(accountHref)}
-            aria-label={signedIn ? "Open your portal" : "Log in to your account"}
+            aria-label="Open your account"
           >
-            {signedIn ? <LayoutDashboard size={19} aria-hidden /> : <LogIn size={19} aria-hidden />}
+            <LayoutDashboard size={19} aria-hidden />
           </Link>
         </div>
       </div>

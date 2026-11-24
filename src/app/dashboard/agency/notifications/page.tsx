@@ -1,37 +1,12 @@
-import Link from "next/link";
+import { PlatformNotificationPage } from "@/components/platform-notification-page";
+import { requireAgencyWorkspace } from "@/lib/dashboard-workspace";
 import { agencyDataContext } from "@/lib/agency-data";
-import { EmptyState } from "@/components/empty-state";
-import { Bell } from "lucide-react";
+import Link from "next/link";
 
-export default async function Notifications() {
-  const ctx = await agencyDataContext();
-  if (!ctx) throw new Error("Notifications unavailable.");
-
-  const { data } = await ctx.db
-    .from("agency_notifications")
-    .select("*")
-    .eq("agency_id", ctx.agency.id)
-    .order("created_at", { ascending: false });
-
-  return (
-    <>
-      <h1 className="text-4xl font-black">Notifications</h1>
-      <div className="mt-6 grid gap-3">
-        {data?.map((note) => (
-          <Link href={note.href || "#"} className="panel p-5" key={note.id}>
-            <h2 className="font-black">{note.title}</h2>
-            <p className="text-sm text-[var(--muted)]">{note.body}</p>
-            <time className="mt-2 block text-xs">{new Date(note.created_at).toLocaleString()}</time>
-          </Link>
-        ))}
-        {!data?.length ? (
-          <EmptyState
-            icon={Bell}
-            title="No notifications"
-            description="You're all caught up! Updates about your agency events, applications, and staff will appear here."
-          />
-        ) : null}
-      </div>
-    </>
-  );
+export default async function AgencyNotificationsPage() {
+  const [{ profile }, context] = await Promise.all([requireAgencyWorkspace(), agencyDataContext()]);
+  const legacy = context ? await context.db.from("agency_notifications").select("id,title,body,href,created_at").eq("agency_id", context.agency.id).order("created_at", { ascending: false }).limit(50) : { data: [] };
+  return <PlatformNotificationPage profileId={profile.id} role="agency">
+    {legacy.data?.length ? <section className="mt-9"><h2 className="text-2xl font-black">Agency operation updates</h2><div className="mt-4 grid gap-3">{legacy.data.map((note) => <Link className="panel p-5" href={note.href || "#"} key={note.id}><h3 className="font-black">{note.title}</h3><p className="text-sm text-[var(--muted)]">{note.body}</p><time className="mt-2 block text-xs text-[var(--muted)]">{new Date(note.created_at).toLocaleString("en-IN")}</time></Link>)}</div></section> : null}
+  </PlatformNotificationPage>;
 }

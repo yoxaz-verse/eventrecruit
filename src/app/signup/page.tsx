@@ -21,7 +21,7 @@ export default async function SignupPage({
   const message = resolveAuthMessage(params?.message, {
     supabaseConfigured,
   });
-  const selectedRole = ["organizer", "talent", "exhibitor", "agency"].includes(params?.role ?? "") ? params!.role! : "talent";
+  const selectedRole = ["organizer", "talent", "exhibitor", "agency", "sponsor_agency"].includes(params?.role ?? "") ? params!.role! : "talent";
 
   return (
     <div className="shell">
@@ -29,7 +29,7 @@ export default async function SignupPage({
       <AuthCard
         badge="Verified signup"
         title="Create your account"
-        description="Start as an event organizer, talent, an exhibitor, or an agency for events and retail activations across India."
+        description="Start as an event organizer, talent, exhibitor, staffing agency, or sponsor agency across India."
         footer={{ text: "Already registered?", href: "/login", label: "Log in" }}
       >
         <AuthMessage message={message} />

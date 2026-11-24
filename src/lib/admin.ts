@@ -43,7 +43,7 @@ export function maskEmail(value:string|null|undefined){
 export const adminStatusOptions:Record<string,string[]>={
   profile:["pending_verification","verified","rejected"], agency:["pending_verification","verified","rejected"], exhibitor:["pending_verification","verified","rejected"],
   event_submission:["approved","rejected"],
-  organizer_event:["draft","submitted","published","cancelled"], staffing_role:["open","closed"],
+  sponsor_agency:["pending_verification","verified","rejected"], organizer_event:["draft","submitted","published","cancelled"], staffing_role:["open","closed"],
   application:["applied","shortlisted","documents_requested","under_review","approved","assigned","completed","rejected","withdrawn","no_response","cancelled","closed"], placement:["accepted","completed","cancelled"],
   inquiry:["new","contacted","accepted","declined"], relationship:["pending","active","declined","revoked"],
   recommendation:["recommended","accepted","rejected","withdrawn"], commission:["tracked","approved","disputed","paid_offline"], review:["published","hidden"],

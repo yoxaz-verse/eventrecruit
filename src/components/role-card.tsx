@@ -10,7 +10,7 @@ export function RoleCard({ role, apply = false, rateUnit = "hour", showDate = fa
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-[var(--line)]/60">
           <div>
-            {role.opportunityType==="volunteer"?<span className="badge badge-accent mb-2">Volunteer · unpaid</span>:null}
+            <span className={`badge mb-2 ${role.opportunityType==="volunteer"?"badge-accent":""}`}>{role.opportunityType==="volunteer"?"Volunteer · unpaid":"Paid staff"}</span>
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1">
               <ShieldCheck size={13} className="text-[var(--accent)]" />
               <span>{role.eventTitle}</span>

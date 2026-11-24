@@ -15,6 +15,7 @@ export function validateOnboarding(role: UserRole, data: FormData): string | nul
     const commission = value("commission_value");
     if ((commission && (!Number.isFinite(Number(commission)) || Number(commission) < 0)) || !["percentage", "fixed"].includes(value("commission_type"))) return "Enter valid commission details.";
   }
+  if (role === "sponsor_agency" && (!value("business_name") || value("business_name").length > 160)) return "Enter your sponsor agency name.";
   if (role === "exhibitor" && (!value("business_name") || value("business_name").length > 160)) return "Enter your company name.";
   return null;
 }
@@ -23,6 +24,7 @@ export function hasCoreProfile(role: UserRole, city?: string | null, phone?: str
   if (!city?.trim() || !phone?.trim()) return false;
   if (role === "talent") return true;
   if (role === "agency") return Boolean(details?.name?.trim());
+  if (role === "sponsor_agency") return Boolean(details?.name?.trim());
   if (role === "exhibitor") return Boolean(details?.company_name?.trim());
   return false;
 }

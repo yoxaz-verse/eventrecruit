@@ -1,4 +1,48 @@
-export type UserRole = "organizer" | "admin" | "agency" | "exhibitor" | "talent";
+export type UserRole = "organizer" | "admin" | "agency" | "sponsor_agency" | "exhibitor" | "talent";
+
+export type RoleCapability =
+  | "manage_profile"
+  | "discover_opportunities"
+  | "apply_for_roles"
+  | "manage_events"
+  | "manage_workforce"
+  | "manage_clients"
+  | "manage_stalls"
+  | "manage_sponsorships"
+  | "manage_settlements"
+  | "moderate_platform";
+
+export type ResponsibilityState = "complete" | "action_required" | "blocked" | "informational";
+
+export type ResponsibilityItem = {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  state: ResponsibilityState;
+  blocker?: string;
+};
+
+export type PlatformNotificationCategory =
+  | "account"
+  | "verification"
+  | "application"
+  | "assignment"
+  | "event"
+  | "staffing"
+  | "sponsorship"
+  | "settlement"
+  | "system";
+
+export type PlatformNotification = {
+  id: string;
+  category: PlatformNotificationCategory;
+  title: string;
+  body: string;
+  actionHref: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
 
 export type ExhibitorKind = "platform" | "external";
 export type AgencyExhibitorRelationshipStatus = "pending" | "active" | "declined" | "revoked";
@@ -39,6 +83,10 @@ export type InformationVisibility = "internal" | "staff" | "client_shareable";
 export type EventLifecycleStatus = "draft" | "submitted" | "published" | "cancelled";
 export type RateMode = "fixed" | "range" | "negotiable";
 export type OpportunityType = "paid" | "volunteer";
+export type SponsorshipContributionKind = "cash" | "in_kind" | "cash_and_in_kind";
+export type SponsorshipProposalStatus = "draft" | "submitted" | "under_review" | "changes_requested" | "organizer_accepted" | "confirmed" | "declined" | "withdrawn" | "cancelled";
+export type SponsorVerificationStatus = "pending_verification" | "verified" | "rejected";
+export type EventSponsorStatus = "active" | "cancelled";
 export type VerificationRequestStatus = "pending" | "verified" | "rejected" | "cancelled";
 export type SettlementStatus = "pending" | "sent" | "received" | "processing" | "partially_paid" | "paid" | "failed" | "refunded";
 export type PayoutRecipientType = "agency" | "talent";

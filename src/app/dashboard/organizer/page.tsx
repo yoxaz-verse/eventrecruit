@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlusCircle, Building2, Globe, CalendarDays, MapPin, Sparkles } from "lucide-react";
+import { PlusCircle, Building2, Globe, CalendarDays, MapPin, Sparkles, Megaphone, Users } from "lucide-react";
 
 import { organizerContext } from "@/lib/organizer-server";
 import { eventPhase, eventTypeLabels, venueSettingLabels, type OrganizerEvent } from "@/lib/organizer";
@@ -13,7 +13,7 @@ export default async function OrganizerDashboard({
   const { db, company, companies } = await organizerContext();
   const { data, error } = await db
     .from("organizer_events")
-    .select("*")
+    .select("id,company_id,title,city,starts_at,ends_at,status,event_type,venue_setting")
     .in(
       "company_id",
       companies.map((item) => item.id)
@@ -21,7 +21,7 @@ export default async function OrganizerDashboard({
     .order("starts_at", { ascending: true, nullsFirst: false });
 
   if (error) throw new Error("Unable to load events.");
-  const events: OrganizerEvent[] = data ?? [];
+  const events = (data ?? []) as OrganizerEvent[];
   const filters = ["all", "draft", "submitted", "upcoming", "ongoing", "completed", "cancelled"];
   const active = filters.includes(filter ?? "") ? filter! : "all";
 
@@ -122,8 +122,11 @@ export default async function OrganizerDashboard({
                 <Link className="button button-secondary text-xs py-2 px-3.5" href={`/dashboard/organizer/events/${e.id}/participants`}>
                   Exhibitor Directory
                 </Link>
-                <Link className="button button-secondary text-xs py-2 px-3.5" href={`/dashboard/organizer/events/${e.id}/volunteers`}>
-                  Volunteers
+                <Link className="button button-secondary text-xs py-2 px-3.5 gap-1" href={`/dashboard/organizer/events/${e.id}/workforce`}>
+                  <Users size={14}/> Workforce
+                </Link>
+                <Link className="button button-secondary text-xs py-2 px-3.5 gap-1" href={`/dashboard/organizer/events/${e.id}/sponsors`}>
+                  <Megaphone size={14}/> Sponsors
                 </Link>
               </div>
             </article>

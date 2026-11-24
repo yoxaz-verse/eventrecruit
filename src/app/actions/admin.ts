@@ -10,6 +10,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const targets:Record<string,{table:string;column:string;paths:string[]}>= {
  profile:{table:"profiles",column:"verification_status",paths:["/dashboard/admin","/dashboard/admin/users"]},
  agency:{table:"agencies",column:"verification_status",paths:["/dashboard/admin","/dashboard/admin/organizations"]},
+ sponsor_agency:{table:"sponsor_agencies",column:"verification_status",paths:["/dashboard/admin","/dashboard/admin/organizations","/dashboard/admin/verifications"]},
  exhibitor:{table:"exhibitors",column:"verification_status",paths:["/dashboard/admin","/dashboard/admin/organizations"]},
  organizer_event:{table:"organizer_events",column:"status",paths:["/dashboard/admin","/dashboard/admin/events","/events"]},
  staffing_role:{table:"staffing_roles",column:"status",paths:["/dashboard/admin","/dashboard/admin/workforce","/browse"]},

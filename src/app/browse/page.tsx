@@ -32,18 +32,21 @@ export default async function BrowsePage({
     <div className="shell public-page min-h-screen">
       <TopNav />
       <main className="page py-10">
-        <div className="page-kicker">
+        <div className="page-kicker public-page-intro-split">
+          <div>
           <span className="badge badge-accent inline-flex items-center gap-1.5">
             <Sparkles size={14} aria-hidden />
             <span>India opportunities</span>
           </span>
-          <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight">Open event & retail roles</h1>
+          <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight">Step into your next opportunity.</h1>
           <p className="mt-2 text-lg text-[var(--muted)]">Browse current staffing needs across exhibitions, launches, and activations.</p>
+          </div>
+          {user && rolesResult.available ? <div className="public-intro-stat" aria-label={`${roles.length} open roles`}><strong>{roles.length}</strong><span>open roles</span></div> : null}
         </div>
 
         {user && rolesResult.available && !profileResult?.error ? (
           <>
-            <form className="panel filter-panel my-8 grid gap-4 p-6 shadow-md md:grid-cols-[1fr_220px_auto]" action="/browse">
+            <form className="panel filter-panel my-8 grid gap-4 p-6 shadow-md md:grid-cols-[1fr_220px_auto_auto]" action="/browse">
               <label className="label">
                 <span>Role or event title</span>
                 <div className="input-icon-wrap">
@@ -65,6 +68,7 @@ export default async function BrowsePage({
                 <Filter size={17} aria-hidden />
                 <span>Filter</span>
               </button>
+              {(q || city) && <Link className="button button-secondary self-end" href="/browse">Clear</Link>}
             </form>
 
             {!mayApply && (

@@ -2,9 +2,10 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emailHash, getRequestIpHash } from "@/lib/email/rate-limit";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function consumePasswordLoginLimit(email: string): Promise<{ allowed: boolean; retry_after_seconds: number }> {
-  const admin = createAdminClient();
+export async function consumePasswordLoginLimit(email: string, client?: SupabaseClient): Promise<{ allowed: boolean; retry_after_seconds: number }> {
+  const admin = client ?? createAdminClient();
   if (!admin) throw new Error("Database is not configured.");
   const { data, error } = await admin.rpc("consume_auth_password_rate_limit", {
     p_email_hash: emailHash(email),

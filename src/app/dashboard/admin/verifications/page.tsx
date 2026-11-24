@@ -29,14 +29,18 @@ export default async function VerificationQueue({ searchParams }: { searchParams
             <span className="badge capitalize">{row.entity_type}</span>
             <p className="mt-3">{row.notes || "Verification requested"}</p>
             <p className="text-sm text-[var(--muted)]">Entity {row.entity_id}</p>
-            <form action={reviewVerification} className="mt-4 flex gap-2">
+            <form action={reviewVerification} className="mt-4">
               <input type="hidden" name="verification_id" value={row.id} />
-              <button className="button button-primary" name="decision" value="verified">
+              <input type="hidden" name="decision" value="verified" />
+              <button className="button button-primary" type="submit">
                 Verify
               </button>
-              <button className="button button-secondary" name="decision" value="rejected">
-                Reject
-              </button>
+            </form>
+            <form action={reviewVerification} className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input type="hidden" name="verification_id" value={row.id} />
+              <input type="hidden" name="decision" value="rejected" />
+              <label className="label min-w-0 flex-1 text-xs"><span>Rejection reason</span><input className="input" maxLength={1000} name="reason" placeholder="Explain what must be corrected" required /></label>
+              <button className="button button-secondary self-end" type="submit">Reject</button>
             </form>
           </article>
         ))}

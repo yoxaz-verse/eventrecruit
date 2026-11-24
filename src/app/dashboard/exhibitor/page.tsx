@@ -6,11 +6,11 @@ import { CalendarDays, ClipboardList, Users, PlusCircle, ArrowRight, Sparkles, B
 export default async function ExhibitorDashboard() {
   const { profile, db, entity: exhibitor } = await requireExhibitorWorkspace();
   const [submissions, requests] = await Promise.all([
-    db.from("exhibitor_event_submissions").select("id").eq("exhibitor_id", exhibitor.id),
-    db.from("events").select("id,staffing_roles(id)").eq("created_by", profile.id),
+    db.from("exhibitor_event_submissions").select("id", { count: "exact", head: true }).eq("exhibitor_id", exhibitor.id),
+    db.from("staffing_roles").select("id,events!inner(created_by)", { count: "exact", head: true }).eq("events.created_by", profile.id),
   ]);
   if (submissions.error || requests.error) throw new Error("Unable to load workspace summary.");
-  const requestCount = (requests.data ?? []).reduce((sum, event) => sum + (event.staffing_roles?.length ?? 0), 0);
+  const requestCount = requests.count ?? 0;
 
   return (
     <>
@@ -49,7 +49,7 @@ export default async function ExhibitorDashboard() {
                 <CalendarDays size={22} aria-hidden />
               </div>
             </div>
-            <strong className="mt-4 block text-4xl font-black text-[var(--foreground)]">{submissions.data?.length ?? 0}</strong>
+            <strong className="mt-4 block text-4xl font-black text-[var(--foreground)]">{submissions.count ?? 0}</strong>
           </div>
           <p className="text-xs font-bold text-[var(--accent)] flex items-center gap-1.5 mt-5">
             <span>Manage submitted events</span>

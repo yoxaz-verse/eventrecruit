@@ -25,8 +25,8 @@ export default async function TalentDashboard({searchParams}:{searchParams:Promi
   db.from("staffing_roles").select("id,title,description,headcount,hourly_rate,opportunity_type,shift_start,shift_end,work_starts_on,work_ends_on,required_skills,status,events(title,venue,city,location_id,map_url)").eq("status","open").order("created_at",{ascending:false}).limit(100),
   db.from("applications").select("id,staffing_role_id,status,cancellation_requested_at").eq("talent_id",talent.id),
   db.from("talent_job_alerts").select("id,staffing_role_id,created_at").eq("talent_id",talent.id).order("created_at",{ascending:false}).limit(20),
-  db.from("organizer_events").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","published").gte("ends_at",today).order("starts_at"),
-  db.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","approved").gte("ends_at",today).order("starts_at"),
+  db.from("organizer_events").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","published").gte("ends_at",today).order("starts_at").limit(100),
+  db.from("exhibitor_event_submissions").select("id,title,venue,city,location_id,starts_at,ends_at").eq("status","approved").gte("ends_at",today).order("starts_at").limit(100),
  ]);
  if([prefs,preferred,profile,rolesResult,appsResult,alerts,organizerEvents,submittedEvents].some(result=>result.error))throw new Error("Unable to load talent opportunities. Apply the latest migration.");
  const preferredIds=new Set((preferred.data??[]).map(item=>item.location_id)),matches=(id:string|null)=>Boolean(id&&preferredIds.has(id)),include=(id:string|null)=>view==="preferred"?matches(id):!matches(id);

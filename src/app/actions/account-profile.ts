@@ -6,7 +6,7 @@ import { getCurrentAccount, requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
 
-const roles: UserRole[] = ["admin", "organizer", "agency", "exhibitor", "talent"];
+const roles: UserRole[] = ["admin", "organizer", "agency", "sponsor_agency", "exhibitor", "talent"];
 
 export async function saveAccountProfile(_state: { error: string }, data: FormData): Promise<{ error: string }> {
   const profile = await requireRole(roles);
@@ -34,4 +34,3 @@ export async function accountProfileData() {
   if (error) throw new Error("Unable to load account profile.");
   return { profile, email: account.email, phone: contact?.phone ?? "" };
 }
-

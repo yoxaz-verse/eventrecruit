@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { indiaToday, type OrganizerEvent } from "@/lib/organizer";
 import { formatShiftTime, formatDateRangeDisplay, formatTitleCase } from "@/lib/formatters";
 import type { EventRole } from "@/lib/types";
+import { measureServerOperation } from "@/lib/server-performance";
 
 export const PUBLIC_CACHE_TAGS = {
   events: "public-events",
@@ -31,8 +32,9 @@ export type PublicDirectoryItem =
 
 const getCachedPublicDirectory = unstable_cache(
   async (queryText: string, city: string): Promise<PublicDataResult<PublicDirectoryItem[]>> => {
-    const db = await createClient();
-    if (!db) return { data: [], available: false };
+    return measureServerOperation("public_event_directory", async () => {
+      const db = await createClient();
+      if (!db) return { data: [], available: false };
     let organizerQuery = db.from("organizer_events")
       .select("id,title,description,city,venue,starts_at,ends_at,company_id,status,published_at,staffing_needs,booking_url,event_type,venue_setting,requirement_sections,requirement_details,logo_path,amenities,custom_amenities")
       .eq("status", "published").gte("ends_at", indiaToday()).order("starts_at").limit(200);
@@ -63,7 +65,8 @@ const getCachedPublicDirectory = unstable_cache(
     const exhibitorItems = (submitted.data ?? [])
       .filter((event) => !needle || event.title.toLowerCase().includes(needle))
       .map((event) => ({ source: "exhibitor" as const, event: { ...event, amenities: event.amenities ?? [], custom_amenities: event.custom_amenities ?? [] } }));
-    return { data: [...exhibitorItems, ...organizerItems], available: true };
+      return { data: [...exhibitorItems, ...organizerItems], available: true };
+    });
   },
   ["public-event-directory-v1"],
   { revalidate: 60, tags: [PUBLIC_CACHE_TAGS.events, PUBLIC_CACHE_TAGS.submissions, PUBLIC_CACHE_TAGS.participation] },
@@ -72,6 +75,57 @@ const getCachedPublicDirectory = unstable_cache(
 export function getPublicEventDirectory(filters: { q?: string; city?: string } = {}) {
   return getCachedPublicDirectory((filters.q ?? "").slice(0, 160), (filters.city ?? "").slice(0, 120));
 }
+
+const getCachedHomepageEvents = unstable_cache(async (): Promise<PublicDataResult<PublicDirectoryItem[]>> => {
+  return measureServerOperation("public_homepage_events", async () => {
+    const db = await createClient();
+    if (!db) return { data: [], available: false };
+    const [organizers, submitted] = await Promise.all([
+      db.from("organizer_events")
+        .select("id,title,city,starts_at,ends_at,staffing_needs")
+        .eq("status", "published").gte("ends_at", indiaToday()).order("starts_at").limit(3),
+      db.from("exhibitor_event_submissions")
+        .select("id,title,city,starts_at,ends_at")
+        .eq("status", "approved").gte("ends_at", indiaToday()).order("starts_at").limit(3),
+    ]);
+    if (organizers.error || submitted.error) return { data: [], available: false };
+    const organizerItems = (organizers.data ?? []).map((event) => ({
+      source: "organizer" as const,
+      event: event as OrganizerEvent,
+      companyName: "Event company",
+      participants: [],
+    }));
+    const exhibitorItems = (submitted.data ?? []).map((event) => ({
+      source: "exhibitor" as const,
+      event: { ...event, description: null, venue: "", amenities: [], custom_amenities: [], reviewed_at: null },
+    }));
+    const data = [...organizerItems, ...exhibitorItems]
+      .sort((left, right) => (left.event.starts_at ?? "").localeCompare(right.event.starts_at ?? ""))
+      .slice(0, 3);
+    return { data, available: true };
+  });
+}, ["public-homepage-events-v1"], {
+  revalidate: 60,
+  tags: [PUBLIC_CACHE_TAGS.events, PUBLIC_CACHE_TAGS.submissions],
+});
+
+export const getPublicHomepageEvents = () => getCachedHomepageEvents();
+
+const getCachedPublicEventCities = unstable_cache(async (): Promise<string[]> => {
+  const db = await createClient();
+  if (!db) return [];
+  const [organizers, submitted] = await Promise.all([
+    db.from("organizer_events").select("city").eq("status", "published").gte("ends_at", indiaToday()).limit(500),
+    db.from("exhibitor_event_submissions").select("city").eq("status", "approved").gte("ends_at", indiaToday()).limit(500),
+  ]);
+  if (organizers.error || submitted.error) return [];
+  return [...new Set([...(organizers.data ?? []), ...(submitted.data ?? [])].map((row) => row.city).filter(Boolean))].sort();
+}, ["public-event-cities-v1"], {
+  revalidate: 60,
+  tags: [PUBLIC_CACHE_TAGS.events, PUBLIC_CACHE_TAGS.submissions],
+});
+
+export const getPublicEventCities = () => getCachedPublicEventCities();
 
 const getCachedOpenRoles = unstable_cache(async (): Promise<PublicDataResult<EventRole[]>> => {
   const db = await createClient();

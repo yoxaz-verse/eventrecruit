@@ -21,6 +21,12 @@ const roleContent = {
     submit: "Save agency and continue",
     steps: ["Account created", "Add agency details", "Add your first client"],
   },
+  sponsor_agency: {
+    title: "Set up your sponsor agency",
+    description: "Create your agency profile, then add the sponsor brands you represent.",
+    submit: "Save agency and continue",
+    steps: ["Account created", "Add agency details", "Add sponsor brands"],
+  },
   exhibitor: {
     title: "Set up your company",
     description: "Add the essentials once, then start planning your event presence.",
@@ -35,7 +41,7 @@ export default async function OnboardingPage() {
   const next = await nextAccountPath(profile.id);
   if (next !== "/onboarding") redirect(next);
   if (profile.role === "organizer") redirect("/dashboard/organizer/company");
-  if (!(["talent", "agency", "exhibitor"] as const).includes(profile.role as "talent" | "agency" | "exhibitor")) redirect("/dashboard");
+  if (!(["talent", "agency", "sponsor_agency", "exhibitor"] as const).includes(profile.role as "talent" | "agency" | "sponsor_agency" | "exhibitor")) redirect("/dashboard");
 
   const role = profile.role as keyof typeof roleContent;
   const content = roleContent[role];
@@ -76,10 +82,10 @@ export default async function OnboardingPage() {
                 </div>
               </fieldset>
 
-              {role === "agency" || role === "exhibitor" ? (
+              {role === "agency" || role === "sponsor_agency" || role === "exhibitor" ? (
                 <fieldset className="grid gap-4 border-0 border-t border-[var(--line)] p-0 pt-5">
-                  <legend className="mb-3 text-lg font-black">{role === "agency" ? "Agency" : "Company"} details</legend>
-                  <label className="label"><span>{role === "agency" ? "Agency name" : "Company name"} <span className="text-red-600 ml-1">*</span></span><input autoComplete="organization" className="input" name="business_name" required maxLength={160} /></label>
+                  <legend className="mb-3 text-lg font-black">{role === "exhibitor" ? "Company" : "Agency"} details</legend>
+                  <label className="label"><span>{role === "exhibitor" ? "Company name" : "Agency name"} <span className="text-red-600 ml-1">*</span></span><input autoComplete="organization" className="input" name="business_name" required maxLength={160} /></label>
                   {role === "exhibitor" ? <label className="label"><span>Industry <span className="field-optional">Optional</span></span><input className="input" name="industry" placeholder="For example: FMCG, retail, technology" /></label> : null}
                   {role === "agency" ? (
                     <details className="optional-details">
@@ -90,6 +96,7 @@ export default async function OnboardingPage() {
                       </div>
                     </details>
                   ) : null}
+                  {role === "sponsor_agency" ? <><label className="label">Website <span className="field-optional">Optional</span><input className="input" name="website" type="url" placeholder="https://agency.example" /></label><label className="label">About the agency <span className="field-optional">Optional</span><textarea className="input textarea" name="description" maxLength={5000} /></label></> : null}
                 </fieldset>
               ) : null}
 

@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { LayoutDashboard, LogIn, UserPlus, Calendar, Search, LogOut } from "lucide-react";
-import { getCurrentAccount } from "@/lib/auth";
-import { signOut } from "@/app/actions/auth";
+import { LayoutDashboard, LogIn, Calendar, Search, ArrowUpRight } from "lucide-react";
 import { PublicMobileNavigation } from "@/components/public-mobile-navigation";
-import { SubmitButton } from "@/components/submit-button";
 import { BrandMark } from "@/components/brand-mark";
 
-export async function TopNav({ signedIn: signedInOverride }: { signedIn?: boolean } = {}) {
-  const signedIn = signedInOverride ?? Boolean(await getCurrentAccount());
+export function TopNav() {
   return (
     <>
-      <PublicMobileNavigation signedIn={signedIn} />
+      <PublicMobileNavigation />
       <header className="site-header sticky top-0 z-50 hidden border-b border-[var(--line)]/70 bg-white/85 backdrop-blur-md transition-all md:block">
       <div className="page flex min-h-20 flex-nowrap items-center justify-between gap-4 py-0">
         <Link aria-label="exporb home" className="brand-link group" href="/">
@@ -32,31 +28,15 @@ export async function TopNav({ signedIn: signedInOverride }: { signedIn?: boolea
           
           <div className="h-5 w-px bg-[var(--line)] mx-1 hidden sm:block" />
 
-          {signedIn ? (
-            <>
-              <Link className="button button-primary text-sm font-bold gap-2 shadow-md hover:shadow-lg" href="/dashboard">
-                <LayoutDashboard size={17} aria-hidden />
-                <span>Dashboard</span>
-              </Link>
-              <form action={signOut}>
-                <SubmitButton className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-200 cursor-pointer" pendingText="Signing out…">
-                  <LogOut size={14} aria-hidden />
-                  <span>Sign out</span>
-                </SubmitButton>
-              </form>
-            </>
-          ) : (
-            <>
-              <Link className="button button-secondary text-sm font-bold gap-2" href="/login">
-                <LogIn size={17} aria-hidden />
-                <span>Log in</span>
-              </Link>
-              <Link className="button button-primary text-sm font-bold gap-2 shadow-md hover:shadow-lg" href="/signup">
-                <UserPlus size={17} aria-hidden />
-                <span>Sign up</span>
-              </Link>
-            </>
-          )}
+          <Link className="button button-secondary text-sm font-bold gap-2" href="/login">
+            <LogIn size={17} aria-hidden />
+            <span>Log in</span>
+          </Link>
+          <Link className="button button-primary text-sm font-bold gap-2 shadow-md hover:shadow-lg" href="/dashboard">
+            <LayoutDashboard size={17} aria-hidden />
+            <span>Find talent</span>
+            <ArrowUpRight size={15} aria-hidden />
+          </Link>
         </nav>
       </div>
       </header>

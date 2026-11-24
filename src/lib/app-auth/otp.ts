@@ -5,6 +5,7 @@ import type { AuthEmailPurpose } from "@/lib/email/message";
 import { classifyAuthEmailFailure, AuthEmailStageError } from "@/lib/email/failure";
 import { digest, generateOtp } from "./crypto";
 import { validOtp } from "./otp-code";
+import { optimizedOtpDigest } from "./otp-preparation";
 
 type Purpose = AuthEmailPurpose;
 const ttl = 10 * 60 * 1000;
@@ -36,11 +37,12 @@ export async function createAndSendOtp(accountId: string, email: string, purpose
   }
 }
 
-export async function consumeOtp(accountId: string, purpose: Purpose, code: string) {
+export async function consumeOtp(accountId: string, email: string, purpose: Purpose, code: string) {
   if (!validOtp(code)) return false;
-  const { data, error } = await db().rpc("consume_app_otp", {
+  const { data, error } = await db().rpc("consume_app_otp_v2", {
     p_account: accountId, p_purpose: purpose,
-    p_hash: digest(`${accountId}:${purpose}:${code}`),
+    p_hash: optimizedOtpDigest(email, purpose, code),
+    p_legacy_hash: digest(`${accountId}:${purpose}:${code}`),
   });
   if (error) throw new AuthEmailStageError("otp_verify", "database_error");
   return data === true;

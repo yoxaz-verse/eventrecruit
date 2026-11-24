@@ -48,7 +48,7 @@ export function NavigationProgressBar() {
       if (!target) return;
 
       const clickable = target.closest<HTMLElement>(
-        "button, a.button, .button, [role='button'], input[type='submit'], input[type='button'], .dashboard-nav-link"
+        "a[href], .dashboard-nav-link[href]"
       );
 
       if (!clickable) return;
@@ -62,10 +62,9 @@ export function NavigationProgressBar() {
         return;
       }
 
-      const isAnchor = clickable.tagName === "A";
-      const href = isAnchor ? clickable.getAttribute("href") : null;
+      const href = clickable.getAttribute("href");
 
-      if (isAnchor && href) {
+      if (href) {
         if (
           href.startsWith("#") ||
           href.startsWith("javascript:") ||
@@ -153,5 +152,4 @@ export function NavigationProgressBar() {
     </div>
   );
 }
-
 
