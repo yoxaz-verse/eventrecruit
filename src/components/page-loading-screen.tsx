@@ -6,6 +6,7 @@ export interface PageLoadingScreenProps {
   subtitle?: string;
   quotes?: string[];
   showTopNav?: boolean;
+  fullViewport?: boolean;
 }
 
 export function PageLoadingScreen({
@@ -13,9 +14,10 @@ export function PageLoadingScreen({
   subtitle = "Preparing India-wide event staffing operations and verified placements...",
   quotes,
   showTopNav = false,
+  fullViewport = true,
 }: PageLoadingScreenProps) {
   return (
-    <div className="min-h-[70vh] flex flex-col justify-between">
+    <div className={`${fullViewport ? "min-h-screen" : "min-h-[70vh]"} bg-[var(--background)] flex flex-col justify-between`}>
       {showTopNav && <TopNav />}
 
       <main className="page flex-1 flex flex-col items-center justify-center py-12 md:py-16">

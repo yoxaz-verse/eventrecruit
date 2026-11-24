@@ -1,4 +1,4 @@
-import { LoadingSkeleton } from "@/components/loading-skeleton";
+import { PageLoadingScreen } from "@/components/page-loading-screen";
 import type { UserRole } from "@/lib/types";
 
 const labels: Record<UserRole, string> = {
@@ -11,5 +11,11 @@ const labels: Record<UserRole, string> = {
 };
 
 export function DashboardLoading({ role }: { role: UserRole }) {
-  return <div className="py-4"><LoadingSkeleton label={labels[role]} /></div>;
+  return (
+    <PageLoadingScreen
+      title={labels[role]}
+      subtitle="Preparing schedules, staffing requests, applicants, and placement updates..."
+      showTopNav={false}
+    />
+  );
 }
