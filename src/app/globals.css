@@ -351,6 +351,10 @@ a:focus-visible {
   color: var(--accent);
 }
 
+.password-visibility:active {
+  transform: translateY(-50%) scale(0.97) !important;
+}
+
 .password-visibility:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
