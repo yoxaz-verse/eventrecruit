@@ -47,6 +47,8 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 APP_AUTH_SECRET=
 SMTP_HOST=chocobo.mxrouting.net
+SMTP_PORT=587
+SMTP_SECURE=false
 SMTP_AUTH_USER=
 SMTP_AUTH_PASS=
 SMTP_FROM=
@@ -64,7 +66,7 @@ Use an R2 API token with Object Read & Write access limited to the `exporb` buck
 
 Image sources may be up to 7 MB (the UI recommends staying under 5 MB). The browser resizes them within 1200×1200 and converts them to WebP at no more than 500 KB before submission; the server rejects any uncompressed or oversized bypass attempt before R2 storage.
 
-4. Generate a random `APP_AUTH_SECRET` of at least 32 characters and configure MXroute. Next.js generates six-digit OTPs that expire in 10 minutes and submits messages through MXroute's HTTPS API. `SMTP_HOST` names your MXroute server; `SMTP_PORT` and `SMTP_SECURE` from older configurations are ignored. Supabase Auth email settings are not used.
+4. Generate a random `APP_AUTH_SECRET` of at least 32 characters and configure MXroute. Next.js generates six-digit OTPs that expire in 10 minutes and sends them through authenticated SMTP. Use `SMTP_PORT=587` and `SMTP_SECURE=false` for STARTTLS; use the exact mailbox address in both `SMTP_AUTH_USER` and `SMTP_FROM`. Supabase Auth email settings are not used.
 
 Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL=https://eventrecruit.vercel.app` in production.
 
@@ -76,9 +78,9 @@ Set `NEXT_PUBLIC_APP_URL=http://localhost:3000` locally and `NEXT_PUBLIC_APP_URL
 npm run dev
 ```
 
-Run `npm run diagnose:email` to check HTTPS API reachability without sending credentials or email. It cannot verify mailbox authentication or actual delivery. Signup failures report a request ID, transport, stage, and safe category; a successful provider response confirms API acceptance, not inbox arrival. Set the server-only `ADMIN_EMAIL` and `ADMIN_PASSWORD` values, then run `npm run auth:provision-admin`. The idempotent command creates or updates a verified administrator, hashes the configured password, and revokes existing sessions only when the password changes. The legacy `auth:grant-admin` script name remains as an alias. Never expose these variables with a `NEXT_PUBLIC_` prefix.
+Run `npm run diagnose:email` to verify the SMTP connection, STARTTLS negotiation, and mailbox authentication without sending an email. Signup failures report a request ID, transport, stage, and safe category without logging credentials, recipients, OTPs, or provider response text. Set the server-only `ADMIN_EMAIL` and `ADMIN_PASSWORD` values, then run `npm run auth:provision-admin`. The idempotent command creates or updates a verified administrator, hashes the configured password, and revokes existing sessions only when the password changes. The legacy `auth:grant-admin` script name remains as an alias. Never expose these variables with a `NEXT_PUBLIC_` prefix.
 
-For Vercel, configure `NEXT_PUBLIC_SUPABASE_URL` (or `SUPABASE_URL`), `SUPABASE_SERVICE_ROLE_KEY`, `APP_AUTH_SECRET` (at least 32 characters), `SMTP_HOST`, `SMTP_AUTH_USER`, `SMTP_AUTH_PASS`, `SMTP_FROM`, and `NEXT_PUBLIC_APP_URL` in the project's **Production** environment. `.env.local` is local-only and is not uploaded with the deployment. Redeploy after changing Production variables. The app must also have migrations 005–007 applied to the same Supabase project as those variables. If a signup logs `auth_rate_limit_failed`, no email request was made: `auth_secret_missing` or `database_configuration_missing` means a Production setting is missing; `migration_missing` means the rate-limit RPC is absent; `database_auth_rejected` means the configured key or database grants are wrong. Keep secret values out of logs and support requests.
+For Vercel, configure `NEXT_PUBLIC_SUPABASE_URL` (or `SUPABASE_URL`), `SUPABASE_SERVICE_ROLE_KEY`, `APP_AUTH_SECRET` (at least 32 characters), `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_USER`, `SMTP_AUTH_PASS`, `SMTP_FROM`, and `NEXT_PUBLIC_APP_URL` in the project's **Production** environment. `.env.local` is local-only and is not uploaded with the deployment. Redeploy after changing Production variables. The app must also have migrations 005–007 and 028 applied to the same Supabase project as those variables. If a signup logs `auth_rate_limit_failed`, no email request was made: `auth_secret_missing` or `database_configuration_missing` means a Production setting is missing; `migration_missing` means the rate-limit RPC is absent; `database_auth_rejected` means the configured key or database grants are wrong. Keep secret values out of logs and support requests.
 
 To send Core Web Vitals to an existing first-party collector, optionally set `NEXT_PUBLIC_WEB_VITALS_URL` to its HTTPS endpoint. No metrics are transmitted when it is unset. Run `npm run analyze` locally to produce the official Next.js client/server bundle reports.
 

@@ -29,7 +29,7 @@ test("unexpected delivery errors remain sanitized", async () => {
     atAuthEmailStage("smtp_delivery", () => { throw new Error(secret); }),
     (error: unknown) => {
       assert.ok(error instanceof AuthEmailStageError);
-      assert.deepEqual(authEmailDiagnostic(error), { stage: "smtp_delivery", category: "mxroute_api_unexpected" });
+      assert.deepEqual(authEmailDiagnostic(error), { stage: "smtp_delivery", category: "smtp_unexpected" });
       assert.doesNotMatch(JSON.stringify(authEmailDiagnostic(error)), /secret-password|123456|example\.com/);
       return true;
     },
@@ -50,7 +50,7 @@ test("classifies database, configuration, and unanticipated signup failures safe
     { stage: "otp_verify", category: "database_error" },
     { stage: "configuration", category: "app_url_invalid" },
     { stage: "unexpected", category: "unexpected_error" },
-    { stage: "smtp_delivery", category: "mxroute_api_unexpected" },
+    { stage: "smtp_delivery", category: "smtp_unexpected" },
   ]);
   assert.doesNotMatch(JSON.stringify(failures.map(authEmailDiagnostic)), /user@example|123456|smtp-password/);
 });

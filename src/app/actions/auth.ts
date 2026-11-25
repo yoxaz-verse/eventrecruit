@@ -29,7 +29,7 @@ function isEmail(email: string) { return email.length <= 254 && /^[^\s@<>]+@[^\s
 function url(path: string, message: string, extra?: Record<string,string>) { return `${path}?${new URLSearchParams({message,...extra})}`; }
 function log(event: string, error: unknown) {
   const diagnostic = error instanceof AuthEmailStageError ? authEmailDiagnostic(error) : { stage: "unexpected", category: "service_error" };
-  console.error(JSON.stringify({event, request_id: randomUUID(), ...(diagnostic.stage === "smtp_delivery" ? {transport:"mxroute_https_api"} : {}), ...diagnostic}));
+  console.error(JSON.stringify({event, request_id: randomUUID(), ...(diagnostic.stage === "smtp_delivery" ? {transport:"mxroute_smtp"} : {}), ...diagnostic}));
 }
 async function account(email: string, client = db()) {
   const { data, error } = await client.from("app_accounts").select("id,email,password_hash,email_verified_at,disabled_at").eq("email",email).maybeSingle();

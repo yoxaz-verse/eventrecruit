@@ -20,7 +20,7 @@ export function classifyAuthEmailFailure(stage: AuthEmailStage, error: unknown):
   if (stage === "rate_limit") return new AuthEmailStageError(stage, "database_error");
   if (stage === "account_lookup") return new AuthEmailStageError(stage, "database_error");
   if (stage === "otp_store" || stage === "otp_verify") return new AuthEmailStageError(stage, "database_error");
-  return new AuthEmailStageError(stage, code === "OTP_INVALID_FORMAT" ? "otp_invalid_format" : "mxroute_api_unexpected");
+  return new AuthEmailStageError(stage, code === "OTP_INVALID_FORMAT" ? "otp_invalid_format" : "smtp_unexpected");
 }
 
 export async function atAuthEmailStage<T>(stage: AuthEmailStage, task: () => Promise<T> | T): Promise<T> {
