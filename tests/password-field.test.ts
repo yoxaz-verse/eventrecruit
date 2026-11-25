@@ -13,6 +13,6 @@ test("password visibility control remains clickable while active", async () => {
   assert.match(component, /setVisible\(\(current\) => !current\)/);
   assert.match(
     styles,
-    /\.password-visibility:active\s*\{[^}]*transform:\s*translateY\(-50%\)\s+scale\(0\.97\)\s*!important;/s,
+    /\.password-visibility:active\s*\{[\s\S]*?transform:\s*translateY\(-50%\)\s+scale\(0\.97\)\s*!important;/,
   );
 });
