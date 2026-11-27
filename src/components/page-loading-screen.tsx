@@ -10,7 +10,7 @@ export interface PageLoadingScreenProps {
 }
 
 export function PageLoadingScreen({
-  title = "Loading exporb workspace",
+  title = "Loading Expoline workspace",
   subtitle = "Preparing India-wide event staffing operations and verified placements...",
   quotes,
   showTopNav = false,

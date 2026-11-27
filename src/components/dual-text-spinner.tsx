@@ -24,7 +24,7 @@ export interface DualTextSpinnerProps {
 
 export function DualTextSpinner({
   size = "md",
-  outerText = "EXPORB TALENT OPS • INDIA-WIDE EVENT STAFFING • VERIFIED PLACEMENTS • RECRUITMENT CREWS • ",
+  outerText = "EXPOLINE TALENT OPS • INDIA-WIDE EVENT STAFFING • VERIFIED PLACEMENTS • RECRUITMENT CREWS • ",
   innerText = "COORDINATING CREWS • VERIFYING SKILLS • LIVE DEMAND • MATCHING WORKSPACE • ",
   label,
   sublabel,

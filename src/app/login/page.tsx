@@ -34,7 +34,7 @@ export default async function LoginPage({
       <TopNav />
       <AuthCard
         badge="Secure access"
-        title="Log in to exporb"
+        title="Log in to Expoline"
         description="Access your India-wide event and retail staffing workspace with password or email OTP."
         footer={{ text: "New here?", href: "/signup", label: "Create account" }}
       >

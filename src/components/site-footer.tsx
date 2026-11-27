@@ -10,10 +10,10 @@ export function SiteFooter() {
       <div className="page py-12 pb-24 md:pb-12">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
-            <Link aria-label="exporb home" className="brand-link inline-flex items-center gap-3" href="/">
+            <Link aria-label="Expoline home" className="brand-link inline-flex items-center gap-3" href="/">
               <BrandMark className="shadow-sm border border-white/15" />
               <span className="brand-wordmark font-black tracking-tight text-white">
-                expo<span className="text-[var(--accent-2)]">rb</span>
+                Expo<span className="text-[var(--accent-2)]">line</span>
               </span>
             </Link>
             <p className="mt-4 max-w-sm text-xs text-slate-300/80 leading-relaxed">
@@ -75,7 +75,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
-          <p>© {currentYear} exporb. All rights reserved to Yoxaz Verse.</p>
+          <p>© {currentYear} Expoline. All rights reserved to Yoxaz Verse.</p>
           <div className="flex items-center gap-1">
             <Sparkles size={13} className="text-amber-300" aria-hidden />
             <span>A product of</span>

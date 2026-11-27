@@ -94,7 +94,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: "Match verified people",
-    text: "exporb helps coordinate suitable talent with profile, language, skill, and reliability signals.",
+    text: "Expoline helps coordinate suitable talent with profile, language, skill, and reliability signals.",
   },
   {
     icon: Handshake,
@@ -136,7 +136,7 @@ export default async function Home() {
             <div className="section-heading"><span className="badge">Find your next opportunity</span><h2 id="upcoming-events-heading">Upcoming events</h2><p className="mt-4 text-[var(--muted)]">See who is hiring and how many people each position needs.</p></div>
             <Link className="button button-secondary" href="/events">View all events <ArrowRight size={18} aria-hidden /></Link>
           </div>
-          {upcomingUnavailable ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(item=>{if(item.source==='exhibitor'){const event=item.event;return <article className="panel event-card gap-4 p-6" key={`exhibitor-${event.id}`}><div className="flex flex-wrap gap-2"><span className="badge">Exporb Approved</span><span className="badge">{event.city}</span></div><h3 className="text-2xl font-bold"><Link href={`/events/exhibitor/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><Link className="button button-secondary" href={`/events/exhibitor/${event.id}`}>View event</Link></article>}const event=item.event;return <article className="panel event-card gap-4 p-6" key={`organizer-${event.id}`}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>})}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
+          {upcomingUnavailable ? <p className="panel mt-8 p-6" role="alert">Events are temporarily unavailable. Please try again later.</p> : upcomingEvents.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{upcomingEvents.map(item=>{if(item.source==='exhibitor'){const event=item.event;return <article className="panel event-card gap-4 p-6" key={`exhibitor-${event.id}`}><div className="flex flex-wrap gap-2"><span className="badge">Expoline Approved</span><span className="badge">{event.city}</span></div><h3 className="text-2xl font-bold"><Link href={`/events/exhibitor/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><Link className="button button-secondary" href={`/events/exhibitor/${event.id}`}>View event</Link></article>}const event=item.event;return <article className="panel event-card gap-4 p-6" key={`organizer-${event.id}`}><span className="badge self-start">{event.city}</span><h3 className="text-2xl font-bold"><Link href={`/events/${event.id}`}>{event.title}</Link></h3><p className="text-sm text-[var(--muted)]">{event.starts_at} – {event.ends_at}</p><EventStaffingNeeds needs={event.staffing_needs}/><Link className="button button-secondary" href={`/events/${event.id}`}>View event</Link></article>})}</div> : <p className="panel mt-8 p-6">No upcoming events are published yet. Check back soon.</p>}
         </section>
 
         <section className="home-section page py-14 section-numbered">
@@ -164,7 +164,7 @@ export default async function Home() {
               <span className="badge">Where we help</span>
               <h2>No matter where in India your event or store activation is happening.</h2>
               <p className="mt-4 leading-8 text-[var(--muted)]">
-                exporb helps coordinate the right people across major Indian
+                Expoline helps coordinate the right people across major Indian
                 markets, from exhibition halls and conference venues to retail stores,
                 malls, pop-ups, and local brand activations.
               </p>
@@ -176,7 +176,7 @@ export default async function Home() {
                 ))}
               </div>
             </div>
-            <div className="coverage-map panel" aria-label="India coverage map for exporb">
+            <div className="coverage-map panel" aria-label="India coverage map for Expoline">
               <div className="map-shell">
                 <div className="map-viewport">
                   <Image
@@ -288,7 +288,7 @@ export default async function Home() {
                 </span>
                 <h2>Need people for an event, store, launch, or activation?</h2>
                 <p>
-                  Start with your role and location. exporb keeps the process
+                  Start with your role and location. Expoline keeps the process
                   simple: find verified people, coordinate placements, and keep trust
                   records visible.
                 </p>

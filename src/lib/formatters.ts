@@ -1,5 +1,5 @@
 /**
- * Utility functions for clean, professional display formatting of dates, times, rates, and titles across EventRecruit / exporb.
+ * Utility functions for clean, professional display formatting of dates, times, rates, and titles across EventRecruit / Expoline.
  */
 
 export function formatTime(timeStr: string | null | undefined): string {

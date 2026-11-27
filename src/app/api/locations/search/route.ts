@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   url.searchParams.set("lang", "en");
   url.searchParams.set("bbox", `${INDIA_BOUNDS.west},${INDIA_BOUNDS.south},${INDIA_BOUNDS.east},${INDIA_BOUNDS.north}`);
   try {
-    const response = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "exporb-location-picker/1.0" }, next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) });
+    const response = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "expoline-location-picker/1.0" }, next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) });
     if (!response.ok) throw new Error("upstream");
     return Response.json({ results: normalizePhotonCollection(await response.json()) });
   } catch {

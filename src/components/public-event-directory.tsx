@@ -41,7 +41,7 @@ export function PublicEventDirectory({
           {filtered.map((item) => {
             if (item.source === "exhibitor") {
               const event = item.event;
-              return <article className="panel event-card gap-3 p-6" key={`exhibitor-${event.id}`}><div className="flex flex-wrap gap-2"><span className="badge">Exporb Approved</span><span className="badge">{event.city}</span></div><h2 className="text-2xl font-bold"><Link href={`/events/exhibitor/${event.id}`}>{event.title}</Link></h2><p className="text-sm">{event.starts_at} – {event.ends_at}</p><p className="line-clamp-3 text-[var(--muted)]">{event.description}</p><EventAmenities amenities={event.amenities} compact customAmenities={event.custom_amenities}/><Link className="button button-secondary" href={`/events/exhibitor/${event.id}`}>View event</Link></article>;
+              return <article className="panel event-card gap-3 p-6" key={`exhibitor-${event.id}`}><div className="flex flex-wrap gap-2"><span className="badge">Expoline Approved</span><span className="badge">{event.city}</span></div><h2 className="text-2xl font-bold"><Link href={`/events/exhibitor/${event.id}`}>{event.title}</Link></h2><p className="text-sm">{event.starts_at} – {event.ends_at}</p><p className="line-clamp-3 text-[var(--muted)]">{event.description}</p><EventAmenities amenities={event.amenities} compact customAmenities={event.custom_amenities}/><Link className="button button-secondary" href={`/events/exhibitor/${event.id}`}>View event</Link></article>;
             }
             const event = item.event;
             const participants = item.participants.join(", ");

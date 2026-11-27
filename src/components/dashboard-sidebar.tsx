@@ -35,7 +35,7 @@ export function DashboardSidebar({
             <Link className="brand-link inline-flex items-center gap-3 group" href="/">
               <BrandMark className="shadow-xs transition-transform group-hover:scale-105" />
               <span className="brand-wordmark font-black tracking-tight text-lg">
-                expo<span className="text-[var(--accent)]">rb</span>
+                Expo<span className="text-[var(--accent)]">line</span>
               </span>
             </Link>
 

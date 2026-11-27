@@ -7,7 +7,7 @@ export default function BrowseLoading() {
       subtitle="Searching verified role opportunities for event hosts, promoters, lead capture & store teams..."
       quotes={[
         "Browse verified shifts with transparent daily rates in Rupees.",
-        "Apply directly with your exporb talent profile.",
+        "Apply directly with your Expoline talent profile.",
         "Find opportunities across Delhi NCR, Mumbai, Bengaluru, Hyderabad & more.",
       ]}
       showTopNav={true}

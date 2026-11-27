@@ -32,7 +32,7 @@ export default async function ResetPasswordPage({
       <AuthCard
         badge="New password"
         title="Create a new password"
-        description="Verify the recovery code first, then set a new password for your exporb account."
+        description="Verify the recovery code first, then set a new password for your Expoline account."
         footer={profile ? undefined : { text: "Need a new recovery code?", href: "/forgot-password", label: "Send again" }}
         showTabs={false}
       >

@@ -287,7 +287,7 @@ export function AdminOrganizationDetailPage({ detail }: { detail: AdminOrganizat
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-                Company profile, event participation, platform activity, and financial records inside Exporb Portal.
+                Company profile, event participation, platform activity, and financial records inside Expoline Portal.
               </p>
             </div>
           </div>

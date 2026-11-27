@@ -15,22 +15,22 @@ const geist = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "exporb | Verified event and retail talent across India",
-    template: "%s | exporb",
+    default: "Expoline | Verified event and retail talent across India",
+    template: "%s | Expoline",
   },
   description: "Find and coordinate verified talent for exhibitions, retail activations, product launches, roadshows, and brand campaigns across India.",
-  applicationName: "exporb",
+  applicationName: "Expoline",
   keywords: ["event staffing India", "exhibition staff", "retail promoters", "brand activation talent"],
   openGraph: {
-    title: "exporb | Verified event and retail talent across India",
+    title: "Expoline | Verified event and retail talent across India",
     description: "Find and coordinate verified people for events, stores, launches, and activations across India.",
-    siteName: "exporb",
+    siteName: "Expoline",
     locale: "en_IN",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "exporb | Verified event and retail talent across India",
+    title: "Expoline | Verified event and retail talent across India",
     description: "Find and coordinate verified people for events, stores, launches, and activations across India.",
   },
   robots: { index: true, follow: true },

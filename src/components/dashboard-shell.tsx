@@ -59,7 +59,7 @@ export async function DashboardShell({
         <Link className="brand-link flex items-center gap-2.5" href="/">
           <BrandMark size={36} className="shadow-xs" />
           <span className="brand-wordmark font-black tracking-tight text-base">
-            expo<span className="text-[var(--accent)]">rb</span>
+            Expo<span className="text-[var(--accent)]">line</span>
           </span>
         </Link>
 

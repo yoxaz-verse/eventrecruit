@@ -16,7 +16,7 @@ const config: MxrouteConfig = {
   secure: false,
   username: "no-reply@example.com",
   password: "private-password",
-  from: "exporb <no-reply@example.com>",
+  from: "Expoline <no-reply@example.com>",
 };
 
 function transport(overrides: Partial<MailTransport> = {}): MailTransport {
@@ -29,8 +29,8 @@ function transport(overrides: Partial<MailTransport> = {}): MailTransport {
 
 test("extracts only one valid sender matching the authenticated mailbox", async () => {
   assert.equal(senderAddress(config.from), config.username);
-  assert.equal(senderAddress('"exporb <no-reply@example.com>"'), config.username);
-  assert.equal(senderAddress("exporb no-reply@example.com"), config.username);
+  assert.equal(senderAddress('"Expoline <no-reply@example.com>"'), config.username);
+  assert.equal(senderAddress("Expoline no-reply@example.com"), config.username);
   assert.throws(() => senderAddress("no-reply@example.com,other@example.com"), AuthEmailStageError);
   assert.throws(() => senderAddress("no-reply@example.com\r\nBcc: other@example.com"), AuthEmailStageError);
   await assert.rejects(

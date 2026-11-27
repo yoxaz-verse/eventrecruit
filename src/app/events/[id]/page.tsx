@@ -18,7 +18,7 @@ export async function generateMetadata({params}:{params:Promise<{id:string}>}):P
  const {id}=await params; const event=await getPublicEventMetadata('organizer',id);
  if(!event)return {title:'Event not found',robots:{index:false,follow:false}};
  const description=(event.description||`${event.title} in ${event.city}`).slice(0,160);
- return {title:event.title,description,alternates:{canonical:`/events/${id}`},openGraph:{title:event.title,description,type:'website',images:[{url:'/brand/expo-sphere-event-team.webp',width:1672,height:941,alt:'exporb event team'}]}};
+ return {title:event.title,description,alternates:{canonical:`/events/${id}`},openGraph:{title:event.title,description,type:'website',images:[{url:'/brand/expo-sphere-event-team.webp',width:1672,height:941,alt:'Expoline event team'}]}};
 }
 
 export default async function EventDetails({params}:{params:Promise<{id:string}>}) {

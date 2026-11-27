@@ -103,7 +103,7 @@ export const privateContacts: PrivateContactPreview[] = [
     role: "agency",
     city: "Delhi NCR",
     phone: "+919900000002",
-    alternateEmail: "agency-ops@exporb.local",
+    alternateEmail: "agency-ops@expoline.local",
   },
   {
     profileId: "00000000-0000-0000-0000-000000000003",
@@ -111,7 +111,7 @@ export const privateContacts: PrivateContactPreview[] = [
     role: "exhibitor",
     city: "Bengaluru",
     phone: "+919900000003",
-    alternateEmail: "exhibitor-ops@exporb.local",
+    alternateEmail: "exhibitor-ops@expoline.local",
   },
   {
     profileId: "00000000-0000-0000-0000-000000000004",
@@ -119,7 +119,7 @@ export const privateContacts: PrivateContactPreview[] = [
     role: "talent",
     city: "Mumbai",
     phone: "+919900000004",
-    alternateEmail: "aisha@exporb.local",
+    alternateEmail: "aisha@expoline.local",
   },
 ];
 

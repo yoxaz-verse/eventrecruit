@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "exporb",
-    short_name: "exporb",
+    name: "Expoline",
+    short_name: "Expoline",
     description: "Verified event and retail talent across India",
     start_url: "/",
     display: "standalone",

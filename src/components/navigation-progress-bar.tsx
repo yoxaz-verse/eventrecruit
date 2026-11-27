@@ -120,7 +120,7 @@ export function NavigationProgressBar() {
           <DualTextSpinner
             size="md"
             label="Loading your next page"
-            sublabel="Preparing your exporb workspace..."
+            sublabel="Preparing your Expoline workspace..."
             showQuotes={false}
             className="w-full max-w-xl"
           />

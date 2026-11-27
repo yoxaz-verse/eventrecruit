@@ -9,10 +9,10 @@ export function TopNav() {
       <PublicMobileNavigation />
       <header className="site-header sticky top-0 z-50 hidden border-b border-[var(--line)]/70 bg-white/85 backdrop-blur-md transition-all md:block">
       <div className="page flex min-h-20 flex-nowrap items-center justify-between gap-4 py-0">
-        <Link aria-label="exporb home" className="brand-link group" href="/">
+        <Link aria-label="Expoline home" className="brand-link group" href="/">
           <BrandMark className="shadow-sm transition-transform group-hover:scale-105" />
           <span className="brand-wordmark font-black tracking-tight">
-            expo<span className="text-[var(--accent)]">rb</span>
+            Expo<span className="text-[var(--accent)]">line</span>
           </span>
         </Link>
 

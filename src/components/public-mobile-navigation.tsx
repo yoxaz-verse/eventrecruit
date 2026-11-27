@@ -24,7 +24,7 @@ export function PublicMobileNavigation() {
 
   const activePath = optimisticPath&&optimisticPath!==pathname ? optimisticPath : pathname;
   const accountHref = "/dashboard";
-  const pageLabel = pageLabels.find(([path]) => isNavigationItemActive(activePath, path))?.[1] ?? "exporb";
+  const pageLabel = pageLabels.find(([path]) => isNavigationItemActive(activePath, path))?.[1] ?? "Expoline";
 
   const tabs = [
     { href: "/", label: "Home", icon: Home },
@@ -37,9 +37,9 @@ export function PublicMobileNavigation() {
     <>
       <div className="mobile-top-bar md:hidden">
         <div className="page mobile-top-bar-inner">
-          <Link aria-label="exporb home" className="brand-link" href="/" onClick={() => setOptimisticPath("/")}>
+          <Link aria-label="Expoline home" className="brand-link" href="/" onClick={() => setOptimisticPath("/")}>
             <BrandMark size={36} className="mobile-brand-mark" />
-            <span className="brand-wordmark mobile-wordmark">expo<span>rb</span></span>
+            <span className="brand-wordmark mobile-wordmark">Expo<span>line</span></span>
           </Link>
           <span className="mobile-page-context" aria-current="page">{pageLabel}</span>
           <Link

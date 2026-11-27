@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   url.searchParams.set("limit", "1");
   url.searchParams.set("lang", "en");
   try {
-    const response = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "exporb-location-picker/1.0" }, next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) });
+    const response = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "expoline-location-picker/1.0" }, next: { revalidate: 300 }, signal: AbortSignal.timeout(6000) });
     if (!response.ok) throw new Error("upstream");
     const result = normalizePhotonCollection(await response.json(), 1)[0];
     if (!result) return Response.json({ error: "No Indian venue was found at that point." }, { status: 404 });
